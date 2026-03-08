@@ -20,7 +20,7 @@ function isPublicPath(pathname: string): boolean {
   );
 }
 
-export function middleware(req: NextRequest) {
+export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const session = req.cookies.get("session");
   const roleCookie = req.cookies.get("role")?.value;
