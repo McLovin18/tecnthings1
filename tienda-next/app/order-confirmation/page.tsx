@@ -69,8 +69,8 @@ export default function OrderConfirmationPage() {
             <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">Número de orden</p>
             <p className="text-2xl font-extrabold text-[#3a1859] dark:text-white mb-3">{orderId}</p>
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Link único de tu orden (guárdalo para consultarla luego)</p>
-            <div className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2">
-              <span className="flex-1 text-xs text-slate-700 dark:text-slate-300 truncate text-left">{orderLink}</span>
+            <div className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 overflow-x-auto">
+              <span className="flex-1 text-xs text-slate-700 dark:text-slate-300 break-all text-left">{orderLink}</span>
               <button
                 onClick={handleCopy}
                 className="flex items-center gap-1 px-3 py-1 rounded-lg bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold transition shrink-0"

@@ -90,19 +90,19 @@ export default function ProductDetailPage({ params }) {
           </div>
           {/* Miniaturas */}
           {producto.imagenes.length > 1 && (
-            <div className="flex gap-2 mt-4">
-              {producto.imagenes.map((img, idx) => (
-                <img
-                  key={idx}
-                  src={img}
-                  alt="mini"
-                  className={`w-16 h-16 object-cover rounded-lg border-2 ${imgIdx === idx ? "border-purple-600" : "border-transparent"}`}
-                  onClick={() => setImgIdx(idx)}
-                  style={{ cursor: "pointer" }}
-                />
-              ))}
-            </div>
-          )}
+          <div className="flex gap-2 mt-4 overflow-x-auto">
+            {producto.imagenes.map((img, idx) => (
+              <img
+                key={idx}
+                src={img}
+                alt="mini"
+                className={`w-16 h-16 object-cover rounded-lg border-2 ${imgIdx === idx ? "border-purple-600" : "border-transparent"}`}
+                onClick={() => setImgIdx(idx)}
+                style={{ cursor: "pointer" }}
+              />
+            ))}
+          </div>
+        )}
         </div>
         {/* Info producto */}
         <div className="flex-1 flex flex-col gap-4">
@@ -125,7 +125,7 @@ export default function ProductDetailPage({ params }) {
             <span className={producto.stock > 0 ? "text-green-600" : "text-red-600"}>{producto.stock > 0 ? producto.stock : "Sin stock"}</span>
           </div>
           {/* Campo cantidad y acciones */}
-          <div className="flex items-center gap-4 mb-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-4">
             <label className="font-bold">Cantidad:</label>
             <input
               type="number"
@@ -133,20 +133,22 @@ export default function ProductDetailPage({ params }) {
               max={maxCantidad}
               value={cantidad}
               onChange={e => setCantidad(Math.max(1, Math.min(maxCantidad, Number(e.target.value))))}
-              className="input w-20 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
+              className="input w-24 sm:w-20 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
             />
-            <button
-              className={`bg-purple-700 hover:bg-purple-800 text-white font-bold py-2 px-6 rounded-xl shadow-lg text-lg ${inCart ? "opacity-60" : ""}`}
-              disabled={producto.stock === 0}
-              onClick={handleAddCart}
-            >{inCart ? "Quitar del carrito" : "Añadir al carrito"}</button>
-            <button
-              className={`bg-pink-600 hover:bg-pink-700 text-white font-bold py-2 px-4 rounded-xl shadow-lg text-lg ${isFav ? "opacity-80" : ""}`}
-              onClick={handleFav}
-              title={isFav ? "Quitar de favoritos" : "Agregar a favoritos"}
-            >
-              <span className="material-icons-round">{isFav ? "favorite" : "favorite_border"}</span>
-            </button>
+            <div className="flex gap-2 w-full sm:w-auto">
+              <button
+                className={`flex-1 sm:flex-none w-full sm:w-auto bg-purple-700 hover:bg-purple-800 text-white font-bold py-2 px-6 rounded-xl shadow-lg text-lg ${inCart ? "opacity-60" : ""}`}
+                disabled={producto.stock === 0}
+                onClick={handleAddCart}
+              >{inCart ? "Quitar del carrito" : "Añadir al carrito"}</button>
+              <button
+                className={`bg-pink-600 hover:bg-pink-700 text-white font-bold py-2 px-4 rounded-xl shadow-lg text-lg ${isFav ? "opacity-80" : ""}`}
+                onClick={handleFav}
+                title={isFav ? "Quitar de favoritos" : "Agregar a favoritos"}
+              >
+                <span className="material-icons-round">{isFav ? "favorite" : "favorite_border"}</span>
+              </button>
+            </div>
           </div>
           {!isLogged && (
             <div className="mb-4 p-3 bg-yellow-100 text-yellow-800 rounded-lg border border-yellow-300">

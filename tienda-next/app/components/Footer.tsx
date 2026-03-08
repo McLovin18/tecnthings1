@@ -79,55 +79,6 @@ const Footer: React.FC = () => {
               </div>
             )}
 
-            {/* Categorías */}
-            <div className="pt-3 lg:pt-0 text-center md:text-start">
-              <p className="text-base font-normal mb-4">Categorías</p>
-              <ul className="space-y-3 text-sm">
-                <li>
-                  <Link
-                    href={`${base}/products-by-category`}
-                    className="text-slate-200 hover:text-white transition-colors"
-                  >
-                    Productos
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href={`${base}/products-by-category`}
-                    className="text-slate-200 hover:text-white transition-colors"
-                  >
-                    Monitores
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href={`${base}/products-by-category`}
-                    className="text-slate-200 hover:text-white transition-colors"
-                  >
-                    Hardware
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href={`${base}/products-by-category`}
-                    className="text-slate-200 hover:text-white transition-colors"
-                  >
-                    Laptops
-                  </Link>
-                </li>
-                <li>
-                  <a
-                    href="https://www.google.com/maps/place/TECNOTHINGS+GYE/"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-slate-200 hover:text-white transition-colors"
-                  >
-                    Contacto
-                  </a>
-                </li>
-              </ul>
-            </div>
-
             {/* Datos de contacto + mapa */}
             <div
               className={`pt-3 lg:pt-0 text-center md:text-start ${

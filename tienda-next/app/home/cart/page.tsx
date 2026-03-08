@@ -245,9 +245,9 @@ export default function CartPage() {
                   const hasDiscount = !isNaN(discount) && discount > 0 && discount < 100;
                   const lineTotal = unit * (p.cantidad || 1);
                   return (
-                    <div key={p.id} className="flex items-center gap-4 bg-white dark:bg-slate-800 rounded-xl shadow p-4">
-                      <img src={p.imagenes?.[0] || "/no-image.png"} alt={p.nombre} className="w-20 h-20 object-contain rounded-lg border" />
-                      <div className="flex-1">
+                    <div key={p.id} className="flex flex-col sm:flex-row items-start sm:items-center gap-4 bg-white dark:bg-slate-800 rounded-xl shadow p-4">
+                      <img src={p.imagenes?.[0] || "/no-image.png"} alt={p.nombre} className="w-20 h-20 sm:w-24 sm:h-24 object-contain rounded-lg border flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
                         <div className="font-bold text-lg">{p.nombre}</div>
                         <div className="flex items-baseline gap-2 text-slate-500 dark:text-slate-300">
                           {hasDiscount ? (
@@ -260,21 +260,21 @@ export default function CartPage() {
                             <span className="text-sm font-semibold text-purple-700 dark:text-purple-300">${unit.toFixed(2)} c/u</span>
                           )}
                         </div>
-                        <div className="flex items-center gap-2 mt-2">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mt-2">
                           <label className="text-sm">Cantidad:</label>
                           <input
                             type="number"
                             min={1}
                             value={p.cantidad || 1}
                             onChange={e => handleCantidad(p.id, Number(e.target.value))}
-                            className="w-16 px-2 py-1 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
+                            className="w-16 sm:w-20 px-2 py-1 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
                           />
                           <button className="ml-2 text-red-600 hover:text-red-800" onClick={() => removeCarrito(p.id)}>
                             <span className="material-icons-round">delete</span>
                           </button>
                         </div>
                       </div>
-                      <div className="font-bold text-lg text-right min-w-[4.5rem]">${lineTotal.toFixed(2)}</div>
+                      <div className="font-bold text-lg text-right min-w-[4.5rem] mt-3 sm:mt-0">${lineTotal.toFixed(2)}</div>
                     </div>
                   );
                 })}
@@ -283,7 +283,7 @@ export default function CartPage() {
           </div>
           {/* Resumen */}
           <div className="lg:col-span-1">
-            <div className="rounded-xl p-6 sticky top-20 bg-white text-slate-900 dark:bg-[#3a1859] dark:text-white">
+            <div className="rounded-xl p-6 md:sticky md:top-20 relative bg-white text-slate-900 dark:bg-[#3a1859] dark:text-white">
               <h2 className="text-lg font-bold mb-4">Resumen</h2>
               <div className="space-y-3 border-b border-slate-200 dark:border-[#6d28d9] pb-4 mb-4">
                 <div className="flex justify-between text-sm">
