@@ -31,6 +31,9 @@ export function proxy(req: NextRequest) {
 
   const redirectTo = (path: string) => NextResponse.redirect(new URL(path, req.url));
 
+  // Debug logging
+  console.log(`[proxy] pathname: ${pathname}, session: ${!!session}, role: ${roleCookie}`);
+
   // Sin sesión: se bloquean zonas protegidas (/home, /admin) y se redirige al landing
   if (!session) {
     if (isClientArea || isAdminArea) {
@@ -49,6 +52,8 @@ export function proxy(req: NextRequest) {
     return NextResponse.next();
   }
 
+  // Fallback: always allow if not matched above
+  return NextResponse.next();
   // Cliente autenticado
   if (role === "client") {
     // No puede entrar a admin
