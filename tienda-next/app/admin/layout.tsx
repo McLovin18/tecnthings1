@@ -1,0 +1,28 @@
+"use client";
+import Sidebar from "../components/Sidebar";
+import BottomBar from "../components/BottomBar";
+import { useEffect, useState } from "react";
+import { getCurrentUser } from "../lib/firebase-auth";
+import CategoriesBar from "../components/CategoriesBar";
+
+export default function HomeLayout({ children }) {
+  const [role, setRole] = useState("client");
+  useEffect(() => {
+    getCurrentUser().then((user) => {
+      if (user?.role === "admin") setRole("admin");
+      else setRole("client");
+    });
+  }, []);
+  return (
+    
+    <div className="flex">
+
+      <Sidebar role={role} />
+      <main className="flex-1">
+        <CategoriesBar />
+        {children}
+      </main>
+      <BottomBar role={role} />
+    </div>
+  );
+}

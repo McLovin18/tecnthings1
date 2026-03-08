@@ -1,0 +1,41 @@
+"use client";
+import React from "react";
+
+const Sidebar = ({ role = "client" }) => {
+  // Opciones para cliente
+  const clientItems = [
+    { name: "Inicio", path: "/home", icon: "home" },
+    { name: "Productos", path: "/home/productos", icon: "store" },
+    { name: "Favoritos", path: "/home/favoritos", icon: "favorite" },
+    { name: "Ordenes", path: "/home/ordenes", icon: "assignment" },
+    { name: "Configuración", path: "/home/config", icon: "settings" },
+  ];
+  // Opciones para admin (solo para admin, no mezcladas con cliente)
+  const adminItems = [
+    { name: "Dashboard", path: "/admin", icon: "dashboard" },
+    { name: "Inventario", path: "/admin/inventario", icon: "inventory" },
+    { name: "Pedidos", path: "/admin/pedidos", icon: "assignment" },
+    { name: "Clientes", path: "/admin/clientes", icon: "people" },
+    { name: "Editar landing", path: "/admin/edit-landing", icon: "edit" },
+    { name: "Editar blogs", path: "/admin/edit-blogs", icon: "library_books" },
+    { name: "Perfil", path: "/admin/perfil", icon: "person" },
+    { name: "Configuración", path: "/admin/config", icon: "settings" },
+  ];
+  const items = role === "admin" ? adminItems : clientItems;
+  return (
+    <aside className="hidden lg:flex flex-col w-56 min-h-screen bg-white dark:bg-[#2a1040] border-r border-slate-200 dark:border-slate-700 shadow-md p-4">
+      <ul className="space-y-2">
+        {items.map((item) => (
+          <li key={item.path}>
+            <a href={item.path} className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 text-[#3a1859] dark:text-white font-medium">
+              <span className="material-icons-round text-xl">{item.icon}</span>
+              <span>{item.name}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </aside>
+  );
+};
+
+export default Sidebar;
