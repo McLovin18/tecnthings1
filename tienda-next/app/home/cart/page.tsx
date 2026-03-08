@@ -5,6 +5,8 @@ import React, { useState } from "react";
 import { useUser } from "../../context/UserContext";
 import { crearOrden } from "../../lib/ordenes-db";
 import { useRouter } from "next/navigation";
+import { loadStripe } from "@stripe/stripe-js";
+import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 
 export default function CartPage() {
   const { carrito, removeCarrito, addCarrito, user, setUser } = useUser();
@@ -15,6 +17,123 @@ export default function CartPage() {
   const [visitTime, setVisitTime] = useState("");
   const router = useRouter();
   const todayStr = new Date().toISOString().split("T")[0];
+
+  // Stripe client
+  const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+
+  // --- Stripe inner form (uses PaymentElement) ---
+  function StripeInnerForm({ orderId, total, onError, onSuccess }: { orderId: string; total: number; onError: (m: string) => void; onSuccess: () => void; }) {
+    const stripe = useStripe();
+    const elements = useElements();
+    const [paying, setPaying] = useState(false);
+
+    const handlePay = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!stripe || !elements) return;
+      setPaying(true);
+
+      const { error, paymentIntent } = await stripe.confirmPayment({
+        elements,
+        confirmParams: { return_url: `${window.location.origin}/order-confirmation?orderId=${orderId}&paid=true` },
+        redirect: "if_required",
+      });
+
+      if (error) {
+        onError(error.message || "Error al procesar el pago.");
+        setPaying(false);
+      } else if (paymentIntent?.status === "succeeded") {
+        onSuccess();
+      } else {
+        setPaying(false);
+      }
+    };
+
+    return (
+      <form onSubmit={handlePay} className="space-y-5">
+        <PaymentElement options={{ layout: "tabs", wallets: { applePay: "auto", googlePay: "auto" } }} />
+        <button type="submit" disabled={!stripe || paying} className="w-full py-4 rounded-2xl font-extrabold text-lg text-white bg-gradient-to-r from-[#6d28d9] via-[#7c3aed] to-[#a855f7] hover:from-[#5b21b6] hover:via-[#6d28d9] hover:to-[#9333ea] active:scale-[0.98] shadow-xl shadow-purple-500/30 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+          {paying ? (
+            <>
+              <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+              </svg>
+              Procesando...
+            </>
+          ) : (
+            <>Pagar ${total.toFixed(2)}</>
+          )}
+        </button>
+      </form>
+    );
+  }
+
+  // --- Stripe modal ---
+  function StripePaymentModal({ clientSecret, orderId, total, productos, onClose, onSuccess }: { clientSecret: string; orderId: string; total: number; productos: any[]; onClose: () => void; onSuccess: () => void; }) {
+    const [stripeError, setStripeError] = useState("");
+
+    const isDark = typeof document !== "undefined" && document.documentElement.classList.contains("dark");
+    const appearance: any = { theme: isDark ? "night" : "stripe", variables: { colorPrimary: "#7c3aed" } };
+    const options = { clientSecret, appearance };
+
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+        <div className="relative w-full max-w-[520px] max-h-[90vh] overflow-y-auto rounded-3xl shadow-2xl bg-white dark:bg-[#0f0a23] border border-purple-100 dark:border-purple-900">
+          <div className="px-6 pt-6 pb-5">
+            <div className="flex items-start justify-between">
+              <div>
+                <h2 className="text-xl font-extrabold">Completa tu compra</h2>
+                <p className="text-sm text-slate-500">Orden {orderId}</p>
+              </div>
+              <button onClick={onClose} className="text-slate-500 hover:text-slate-700">Cerrar</button>
+            </div>
+          </div>
+          <div className="px-6 py-5">
+            {stripeError && <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-xl text-sm text-red-700 dark:text-red-300">{stripeError}</div>}
+            <Elements stripe={stripePromise} options={options}>
+              <StripeInnerForm orderId={orderId} total={total} onError={setStripeError} onSuccess={onSuccess} />
+            </Elements>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Stripe state
+  const [stripeClientSecret, setStripeClientSecret] = useState<string | null>(null);
+  const [stripeOrderId, setStripeOrderId] = useState<string>("");
+  const [stripeLoading, setStripeLoading] = useState(false);
+
+  const handleStripeSuccess = () => {
+    carrito.forEach((p) => removeCarrito(p.id));
+    router.push(`/order-confirmation?orderId=${stripeOrderId}&paid=true`);
+  };
+
+  const handleIniciarPago = async () => {
+    setError("");
+    for (const p of carrito) {
+      if (p.cantidad > p.stock) {
+        setError(`Solo hay ${p.stock} unidades disponibles de "${p.nombre}".`);
+        return;
+      }
+    }
+    setStripeLoading(true);
+    try {
+      const res = await fetch("/api/create-payment-intent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ carrito: carrito.map((p) => ({ id: p.id, cantidad: p.cantidad })), email: user?.email || null, visitDate: visitDate || null, visitTime: visitTime || null, userId: user?.uid || null }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Error al iniciar el pago");
+      setStripeClientSecret(data.clientSecret);
+      setStripeOrderId(data.orderId);
+    } catch (e: any) {
+      setError(e.message || "No se pudo iniciar el pago. Intenta de nuevo.");
+    }
+    setStripeLoading(false);
+  };
 
   const calcularPrecioUnitario = (p: any) => {
     const basePrice = Number(p.precio || 0);
@@ -84,7 +203,18 @@ export default function CartPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-white dark:bg-[#3a1859] text-slate-900 dark:text-white transition-colors">
+    <>
+      {stripeClientSecret && (
+        <StripePaymentModal
+          clientSecret={stripeClientSecret}
+          orderId={stripeOrderId}
+          total={total}
+          productos={carrito}
+          onClose={() => setStripeClientSecret(null)}
+          onSuccess={handleStripeSuccess}
+        />
+      )}
+      <div className="min-h-screen flex flex-col bg-white dark:bg-[#3a1859] text-slate-900 dark:text-white transition-colors">
       <main className="max-w-6xl mx-auto px-4 py-8 lg:px-6 flex-1">
         <h1 className="text-3xl font-bold mb-8 text-[#3a1859] dark:text-white">Carrito de compras</h1>
         {isGuest && carrito.length > 0 && (
@@ -193,19 +323,30 @@ export default function CartPage() {
                 </div>
               )}
               {carrito.length > 0 && (
-                <button
-                  className="w-full block text-center px-6 py-4 mt-6 text-2xl bg-green-600 hover:bg-green-700 text-white font-extrabold rounded-2xl shadow-lg border-2 border-green-700 transition-all duration-200 disabled:opacity-60"
-                  style={{ zIndex: 10, position: 'relative' }}
-                  onClick={handleGenerarOrden}
-                  disabled={loading || !visitDate || !visitTime}
-                >
-                  {loading ? "Generando orden..." : "Generar orden"}
-                </button>
+                <>
+                  <button
+                    className="w-full block text-center px-6 py-4 mt-6 text-2xl bg-green-600 hover:bg-green-700 text-white font-extrabold rounded-2xl shadow-lg border-2 border-green-700 transition-all duration-200 disabled:opacity-60"
+                    style={{ zIndex: 10, position: 'relative' }}
+                    onClick={handleGenerarOrden}
+                    disabled={loading || !visitDate || !visitTime}
+                  >
+                    {loading ? "Generando orden..." : "Generar orden"}
+                  </button>
+
+                  <button
+                    className="w-full block text-center px-6 py-3 mt-3 text-lg bg-gradient-to-r from-[#6d28d9] via-[#7c3aed] to-[#a855f7] text-white font-extrabold rounded-2xl shadow-lg transition-all duration-200 disabled:opacity-60"
+                    onClick={handleIniciarPago}
+                    disabled={stripeLoading || !visitDate || !visitTime}
+                  >
+                    {stripeLoading ? "Preparando pago..." : `Pagar con tarjeta — $${total.toFixed(2)}`}
+                  </button>
+                </>
               )}
             </div>
           </div>
         </div>
       </main>
     </div>
+  </>
   );
 }

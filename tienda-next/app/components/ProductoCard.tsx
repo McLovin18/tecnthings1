@@ -16,9 +16,19 @@ export default function ProductoCard({ producto, onClick, showCart = false, show
   // Navegación al detalle según rol
   const goToDetail = (e) => {
     if (e) e.stopPropagation();
+    // Prefer the /home detail when we're inside the home section
     let detailUrl = `/product-detail?id=${producto.id}`;
-    if (isAdmin) detailUrl = `/admin/product-detail?id=${producto.id}`;
-    if (isCliente) detailUrl = `/home/product-detail?id=${producto.id}`;
+    try {
+      if (typeof window !== 'undefined' && window.location.pathname.startsWith('/home')) {
+        detailUrl = `/home/product-detail?id=${producto.id}`;
+      } else {
+        if (isAdmin) detailUrl = `/admin/product-detail?id=${producto.id}`;
+        if (isCliente) detailUrl = `/home/product-detail?id=${producto.id}`;
+      }
+    } catch (err) {
+      if (isAdmin) detailUrl = `/admin/product-detail?id=${producto.id}`;
+      if (isCliente) detailUrl = `/home/product-detail?id=${producto.id}`;
+    }
     router.push(detailUrl);
   };
   return (

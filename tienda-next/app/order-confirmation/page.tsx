@@ -11,7 +11,7 @@ export default function OrderConfirmationPage() {
   const paid = searchParams.get("paid") === "true";
   const redirectStatus = searchParams.get("redirect_status"); // Stripe redirect
   const [copied, setCopied] = useState(false);
-  const { carrito, removeCarrito } = useUser();
+  const { carrito, removeCarrito, isLogged } = useUser();
 
   // Limpiar carrito cuando llega desde redirect de Stripe (3DS/billeteras)
   useEffect(() => {
@@ -88,13 +88,15 @@ export default function OrderConfirmationPage() {
             : "Visita el local en la fecha y hora indicadas para retirar tus productos. Presenta el número de orden al llegar."}
         </p>
 
-        <div className="p-4 bg-yellow-100 text-yellow-800 rounded-lg border border-yellow-300 text-sm mb-6">
-          ¿Quieres hacer seguimiento de tu orden?{" "}
-          <Link href="/login?tab=register" className="underline font-semibold">
-            Regístrate e inicia sesión
-          </Link>{" "}
-          para una mejor experiencia de compra.
-        </div>
+        {!isLogged && (
+          <div className="p-4 bg-yellow-100 text-yellow-800 rounded-lg border border-yellow-300 text-sm mb-6">
+            ¿Quieres hacer seguimiento de tu orden?{" "}
+            <Link href="/login?tab=register" className="underline font-semibold">
+              Regístrate e inicia sesión
+            </Link>{" "}
+            para una mejor experiencia de compra.
+          </div>
+        )}
 
         <Link href="/" className="inline-block px-6 py-3 bg-purple-700 hover:bg-purple-800 text-white font-bold rounded-xl shadow-lg">
           Volver al inicio
