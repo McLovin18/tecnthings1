@@ -66,6 +66,11 @@ export default function PedidosAdminPage() {
 
 	const aprobarOrden = async (orden: any) => {
 		if (orden.estado !== "generada") return;
+		// Para pagos con Stripe, asegurarse de que el webhook haya marcado la orden como pagada
+		if (orden.metodoPago === "stripe" && orden.paymentStatus !== "paid") {
+			alert("La orden no está marcada como pagada aún. Espera a que llegue la confirmación del pago antes de aprobar.");
+			return;
+		}
 		if (!confirm(`Aprobar la orden ${orden.orderId || orden.id}?`)) return;
 		try {
 			// Actualizar stock de cada producto al aprobar
@@ -208,12 +213,18 @@ export default function PedidosAdminPage() {
 									>
 										Rechazar
 									</button>
-									<button
-										onClick={() => aprobarOrden(orden)}
-										className="px-3 py-1 rounded bg-green-600 text-white hover:bg-green-700 text-sm"
-									>
-										Aprobar
-									</button>
+									{orden.metodoPago === "stripe" && orden.paymentStatus !== "paid" ? (
+										<button className="px-3 py-1 rounded bg-slate-300 text-slate-700 text-sm cursor-not-allowed" title="Esperando confirmación de pago">
+											Esperando pago
+										</button>
+									) : (
+										<button
+											onClick={() => aprobarOrden(orden)}
+											className="px-3 py-1 rounded bg-green-600 text-white hover:bg-green-700 text-sm"
+										>
+											Aprobar
+										</button>
+									)}
 								</div>
 							)}
 						</div>

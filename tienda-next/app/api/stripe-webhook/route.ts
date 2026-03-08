@@ -39,13 +39,25 @@ export async function POST(req: NextRequest) {
       const { orderId, firestoreId, email } = pi.metadata || {};
 
       if (firestoreId) {
-        await db.collection("ordenes").doc(firestoreId).update({
-          estado: "generada",
-          stripePaymentIntentId: pi.id,
-          stripeAmount: pi.amount,
-          paidAt: admin.firestore.Timestamp.now(),
-        });
-        console.log(`[stripe-webhook] Orden ${orderId} marcada como generada (pagada).`);
+        const orderRef = db.collection("ordenes").doc(firestoreId);
+        const orderSnap = await orderRef.get();
+        const orderData = orderSnap.exists ? orderSnap.data() as any : null;
+
+        // Idempotencia: si ya está marcada como pagada, no hacer nada
+        if (orderData?.paymentStatus === "paid") {
+          console.log(`[stripe-webhook] Orden ${orderId} (firestoreId=${firestoreId}) ya marcada como pagada, evento ${event.id} ignorado.`);
+        } else {
+          await orderRef.update({
+            estado: "generada",
+            paymentStatus: "paid",
+            stripePaymentIntentId: pi.id,
+            stripeAmount: pi.amount,
+            paidAt: admin.firestore.Timestamp.now(),
+            stripeEventId: event.id,
+            receiptUrl: (pi.charges && (pi.charges as any).data && (pi.charges as any).data[0]?.receipt_url) || null,
+          });
+          console.log(`[stripe-webhook] Orden ${orderId} marcada como generada (pagada).`);
+        }
       }
       break;
     }
@@ -57,7 +69,9 @@ export async function POST(req: NextRequest) {
       if (firestoreId) {
         await db.collection("ordenes").doc(firestoreId).update({
           estado: "pago_fallido",
+          paymentStatus: "failed",
           stripePaymentIntentId: pi.id,
+          stripeEventId: event.id,
         });
         console.log(`[stripe-webhook] Orden ${pi.metadata?.orderId} marcada como pago_fallido.`);
       }
