@@ -8,11 +8,6 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 export const runtime = "nodejs";
 
-// Next.js necesita el cuerpo crudo para verificar la firma de Stripe
-export const config = {
-  api: { bodyParser: false },
-};
-
 export async function POST(req: NextRequest) {
   const body = await req.text();
   const sig = req.headers.get("stripe-signature");
