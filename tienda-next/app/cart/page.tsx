@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { useUser } from "../context/UserContext";
 import { crearOrden } from "../lib/ordenes-db";
 import { useRouter } from "next/navigation";
@@ -365,6 +365,7 @@ export default function CartPage() {
   const [stripeClientSecret, setStripeClientSecret] = useState<string | null>(null);
   const [stripeOrderId, setStripeOrderId] = useState<string>("");
   const [stripeLoading, setStripeLoading] = useState(false);
+  const [stripeDiag, setStripeDiag] = useState<string | null>(null);
   const router = useRouter();
   const todayStr = new Date().toISOString().split("T")[0];
 
@@ -474,6 +475,38 @@ export default function CartPage() {
     router.push(`/order-confirmation?orderId=${stripeOrderId}&paid=true`);
   }, [carrito, removeCarrito, router, stripeOrderId]);
 
+  // Calcular totales (mover antes del useEffect para evitar "Cannot access 'total' before initialization")
+  const subtotal = carrito.reduce((sum, p) => sum + calcularPrecioUnitario(p) * (p.cantidad || 1), 0);
+  const total = subtotal;
+
+  // Diagnostic: check PaymentRequest.canMakePayment to see available wallets (Apple Pay / Google Pay)
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const stripe = await stripePromise;
+        if (!stripe) {
+          if (mounted) setStripeDiag("stripe.js not loaded");
+          return;
+        }
+        // Use a small total for the check; amount must be integer cents
+        const amount = Math.max(100, Math.round((total || 1) * 100));
+        const pr = stripe.paymentRequest({ country: "US", currency: "usd", total: { label: "Total", amount } });
+        const can = await pr.canMakePayment();
+        console.log("stripe.canMakePayment =>", can);
+        if (!mounted) return;
+        if (!can) setStripeDiag("PaymentRequest.canMakePayment returned null/false — Apple/Google Pay not available on this device or domain not verified.");
+        else if ((can as any).applePay) setStripeDiag("Apple Pay available: true");
+        else if ((can as any).googlePay) setStripeDiag("Google Pay available: true");
+        else setStripeDiag(JSON.stringify(can));
+      } catch (err: any) {
+        console.error("stripe diag error", err);
+        if (mounted) setStripeDiag(String(err?.message || err));
+      }
+    })();
+    return () => { mounted = false; };
+  }, [stripePromise, total]);
+
   const handleCantidad = (id: string, cantidad: number) => {
     if (cantidad < 1) return;
     const prod = carrito.find((p) => p.id === id);
@@ -488,8 +521,7 @@ export default function CartPage() {
     }
   };
 
-  const subtotal = carrito.reduce((sum, p) => sum + calcularPrecioUnitario(p) * (p.cantidad || 1), 0);
-  const total = subtotal;
+  
 
   // Vista: Proforma
   if (step === "proforma" && ordenCreada) {
@@ -718,7 +750,7 @@ export default function CartPage() {
                     </div>
 
                     {/* Boton de accion principal */}
-                    {payMode === "order" ? (
+                      {payMode === "order" ? (
                       <button
                         className="w-full flex items-center justify-center gap-2 px-6 py-4 mt-2 text-base bg-[#3a1859] hover:bg-[#2d1244] text-white font-extrabold rounded-2xl shadow-lg border-2 border-purple-900 transition-all duration-200 disabled:opacity-60"
                         onClick={handleVerProforma}
@@ -768,9 +800,19 @@ export default function CartPage() {
                           </>
                         )}
                       </button>
-                    )}
+                      )}
                   </>
                 )}
+
+                {/* Diagnostic info for PaymentRequest availability (for Apple Pay / Google Pay) */}
+                {stripeDiag && (
+                  <div className="mt-4 p-3 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-sm text-slate-700 dark:text-slate-200">
+                    <strong className="block text-xs font-semibold mb-1">Stripe paymentRequest diagnosis</strong>
+                    <div className="break-words text-xs">{stripeDiag}</div>
+                    <div className="text-xs text-slate-400 mt-2">Si ves "PaymentRequest.canMakePayment returned null" puede ser por dominio no verificado, Safari/Wallet no configurado, o falta de HTTPS.</div>
+                  </div>
+                )}
+
               </div>
             </div>
           </div>

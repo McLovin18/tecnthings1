@@ -1,7 +1,7 @@
 "use client";
 
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useUser } from "../../context/UserContext";
 import { crearOrden } from "../../lib/ordenes-db";
 import { useRouter } from "next/navigation";
@@ -104,6 +104,7 @@ export default function CartPage() {
   const [stripeClientSecret, setStripeClientSecret] = useState<string | null>(null);
   const [stripeOrderId, setStripeOrderId] = useState<string>("");
   const [stripeLoading, setStripeLoading] = useState(false);
+  const [stripeDiag, setStripeDiag] = useState<string | null>(null);
 
   const handleStripeSuccess = () => {
     carrito.forEach((p) => removeCarrito(p.id));
@@ -134,6 +135,32 @@ export default function CartPage() {
     }
     setStripeLoading(false);
   };
+
+  // Diagnostic check for PaymentRequest (Apple/Google Pay availability)
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const stripe = await stripePromise;
+        if (!stripe) {
+          if (mounted) setStripeDiag("stripe.js not loaded");
+          return;
+        }
+        const pr = stripe.paymentRequest({ country: "US", currency: "usd", total: { label: "Test", amount: 100 } });
+        const can = await pr.canMakePayment();
+        console.log("home/cart stripe.canMakePayment =>", can);
+        if (!mounted) return;
+        if (!can) setStripeDiag("PaymentRequest.canMakePayment returned null/false — Apple/Google Pay not available on this device or domain not verified.");
+        else if ((can as any).applePay) setStripeDiag("Apple Pay available: true");
+        else if ((can as any).googlePay) setStripeDiag("Google Pay available: true");
+        else setStripeDiag(JSON.stringify(can));
+      } catch (err: any) {
+        console.error("stripe diag error", err);
+        if (mounted) setStripeDiag(String(err?.message || err));
+      }
+    })();
+    return () => { mounted = false; };
+  }, [stripePromise]);
 
   const calcularPrecioUnitario = (p: any) => {
     const basePrice = Number(p.precio || 0);
@@ -341,6 +368,13 @@ export default function CartPage() {
                     {stripeLoading ? "Preparando pago..." : `Pagar con tarjeta — $${total.toFixed(2)}`}
                   </button>
                 </>
+              )}
+              {stripeDiag && (
+                <div className="mt-4 p-3 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-sm text-slate-700 dark:text-slate-200">
+                  <strong className="block text-xs font-semibold mb-1">Stripe paymentRequest diagnosis</strong>
+                  <div className="break-words text-xs">{stripeDiag}</div>
+                  <div className="text-xs text-slate-400 mt-2">Si ves "PaymentRequest.canMakePayment returned null" puede ser por dominio no verificado, Safari/Wallet no configurado, o falta de HTTPS.</div>
+                </div>
               )}
             </div>
           </div>
