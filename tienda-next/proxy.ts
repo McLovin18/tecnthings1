@@ -52,8 +52,6 @@ export function proxy(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // Fallback: always allow if not matched above
-  return NextResponse.next();
   // Cliente autenticado
   if (role === "client") {
     // No puede entrar a admin
@@ -64,6 +62,7 @@ export function proxy(req: NextRequest) {
     if (publicPath) {
       return redirectTo("/home");
     }
+    return NextResponse.next();
   }
 
   // Admin autenticado
@@ -76,8 +75,10 @@ export function proxy(req: NextRequest) {
     if (publicPath) {
       return redirectTo("/admin");
     }
+    return NextResponse.next();
   }
 
+  // Default allow
   return NextResponse.next();
 }
 
