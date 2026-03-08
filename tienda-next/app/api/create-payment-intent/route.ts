@@ -83,10 +83,13 @@ export async function POST(req: NextRequest) {
     const currency = process.env.NEXT_PUBLIC_STRIPE_CURRENCY || "usd";
     const amountInCents = Math.round(total * 100);
 
+    // Create PaymentIntent: explicitly allow card payments only to avoid
+    // automatic inclusion of additional methods like Cash App Pay. Keeping
+    // 'card' allows Google Pay / Apple Pay tokenized card flows to work.
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amountInCents,
       currency,
-      automatic_payment_methods: { enabled: true },
+      payment_method_types: ["card"],
       receipt_email: email,
       metadata: {
         orderId,
