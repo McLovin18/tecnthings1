@@ -86,14 +86,5 @@ export const config = {
   matcher: [
     "/home/:path*",
     "/admin/:path*",
-    "/",
-    "/login",
-    "/blogs/:path*",
-    "/cart/:path*",
-    "/product-detail/:path*",
-    "/products-by-category/:path*",
-    "/search-results/:path*",
-    "/order-confirmation/:path*",
-    "/settings/:path*",
   ],
 };
