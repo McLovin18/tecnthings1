@@ -41,6 +41,8 @@ export default function LoginPage() {
   const [registerEmail, setRegisterEmail] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
   const [registerPasswordConfirm, setRegisterPasswordConfirm] = useState("");
+  const [registerPhone, setRegisterPhone] = useState("");
+  const [registerId, setRegisterId] = useState("");
 
   // ALERT AUTO REMOVE
 
@@ -147,13 +149,33 @@ export default function LoginPage() {
       });
       return;
     }
+    // Validación de número de teléfono (Ecuador: 10 dígitos)
+    if (!/^\d{10}$/.test(registerPhone)) {
+      setAlert({
+        message: "Número de teléfono inválido (10 dígitos)",
+        type: "error",
+      });
+      return;
+    }
+    // Validación de cédula/RUC (Ecuador: cédula 10 dígitos, RUC 13 dígitos)
+    if (!/^\d{10}$/.test(registerId) && !/^\d{13}$/.test(registerId)) {
+      setAlert({
+        message: "Cédula/RUC inválido (10 o 13 dígitos)",
+        type: "error",
+      });
+      return;
+    }
 
     try {
       setLoading(true);
       const result = await registerUser(
         registerEmail,
         registerPassword,
-        { name },
+        {
+          name,
+          phone: registerPhone,
+          id: registerId,
+        },
       );
       if (result.success) {
         setAlert({
@@ -302,6 +324,20 @@ ${tab === "register" ? "border-b-2 border-blue-500 text-blue-600 dark:text-blue-
               placeholder="Correo electrónico"
               value={registerEmail}
               onChange={(e) => setRegisterEmail(e.target.value)}
+              className="w-full p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-slate-400 dark:placeholder:text-white/70"
+            />
+            <input
+              type="text"
+              placeholder="Número de teléfono"
+              value={registerPhone}
+              onChange={(e) => setRegisterPhone(e.target.value)}
+              className="w-full p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-slate-400 dark:placeholder:text-white/70"
+            />
+            <input
+              type="text"
+              placeholder="Cédula o RUC"
+              value={registerId}
+              onChange={(e) => setRegisterId(e.target.value)}
               className="w-full p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-slate-400 dark:placeholder:text-white/70"
             />
             <div className="relative">

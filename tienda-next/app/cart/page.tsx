@@ -493,7 +493,6 @@ export default function CartPage() {
         const amount = Math.max(100, Math.round((total || 1) * 100));
         const pr = stripe.paymentRequest({ country: "US", currency: "usd", total: { label: "Total", amount } });
         const can = await pr.canMakePayment();
-        console.log("stripe.canMakePayment =>", can);
         if (!mounted) return;
         if (!can) setStripeDiag("PaymentRequest.canMakePayment returned null/false — Apple/Google Pay not available on this device or domain not verified.");
         else if ((can as any).applePay) setStripeDiag("Apple Pay available: true");

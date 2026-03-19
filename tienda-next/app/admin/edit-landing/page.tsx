@@ -37,19 +37,22 @@ type Section = LandingSection;
    CONSTANTES
 ============================ */
 
-// De momento derivamos las opciones del schema registry
-const SECTION_TYPES = Object.values(sectionSchemas).map((schema) => ({
-  type: schema.type as SectionType,
-  icon: schema.icon || "view_compact",
-  label: schema.label,
-}));
 
 function getDefaultSection(type: SectionType): Section {
+
+  
+    // De momento derivamos las opciones del schema registry
+
+  const SECTION_TYPES = Object.values(sectionSchemas).map((schema: any) => ({
+    type: schema.type as SectionType,
+    icon: schema.icon || "view_compact",
+    label: schema.label,
+  }));
   const id = `section-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-  const schema = sectionSchemas[type] ?? sectionSchemas.hero;
+  const schema = (sectionSchemas as any)[type] ?? (sectionSchemas as any).hero;
 
   const defaultProps: Record<string, any> = {};
-  schema.fields.forEach((field) => {
+  schema.fields.forEach((field: any) => {
     if (field.type === "text" || field.type === "textarea") {
       defaultProps[field.name] = "";
     }
@@ -72,6 +75,8 @@ function getDefaultSection(type: SectionType): Section {
 ============================ */
 
 export default function LandingEditor() {
+    // Estado para error de comentarios de Google Maps
+    const [googleCommentsError, setGoogleCommentsError] = useState("");
   const [loading, setLoading] = useState<boolean>(true);
   const [productos, setProductos] = useState<any[]>([]);
   const [hero, setHero] = useState<any>(null);
@@ -96,6 +101,146 @@ export default function LandingEditor() {
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [showFullPreview, setShowFullPreview] = useState<boolean>(false);
   const featuredScrollRef = useRef<HTMLDivElement | null>(null);
+
+  // ============================
+  // GOOGLE MAPS REVIEWS (Hero y comentarios seleccionados)
+  // ============================
+  const [googleReviewSummary, setGoogleReviewSummary] = useState<any>(null);
+  const [googleComments, setGoogleComments] = useState<any[]>([]);
+  const [selectedGoogleComments, setSelectedGoogleComments] = useState<any[]>([]);
+  const [showGoogleCommentsModal, setShowGoogleCommentsModal] = useState(false);
+  const [googleCommentsLoading, setGoogleCommentsLoading] = useState(false);
+
+  // Cargar resumen y comentarios de Google Maps
+  useEffect(() => {
+    async function fetchGoogleReviews() {
+      try {
+        const placeId = process.env.NEXT_PUBLIC_GOOGLE_MAPS_PLACE_ID || "";
+        const res = await fetch(`/api/google-maps?place_id=${placeId}`);
+        const data = await res.json();
+        setGoogleReviewSummary(data);
+      } catch (err) {
+        setGoogleReviewSummary(null);
+      }
+    }
+    fetchGoogleReviews();
+    // Fetch Google Maps comments for modal
+    async function fetchGoogleComments() {
+      setGoogleCommentsLoading(true);
+      try {
+        const placeId = process.env.NEXT_PUBLIC_GOOGLE_MAPS_PLACE_ID || "";
+        const res = await fetch(`/api/google-scrape-reviews?place_id=${placeId}`);
+        const data = await res.json();
+        console.log("[Admin] fetchGoogleComments data:", data);
+        setGoogleComments(data.reviews || []);
+        if (data.error) {
+          setGoogleCommentsError(data.error);
+        } else {
+          setGoogleCommentsError("");
+        }
+      } catch (err) {
+        setGoogleComments([]);
+        setGoogleCommentsError("No se pudieron cargar los comentarios de Google Maps.");
+      }
+      setGoogleCommentsLoading(false);
+    }
+    fetchGoogleComments();
+  }, []);
+
+  // Guardar comentarios seleccionados
+  const saveSelectedGoogleComments = async () => {
+    setSaving(true);
+    // Log selección antes de guardar
+    console.log("[Admin] selectedGoogleComments:", selectedGoogleComments);
+    // Mapear los comentarios al formato esperado por GoogleCommentsSection
+    const mappedComments = selectedGoogleComments.map((c: any) => ({
+      author_name: c.author || c.author_name || "",
+      rating: typeof c.rating === "string" ? parseFloat(c.rating) : c.rating || 0,
+      text: c.text || "",
+      time: c.date || c.time || "",
+      profile_photo_url: c.photo || c.profile_photo_url || "",
+    }));
+    // Save as JSON string in googleComments section
+    const section = sections.find(s => s.type === "googleComments");
+    if (section) {
+      const updatedSections = sections.map(s =>
+        s.id === section.id
+          ? {
+              ...s,
+              props: {
+                ...s.props,
+                comments: JSON.stringify(mappedComments),
+              },
+            }
+          : s
+      );
+      await saveLandingSections(updatedSections);
+      setSections(updatedSections);
+      // Also update selectedGoogleComments from saved section
+      try {
+        const parsed = JSON.parse(updatedSections.find(s => s.type === "googleComments")?.props?.comments || "[]");
+        setSelectedGoogleComments(parsed);
+      } catch {
+        setSelectedGoogleComments([]);
+      }
+      console.log("[Admin] updatedSections googleComments:", updatedSections.find(s => s.type === "googleComments"));
+    }
+    setSaving(false);
+    setShowGoogleCommentsModal(false);
+    alert("Comentarios de Google guardados");
+    console.log("[Admin] mappedComments:", mappedComments);
+    // ...existing code...
+    setSaving(false);
+    setShowGoogleCommentsModal(false);
+    alert("Comentarios de Google guardados");
+  };
+
+  // Abrir/cerrar modal de selección
+  const openGoogleCommentsModal = () => setShowGoogleCommentsModal(true);
+  const closeGoogleCommentsModal = () => setShowGoogleCommentsModal(false);
+
+  // Seleccionar/deseleccionar comentarios
+  const toggleGoogleComment = (comment: any) => {
+    // Log antes y después de seleccionar/deseleccionar
+    console.log("[Admin] toggleGoogleComment BEFORE:", selectedGoogleComments);
+    // Usar el texto como clave única
+    if (selectedGoogleComments.some((c) => c.text === comment.text)) {
+      setSelectedGoogleComments(selectedGoogleComments.filter((c) => c.text !== comment.text));
+      console.log("[Admin] toggleGoogleComment REMOVED:", comment);
+    } else {
+      if (selectedGoogleComments.length < 8) {
+        setSelectedGoogleComments([...selectedGoogleComments, comment]);
+        console.log("[Admin] toggleGoogleComment ADDED:", comment);
+      } else {
+        alert("Solo puedes seleccionar hasta 8 comentarios.");
+      }
+    }
+    setTimeout(() => {
+      console.log("[Admin] toggleGoogleComment AFTER:", selectedGoogleComments);
+    }, 100);
+  };
+  // Abrir modal y cargar comentarios
+  // (removed duplicate definition)
+  // Cargar comentarios seleccionados desde sección al abrir modal
+  useEffect(() => {
+    if (showGoogleCommentsModal) {
+      const section = sections.find(s => s.type === "googleComments");
+      if (section && section.props && section.props.comments) {
+        try {
+          const parsed = JSON.parse(section.props.comments);
+          // Unify photo property for modal display
+          setSelectedGoogleComments(parsed.map((c: any) => ({
+            ...c,
+            photo: c.profile_photo_url || c.photo || "",
+          })));
+        } catch {
+          setSelectedGoogleComments([]);
+        }
+      }
+      // Log los comentarios cargados para seleccionar
+      console.log("[Admin] googleComments for modal:", googleComments);
+    }
+  }, [showGoogleCommentsModal, sections]);
 
   /* ============================
      CARGA INICIAL
@@ -128,7 +273,7 @@ export default function LandingEditor() {
       //    que aún no esté en la lista explícita (unión inventario + landing).
       const explicitIds = new Set(explicitFeatured.map((p: any) => p.id));
       const fromInventory = allProds.filter(
-        (p) => p.destacado && !explicitIds.has(p.id)
+        (p: any) => p.destacado && !explicitIds.has(p.id)
       );
 
       const initialFeatured: any[] = [...explicitFeatured, ...fromInventory];
@@ -609,7 +754,7 @@ export default function LandingEditor() {
                           provided.innerRef(el);
                         }}
                         {...provided.droppableProps}
-                        className="flex items-stretch gap-3 overflow-x-auto pb-2 min-h-[120px]"
+                        className="flex items-stretch gap-3 overflow-x-auto pb-2 min-h-30"
                       >
                         {featuredProducts.map((prod, idx) => (
                           <Draggable
@@ -997,10 +1142,10 @@ export default function LandingEditor() {
                             const fieldStyles = section.fieldStyles || {};
 
                             const contentFields = schema.fields.filter(
-                              (f) => !f.group || f.group === "content"
+                              (f: any) => !f.group || f.group === "content"
                             );
                             const styleFields = schema.fields.filter(
-                              (f) => f.group === "styles"
+                              (f: any) => f.group === "styles"
                             );
 
                             return (
@@ -1012,24 +1157,40 @@ export default function LandingEditor() {
                                     <h4 className="text-xs font-semibold uppercase text-slate-500">
                                       Contenido
                                     </h4>
-                                    {contentFields.map((field) => {
+                                    {contentFields.map((field: any) => {
                                       const value = props[field.name] ?? "";
                                       const isStylable = field.stylable;
-                                      const isActiveField =
-                                        activeFieldStyles[section.id] ===
-                                        field.name;
-                                      const currentFieldStyle =
-                                        fieldStyles[field.name] || {};
+                                      const isActiveField = activeFieldStyles[section.id] === field.name;
+                                      const currentFieldStyle = fieldStyles[field.name] || {};
 
-                                      if (
-                                        field.type === "text" ||
-                                        field.type === "number"
-                                      ) {
+                                      // Checkbox Google Maps
+                                      if (field.type === "boolean" && field.name === "googleMaps") {
                                         return (
-                                          <div
-                                            key={field.name}
-                                            className="space-y-1"
-                                          >
+                                          <div key={field.name} className="flex items-center gap-2 mb-2">
+                                            <input
+                                              type="checkbox"
+                                              checked={!!props[field.name]}
+                                              onChange={(e) =>
+                                                handleSectionPropChange(
+                                                  idx,
+                                                  field.name,
+                                                  e.target.checked
+                                                )
+                                              }
+                                            />
+                                            <label className="text-sm font-medium">{field.label}</label>
+                                          </div>
+                                        );
+                                      }
+
+                                      // Campos especiales Google Maps solo si el checkbox está activo
+                                      if (field.showIf && field.showIf.googleMaps && !props.googleMaps) {
+                                        return null;
+                                      }
+
+                                      if (field.type === "text" || field.type === "number") {
+                                        return (
+                                          <div key={field.name} className="space-y-1">
                                             <div className="flex items-center justify-between gap-2">
                                               <input
                                                 className="flex-1 border p-2 text-sm rounded"
@@ -1055,8 +1216,7 @@ export default function LandingEditor() {
                                                     setActiveFieldStyles(
                                                       (prev) => ({
                                                         ...prev,
-                                                        [section.id]:
-                                                          prev[section.id] ===
+                                                        [section.id]: prev[section.id] ===
                                                           field.name
                                                             ? null
                                                             : field.name,
@@ -1064,9 +1224,7 @@ export default function LandingEditor() {
                                                     )
                                                   }
                                                 >
-                                                  <span className="material-icons-round text-[14px]">
-                                                    format_paint
-                                                  </span>
+                                                  <span className="material-icons-round text-[14px]">format_paint</span>
                                                   Estilos
                                                 </button>
                                               )}
@@ -1074,16 +1232,11 @@ export default function LandingEditor() {
                                             {isStylable && isActiveField && (
                                               <div className="mt-2 p-2 rounded border border-slate-200 bg-slate-50 flex flex-wrap items-center gap-2 text-[11px]">
                                                 <div className="flex items-center gap-1">
-                                                  <span className="text-slate-600">
-                                                    Color
-                                                  </span>
+                                                  <span className="text-slate-600">Color</span>
                                                   <input
                                                     type="color"
                                                     className="h-6 w-8 border rounded"
-                                                    value={
-                                                      currentFieldStyle.color ||
-                                                      "#000000"
-                                                    }
+                                                    value={currentFieldStyle.color || "#000000"}
                                                     onChange={(e) =>
                                                       handleFieldStyleChange(
                                                         idx,
@@ -1114,9 +1267,7 @@ export default function LandingEditor() {
                                                     )
                                                   }
                                                 >
-                                                  <span className="material-icons-round text-[14px]">
-                                                    format_bold
-                                                  </span>
+                                                  <span className="material-icons-round text-[14px]">format_bold</span>
                                                 </button>
                                                 <button
                                                   type="button"
@@ -1138,9 +1289,7 @@ export default function LandingEditor() {
                                                     )
                                                   }
                                                 >
-                                                  <span className="material-icons-round text-[14px]">
-                                                    format_italic
-                                                  </span>
+                                                  <span className="material-icons-round text-[14px]">format_italic</span>
                                                 </button>
                                                 <button
                                                   type="button"
@@ -1162,22 +1311,15 @@ export default function LandingEditor() {
                                                     )
                                                   }
                                                 >
-                                                  <span className="material-icons-round text-[14px]">
-                                                    format_underlined
-                                                  </span>
+                                                  <span className="material-icons-round text-[14px]">format_underlined</span>
                                                 </button>
                                                 <div className="flex items-center gap-1">
-                                                  <span className="text-slate-600">
-                                                    Tamaño
-                                                  </span>
+                                                  <span className="text-slate-600">Tamaño</span>
                                                   <input
                                                     type="text"
                                                     className="w-16 border rounded px-1 py-0.5 text-[11px]"
                                                     placeholder="16px"
-                                                    value={
-                                                      currentFieldStyle
-                                                        .fontSize || ""
-                                                    }
+                                                    value={currentFieldStyle.fontSize || ""}
                                                     onChange={(e) =>
                                                       handleFieldStyleChange(
                                                         idx,
@@ -1193,16 +1335,11 @@ export default function LandingEditor() {
                                                     "buttonText") && (
                                                   <>
                                                     <div className="flex items-center gap-1">
-                                                      <span className="text-slate-600">
-                                                        Fondo contenedor
-                                                      </span>
+                                                      <span className="text-slate-600">Fondo contenedor</span>
                                                       <input
                                                         type="color"
                                                         className="h-6 w-8 border rounded"
-                                                        value={
-                                                          currentFieldStyle.backgroundColor ||
-                                                          "#000000"
-                                                        }
+                                                        value={currentFieldStyle.backgroundColor || "#000000"}
                                                         onChange={(e) =>
                                                           handleFieldStyleChange(
                                                             idx,
@@ -1214,17 +1351,12 @@ export default function LandingEditor() {
                                                       />
                                                     </div>
                                                     <div className="flex items-center gap-1">
-                                                      <span className="text-slate-600">
-                                                        Border radius
-                                                      </span>
+                                                      <span className="text-slate-600">Border radius</span>
                                                       <input
                                                         type="text"
                                                         className="w-20 border rounded px-1 py-0.5 text-[11px]"
                                                         placeholder="9999px"
-                                                        value={
-                                                          currentFieldStyle
-                                                            .borderRadius || ""
-                                                        }
+                                                        value={currentFieldStyle.borderRadius || ""}
                                                         onChange={(e) =>
                                                           handleFieldStyleChange(
                                                             idx,
@@ -1236,17 +1368,12 @@ export default function LandingEditor() {
                                                       />
                                                     </div>
                                                     <div className="flex items-center gap-1">
-                                                      <span className="text-slate-600">
-                                                        Padding X
-                                                      </span>
+                                                      <span className="text-slate-600">Padding X</span>
                                                       <input
                                                         type="text"
                                                         className="w-16 border rounded px-1 py-0.5 text-[11px]"
                                                         placeholder="12px"
-                                                        value={
-                                                          currentFieldStyle
-                                                            .paddingInline || ""
-                                                        }
+                                                        value={currentFieldStyle.paddingInline || ""}
                                                         onChange={(e) =>
                                                           handleFieldStyleChange(
                                                             idx,
@@ -1256,17 +1383,12 @@ export default function LandingEditor() {
                                                           )
                                                         }
                                                       />
-                                                      <span className="text-slate-600">
-                                                        Y
-                                                      </span>
+                                                      <span className="text-slate-600">Y</span>
                                                       <input
                                                         type="text"
                                                         className="w-16 border rounded px-1 py-0.5 text-[11px]"
                                                         placeholder="6px"
-                                                        value={
-                                                          currentFieldStyle
-                                                            .paddingBlock || ""
-                                                        }
+                                                        value={currentFieldStyle.paddingBlock || ""}
                                                         onChange={(e) =>
                                                           handleFieldStyleChange(
                                                             idx,
@@ -1284,12 +1406,10 @@ export default function LandingEditor() {
                                           </div>
                                         );
                                       }
+
                                       if (field.type === "textarea") {
                                         return (
-                                          <div
-                                            key={field.name}
-                                            className="space-y-1"
-                                          >
+                                          <div key={field.name} className="space-y-1">
                                             <div className="flex items-center justify-between gap-2">
                                               <textarea
                                                 className="flex-1 border p-2 text-sm rounded"
@@ -1315,8 +1435,7 @@ export default function LandingEditor() {
                                                     setActiveFieldStyles(
                                                       (prev) => ({
                                                         ...prev,
-                                                        [section.id]:
-                                                          prev[section.id] ===
+                                                        [section.id]: prev[section.id] ===
                                                           field.name
                                                             ? null
                                                             : field.name,
@@ -1324,26 +1443,96 @@ export default function LandingEditor() {
                                                     )
                                                   }
                                                 >
-                                                  <span className="material-icons-round text-[14px]">
-                                                    format_paint
-                                                  </span>
+                                                  <span className="material-icons-round text-[14px]">format_paint</span>
                                                   Estilos
                                                 </button>
                                               )}
                                             </div>
+                                            {/* Botón para abrir modal de selección de comentarios Google Maps */}
+                                            <div className="mt-2">
+                                              <button
+                                                className="bg-blue-600 text-white px-4 py-2 rounded"
+                                                type="button"
+                                                onClick={openGoogleCommentsModal}
+                                              >
+                                                Seleccionar comentarios de Google Maps
+                                              </button>
+                                            </div>
+                                            {/* Google Comments Modal Fragment */}
+                                            {showGoogleCommentsModal && (
+                                              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+                                                <div className="bg-white dark:bg-slate-900 p-6 rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                                                  <div className="flex justify-between items-center mb-4">
+                                                    <h2 className="font-bold text-lg">Selecciona hasta 6 comentarios de Google Maps</h2>
+                                                    <button className="text-slate-500 hover:text-slate-800" onClick={closeGoogleCommentsModal}>
+                                                      <span className="material-icons-round">close</span>
+                                                    </button>
+                                                  </div>
+                                                  {googleCommentsLoading ? (
+                                                    <div className="text-center text-slate-500 py-8">Cargando comentarios...</div>
+                                                  ) : (
+                                                    <div className="grid gap-4 md:grid-cols-2">
+                                                      {googleComments.slice(0, 5).map((c, idx) => {
+                                                        const selected = selectedGoogleComments.some((sc) => sc.text === c.text);
+                                                        const canSelect = selectedGoogleComments.length < 6 || selected;
+                                                        return (
+                                                          <div
+                                                            key={c.text || idx}
+                                                            className={`bg-white dark:bg-slate-900 rounded-xl p-4 shadow border border-slate-200 dark:border-slate-700 flex flex-col relative ${selected ? 'ring-2 ring-purple-500' : ''} ${!canSelect ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                            onClick={() => canSelect && toggleGoogleComment(c)}
+                                                            style={{ cursor: canSelect ? 'pointer' : 'not-allowed' }}
+                                                          >
+                                                            <div className="flex items-center mb-2">
+                                                              {c.photo ? (
+                                                                <img src={c.photo} alt={c.author} className="w-10 h-10 rounded-full mr-3 border border-slate-300" />
+                                                              ) : (
+                                                                <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 border border-slate-300">
+                                                                  <span className="material-icons-round">person</span>
+                                                                </div>
+                                                              )}
+                                                              <div className="flex flex-col">
+                                                                <span className="font-semibold text-base">{c.author}</span>
+                                                                <span className="text-xs text-slate-500">{c.date || ''}</span>
+                                                              </div>
+                                                              <div className="ml-auto flex items-center gap-1">
+                                                                {[1,2,3,4,5].map(i => (
+                                                                  <span key={i} className={i <= parseInt(c.rating) ? "text-yellow-400" : "text-slate-300"}>
+                                                                    <span className="material-icons-round">star</span>
+                                                                  </span>
+                                                                ))}
+                                                              </div>
+                                                            </div>
+                                                            <div className="text-sm text-slate-700 dark:text-slate-200 mb-2 mt-2">
+                                                              {c.text}
+                                                            </div>
+                                                            <input
+                                                              type="checkbox"
+                                                              checked={selected}
+                                                              readOnly
+                                                              className="absolute top-2 right-2"
+                                                              style={{ pointerEvents: 'none' }}
+                                                            />
+                                                          </div>
+                                                        );
+                                                      })}
+                                                    </div>
+                                                  )}
+                                                  <div className="mt-4 flex justify-end gap-2">
+                                                    <button className="bg-slate-200 px-4 py-2 rounded" onClick={closeGoogleCommentsModal}>Cancelar</button>
+                                                    <button className="bg-blue-600 text-white px-4 py-2 rounded" onClick={saveSelectedGoogleComments}>Guardar selección</button>
+                                                  </div>
+                                                  <div className="mt-2 text-xs text-slate-500">Puedes seleccionar hasta 6 comentarios para mostrar en la landing page.</div>
+                                                </div>
+                                              </div>
+                                            )}
                                             {isStylable && isActiveField && (
                                               <div className="mt-2 p-2 rounded border border-slate-200 bg-slate-50 flex flex-wrap items-center gap-2 text-[11px]">
                                                 <div className="flex items-center gap-1">
-                                                  <span className="text-slate-600">
-                                                    Color
-                                                  </span>
+                                                  <span className="text-slate-600">Color</span>
                                                   <input
                                                     type="color"
                                                     className="h-6 w-8 border rounded"
-                                                    value={
-                                                      currentFieldStyle.color ||
-                                                      "#000000"
-                                                    }
+                                                    value={currentFieldStyle.color || "#000000"}
                                                     onChange={(e) =>
                                                       handleFieldStyleChange(
                                                         idx,
@@ -1374,9 +1563,7 @@ export default function LandingEditor() {
                                                     )
                                                   }
                                                 >
-                                                  <span className="material-icons-round text-[14px]">
-                                                    format_bold
-                                                  </span>
+                                                  <span className="material-icons-round text-[14px]">format_bold</span>
                                                 </button>
                                                 <button
                                                   type="button"
@@ -1398,9 +1585,7 @@ export default function LandingEditor() {
                                                     )
                                                   }
                                                 >
-                                                  <span className="material-icons-round text-[14px]">
-                                                    format_italic
-                                                  </span>
+                                                  <span className="material-icons-round text-[14px]">format_italic</span>
                                                 </button>
                                                 <button
                                                   type="button"
@@ -1422,22 +1607,15 @@ export default function LandingEditor() {
                                                     )
                                                   }
                                                 >
-                                                  <span className="material-icons-round text-[14px]">
-                                                    format_underlined
-                                                  </span>
+                                                  <span className="material-icons-round text-[14px]">format_underlined</span>
                                                 </button>
                                                 <div className="flex items-center gap-1">
-                                                  <span className="text-slate-600">
-                                                    Tamaño
-                                                  </span>
+                                                  <span className="text-slate-600">Tamaño</span>
                                                   <input
                                                     type="text"
                                                     className="w-16 border rounded px-1 py-0.5 text-[11px]"
                                                     placeholder="16px"
-                                                    value={
-                                                      currentFieldStyle
-                                                        .fontSize || ""
-                                                    }
+                                                    value={currentFieldStyle.fontSize || ""}
                                                     onChange={(e) =>
                                                       handleFieldStyleChange(
                                                         idx,
@@ -1447,22 +1625,18 @@ export default function LandingEditor() {
                                                       )
                                                     }
                                                   />
+                                                  
                                                 </div>
                                                 {(field.name === "badge" ||
                                                   field.name ===
                                                     "buttonText") && (
                                                   <>
                                                     <div className="flex items-center gap-1">
-                                                      <span className="text-slate-600">
-                                                        Fondo contenedor
-                                                      </span>
+                                                      <span className="text-slate-600">Fondo contenedor</span>
                                                       <input
                                                         type="color"
                                                         className="h-6 w-8 border rounded"
-                                                        value={
-                                                          currentFieldStyle.backgroundColor ||
-                                                          "#000000"
-                                                        }
+                                                        value={currentFieldStyle.backgroundColor || "#000000"}
                                                         onChange={(e) =>
                                                           handleFieldStyleChange(
                                                             idx,
@@ -1474,17 +1648,12 @@ export default function LandingEditor() {
                                                       />
                                                     </div>
                                                     <div className="flex items-center gap-1">
-                                                      <span className="text-slate-600">
-                                                        Border radius
-                                                      </span>
+                                                      <span className="text-slate-600">Border radius</span>
                                                       <input
                                                         type="text"
                                                         className="w-20 border rounded px-1 py-0.5 text-[11px]"
                                                         placeholder="9999px"
-                                                        value={
-                                                          currentFieldStyle
-                                                            .borderRadius || ""
-                                                        }
+                                                        value={currentFieldStyle.borderRadius || ""}
                                                         onChange={(e) =>
                                                           handleFieldStyleChange(
                                                             idx,
@@ -1496,17 +1665,12 @@ export default function LandingEditor() {
                                                       />
                                                     </div>
                                                     <div className="flex items-center gap-1">
-                                                      <span className="text-slate-600">
-                                                        Padding X
-                                                      </span>
+                                                      <span className="text-slate-600">Padding X</span>
                                                       <input
                                                         type="text"
                                                         className="w-16 border rounded px-1 py-0.5 text-[11px]"
                                                         placeholder="12px"
-                                                        value={
-                                                          currentFieldStyle
-                                                            .paddingInline || ""
-                                                        }
+                                                        value={currentFieldStyle.paddingInline || ""}
                                                         onChange={(e) =>
                                                           handleFieldStyleChange(
                                                             idx,
@@ -1516,17 +1680,12 @@ export default function LandingEditor() {
                                                           )
                                                         }
                                                       />
-                                                      <span className="text-slate-600">
-                                                        Y
-                                                      </span>
+                                                      <span className="text-slate-600">Y</span>
                                                       <input
                                                         type="text"
                                                         className="w-16 border rounded px-1 py-0.5 text-[11px]"
                                                         placeholder="6px"
-                                                        value={
-                                                          currentFieldStyle
-                                                            .paddingBlock || ""
-                                                        }
+                                                        value={currentFieldStyle.paddingBlock || ""}
                                                         onChange={(e) =>
                                                           handleFieldStyleChange(
                                                             idx,
@@ -1544,12 +1703,10 @@ export default function LandingEditor() {
                                           </div>
                                         );
                                       }
+
                                       if (field.type === "image") {
                                         return (
-                                          <div
-                                            key={field.name}
-                                            className="space-y-1"
-                                          >
+                                          <div key={field.name} className="space-y-1">
                                             <label className="block text-xs text-slate-500">
                                               {field.label}
                                             </label>
@@ -1847,8 +2004,8 @@ export default function LandingEditor() {
                                                         className="w-16 border rounded px-1 py-0.5 text-[11px]"
                                                         placeholder="16px"
                                                         value={
-                                                          currentFieldStyle.fontSize ||
-                                                          ""
+                                                          currentFieldStyle
+                                                            .fontSize || ""
                                                         }
                                                         onChange={(e) =>
                                                           handleFieldStyleChange(
@@ -2244,9 +2401,7 @@ export default function LandingEditor() {
                                                                   "buttonText") && (
                                                                 <>
                                                                   <div className="flex items-center gap-1">
-                                                                    <span className="text-slate-600">
-                                                                      Fondo contenedor
-                                                                    </span>
+                                                                    <span className="text-slate-600">Fondo contenedor</span>
                                                                     <input
                                                                       type="color"
                                                                       className="h-6 w-8 border rounded"
@@ -2266,9 +2421,7 @@ export default function LandingEditor() {
                                                                     />
                                                                   </div>
                                                                   <div className="flex items-center gap-1">
-                                                                    <span className="text-slate-600">
-                                                                      Border radius
-                                                                    </span>
+                                                                    <span className="text-slate-600">Border radius</span>
                                                                     <input
                                                                       type="text"
                                                                       className="w-20 border rounded px-1 py-0.5 text-[11px]"
@@ -2289,9 +2442,7 @@ export default function LandingEditor() {
                                                                     />
                                                                   </div>
                                                                   <div className="flex items-center gap-1">
-                                                                    <span className="text-slate-600">
-                                                                      Padding X
-                                                                    </span>
+                                                                    <span className="text-slate-600">Padding X</span>
                                                                     <input
                                                                       type="text"
                                                                       className="w-16 border rounded px-1 py-0.5 text-[11px]"
@@ -2310,9 +2461,7 @@ export default function LandingEditor() {
                                                                         )
                                                                       }
                                                                     />
-                                                                    <span className="text-slate-600">
-                                                                      Y
-                                                                    </span>
+                                                                    <span className="text-slate-600">Y</span>
                                                                     <input
                                                                       type="text"
                                                                       className="w-16 border rounded px-1 py-0.5 text-[11px]"
@@ -2501,7 +2650,7 @@ export default function LandingEditor() {
                                       </span>
                                       Estilos
                                     </h4>
-                                    {styleFields.map((field) => {
+                                    {styleFields.map((field: any) => {
                                       const value = (styles as any)[field.name] ?? "";
                                       if (field.type === "color") {
                                         return (
@@ -2722,31 +2871,40 @@ export default function LandingEditor() {
                     />
                   )}
 
-                    {sections
-                      .slice()
-                      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-                      .map((section) => (
-                        <SectionRenderer
-                          key={section.id}
-                          section={{
-                            ...section,
-                            // Secciones con datos dinámicos
-                            props:
-                              section.type === "featuredProducts"
-                                ? {
-                                    ...(section.props || {}),
-                                    products: featuredProducts,
-                                    device: previewDevice,
-                                  }
-                                : section.type === "featuredCategories"
-                                ? {
-                                    ...(section.props || {}),
-                                    device: previewDevice,
-                                  }
-                                : section.props,
-                          }}
-                        />
-                      ))}
+                  {sections
+                    .slice()
+                    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+                    .map((section) => (
+                      <SectionRenderer
+                        key={section.id}
+                        section={{
+                          ...section,
+                          // Secciones con datos dinámicos
+                          props:
+                            section.type === "featuredProducts"
+                              ? {
+                                  ...(section.props || {}),
+                                  products: featuredProducts,
+                                  device: previewDevice,
+                                }
+                              : section.type === "featuredCategories"
+                              ? {
+                                  ...(section.props || {}),
+                                  device: previewDevice,
+                                }
+                              : section.props,
+                        }}
+                      />
+                    ))}
+                      {/* Botón para abrir modal de selección de comentarios Google Maps */}
+                      <div className="my-6">
+                        <button
+                          className="bg-blue-600 text-white px-4 py-2 rounded"
+                          onClick={openGoogleCommentsModal}
+                        >
+                          Seleccionar comentarios de Google Maps
+                        </button>
+                      </div>
                 </main>
               </div>
             </div>
@@ -2755,20 +2913,18 @@ export default function LandingEditor() {
       </div>
 
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-slate-900 dark:text-white p-6 rounded w-96">
-            <h2 className="font-bold mb-4">Selecciona tipo</h2>
-
-            {SECTION_TYPES.map((st) => (
+            <h2 className="font-bold mb-4">Selecciona tipo de sección</h2>
+            {Object.values(sectionSchemas).map((schema) => (
               <button
-                key={st.type}
-                onClick={() => handleAddSectionType(st.type)}
+                key={schema.type}
+                onClick={() => handleAddSectionType(schema.type)}
                 className="block w-full text-left p-2 border mb-2"
               >
-                {st.label}
+                {schema.label}
               </button>
             ))}
-
             <button
               onClick={closeAddModal}
               className="mt-4 w-full border p-2"
@@ -2794,7 +2950,7 @@ export default function LandingEditor() {
             <div
               className={
                 previewDevice === "mobile"
-                  ? "w-[414px] max-w-full max-h-[85vh] overflow-y-auto rounded-[2rem] border border-slate-300 bg-slate-100 dark:bg-slate-900 shadow-xl"
+                  ? "w-103.5 max-w-full max-h-[85vh] overflow-y-auto rounded-4xl border border-slate-300 bg-slate-100 dark:bg-slate-900 shadow-xl"
                   : "w-full max-w-6xl max-h-[85vh] overflow-y-auto rounded-xl border border-slate-300 bg-slate-50 dark:bg-slate-900 shadow-xl"
               }
             >

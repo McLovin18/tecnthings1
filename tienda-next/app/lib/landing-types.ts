@@ -8,6 +8,21 @@ export type LandingSectionStyles = {
   borderRadius?: string;
 };
 
+// Hero especial para Google Maps
+export type HeroGoogleReview = {
+  title?: string;
+  subtitle?: string;
+  badge?: string;
+  buttonText?: string;
+  buttonLink?: string;
+  image?: string | null;
+  styles?: LandingSectionStyles;
+  fieldStyles?: Record<string, LandingFieldStyle>;
+  rating?: number; // Calificación general de Google Maps
+  ratingCount?: number; // Número de reseñas
+  generalMessage?: string; // Mensaje general
+};
+
 export type LandingFieldStyle = {
   color?: string;
   fontWeight?: "normal" | "bold";

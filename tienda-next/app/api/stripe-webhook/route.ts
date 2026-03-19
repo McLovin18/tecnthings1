@@ -30,6 +30,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: `Webhook Error: ${err.message}` }, { status: 400 });
   }
 
+  // Evitar procesar eventos de modo distinto (test vs live).
+  // Determinamos el modo esperado a partir de la clave secreta configurada.
+  const secretKey = process.env.STRIPE_SECRET_KEY || "";
+  const expectLive = secretKey.startsWith("sk_live_");
+  if (typeof event.livemode === "boolean" && event.livemode !== expectLive) {
+    console.warn(`[stripe-webhook] Ignoring event ${event.id} (livemode=${event.livemode}) because server is configured for ${expectLive ? 'live' : 'test'} mode.`);
+    // Return 200 so Stripe won't keep retrying; we intentionally ignore cross-mode events.
+    return NextResponse.json({ received: true });
+  }
+
   const db = admin.firestore();
 
   // ── Manejar eventos ──────────────────────────────────────────────────────────

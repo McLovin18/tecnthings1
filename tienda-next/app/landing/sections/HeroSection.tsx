@@ -1,5 +1,38 @@
 "use client";
 
+
+// Hook para obtener detalles de Google Maps Place
+function useGoogleMapsPlaceDetails(placeId?: string, enabled?: boolean) {
+  const [data, setData] = React.useState<{ rating?: number; user_ratings_total?: number } | null>(null);
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (!enabled || !placeId) return;
+    setLoading(true);
+    setError(null);
+    const url = `/api/google-maps?place_id=${placeId}`;
+    fetch(url)
+      .then((res) => res.json())
+      .then((json) => {
+        if (typeof json.rating !== "undefined" && typeof json.ratingCount !== "undefined") {
+          setData({
+            rating: json.rating,
+            user_ratings_total: json.ratingCount,
+          });
+        } else {
+          setError(json.error || "No se pudo obtener la información de Google Maps");
+        }
+      })
+      .catch((e) => {
+        setError(e.message);
+      })
+      .finally(() => setLoading(false));
+  }, [placeId, enabled]);
+
+  return { data, loading, error };
+}
+
 import React from "react";
 import type {
   LandingSectionStyles,
@@ -20,6 +53,10 @@ export type HeroSectionProps = {
   title?: string;
   subtitle?: string;
   badge?: string;
+  googleMaps?: boolean;
+  rating?: number;
+  ratingCount?: number;
+  generalMessage?: string;
   buttonText?: string;
   buttonLink?: string;
   image?: string | null;
@@ -42,14 +79,29 @@ export default function HeroSection({
 }: HeroSectionProps) {
   const bg = styles?.backgroundColor;
   const color = styles?.textColor;
-  const paddingTop = styles?.paddingTop || "3rem";
-  const paddingBottom = styles?.paddingBottom || "3rem";
+  const paddingTop = styles?.paddingTop || "1.5rem";
+  const paddingBottom = styles?.paddingBottom || "1.5rem";
   const textAlign: React.CSSProperties["textAlign"] = styles?.textAlign || "left";
   const borderRadius = styles?.borderRadius || "1.5rem";
 
+  // Obtener place_id de variable de entorno
+  const placeId = process.env.NEXT_PUBLIC_GOOGLE_MAPS_PLACE_ID;
+  // Detectar si alguna variante tiene googleMaps activo
+  const hasGoogleMaps = items && items.some((i) => i.googleMaps);
+  const { data: googleMapsData } = useGoogleMapsPlaceDetails(placeId, hasGoogleMaps);
+
   const heroItems: HeroItem[] = (
     items && items.length
-      ? items
+      ? items.map((item) => {
+          if (item.googleMaps && googleMapsData) {
+            return {
+              ...item,
+              rating: googleMapsData.rating,
+              ratingCount: googleMapsData.user_ratings_total,
+            };
+          }
+          return item;
+        })
       : [
           {
             title,
@@ -58,6 +110,10 @@ export default function HeroSection({
             buttonText,
             buttonLink,
             image,
+            googleMaps,
+            rating: googleMapsData?.rating,
+            ratingCount: googleMapsData?.user_ratings_total,
+            generalMessage,
           },
         ]
   ).filter((h) => h && (h.title || h.subtitle || h.image));
@@ -116,9 +172,51 @@ export default function HeroSection({
       className="px-4 lg:px-6"
     >
       <div
-        className="relative overflow-hidden aspect-4/5 lg:aspect-video bg-slate-200 dark:bg-neutral-900 group max-w-full"
+        className="relative overflow-hidden aspect-[4/4] lg:aspect-[16/6] bg-slate-200 dark:bg-neutral-900 group max-w-full"
         style={{ borderRadius }}
       >
+        {/* Campos especiales para Google Maps */}
+        {current.googleMaps && (
+          <div className="absolute top-4 left-4 bg-green-50 dark:bg-green-900 rounded-lg p-4 z-30 flex flex-col items-start">
+            <div className="flex items-center gap-2 mb-2">
+              {/* Estrellas visuales */}
+              {Array.from({ length: 5 }).map((_, idx) => {
+                const rating = current.rating ?? 0;
+                // Calcula el porcentaje de pintado para esta estrella
+                const fill = Math.max(0, Math.min(1, rating - idx));
+                return (
+                  <span key={idx} style={{ position: 'relative', display: 'inline-block', width: 32, height: 32 }}>
+                    <svg width="32" height="32" viewBox="0 0 24 24">
+                      <defs>
+                        <linearGradient id={`star-gradient-${idx}`} x1="0" y1="0" x2="1" y2="0">
+                          <stop offset={`${fill * 100}%`} stopColor="#FACC15" />
+                          <stop offset={`${fill * 100}%`} stopColor="#fff" />
+                        </linearGradient>
+                      </defs>
+                      <polygon
+                        points="12,2 15,9 22,9 17,14 18,21 12,17 6,21 7,14 2,9 9,9"
+                        fill={`url(#star-gradient-${idx})`}
+                        stroke="#FACC15"
+                        strokeWidth="0.5"
+                      />
+                    </svg>
+                  </span>
+                );
+              })}
+              <span className="text-xl font-bold text-green-700 dark:text-green-300 ml-2">
+                {current.rating ?? "-"}
+              </span>
+              <span className="text-sm text-green-700 dark:text-green-300">
+                ({current.ratingCount ?? 0} reseñas)
+              </span>
+            </div>
+            {current.generalMessage && (
+              <div className="text-green-700 dark:text-green-300 text-sm">
+                {current.generalMessage}
+              </div>
+            )}
+          </div>
+        )}
         {current.image && (
           <img
             src={current.image}

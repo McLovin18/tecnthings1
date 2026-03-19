@@ -115,7 +115,6 @@ export const Navbar = () => {
     getCurrentUser().then((u) => {
       setUser(u);
       setLoading(false);
-      console.log("[Navbar] Usuario detectado:", u);
     });
   }, []);
 
