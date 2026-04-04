@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { loginUser, registerUser, getCurrentUser } from "../lib/firebase-auth";
 import { themeManager } from "../components/themeManager";
 import CategoriesBar from "../components/CategoriesBar";
+import { Loading3DIcon } from "../components/Loading3DIcon";
 
 type TabType = "login" | "register";
 
@@ -234,7 +235,7 @@ export default function LoginPage() {
         background: 'var(--bg)',
         color: 'var(--text)'
       }}
-      className="bg-white mt-2 dark:bg-slate-950 text-slate-900 dark:text-white min-h-screen flex flex-col"
+      className="bg-white mt-2 dark:bg-black text-slate-900 dark:text-white min-h-screen flex flex-col"
     >
       <CategoriesBar />
       <div className="w-full text-centew-full max-w-md mx-auto mt-0 mb-5 text-center ">
@@ -306,7 +307,7 @@ ${tab === "register" ? "border-b-2 border-blue-500 text-blue-600 dark:text-blue-
               disabled={loading}
               className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 rounded-xl transition-colors duration-200 shadow-md disabled:opacity-60"
             >
-              {loading ? "Cargando..." : "Iniciar Sesión"}
+              {loading ? <><Loading3DIcon /><span className="ml-2">Cargando...</span></> : "Iniciar Sesión"}
             </button>
           </form>
         )}
@@ -368,7 +369,7 @@ ${tab === "register" ? "border-b-2 border-blue-500 text-blue-600 dark:text-blue-
               disabled={loading}
               className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 rounded-xl transition-colors duration-200 shadow-md disabled:opacity-60"
             >
-              {loading ? "Creando..." : "Crear Cuenta"}
+              {loading ? <><Loading3DIcon type="user" /><span className="ml-2">Creando...</span></> : "Crear Cuenta"}
             </button>
           </form>
         )}

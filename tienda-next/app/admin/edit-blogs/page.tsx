@@ -248,7 +248,7 @@ export default function AdminEditBlogsPage() {
 
 	return (
 		<div className="min-h-screen flex flex-col bg-gray-50 dark:bg-slate-950">
-			<div className="flex-1 w-full px-4 pt-4 pb-24">
+			<div className="flex-1 w-full py-6 sm:py-12 px-4 pt-4 pb-24">
 				<div className="flex flex-col gap-2 mb-4">
 					<h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
 						Editor de blogs

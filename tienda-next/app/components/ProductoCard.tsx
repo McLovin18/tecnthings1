@@ -4,124 +4,259 @@ import React from "react";
 import { useUser } from "../context/UserContext";
 import { useRouter } from "next/navigation";
 
-export default function ProductoCard({ producto, onClick, showCart = false, showEye = true, onAddCart, onEye, showFav = false }) {
-  const { isLogged, isCliente, isAdmin, favoritos, addFavorito, removeFavorito, carrito, addCarrito, removeCarrito } = useUser();
+export default function ProductoCard({
+  producto,
+  onClick,
+  showCart = false,
+  showEye = true,
+  onAddCart,
+  onEye,
+  showFav = false,
+}) {
+  const {
+    isLogged,
+    isCliente,
+    isAdmin,
+    favoritos,
+    addFavorito,
+    removeFavorito,
+    carrito,
+    addCarrito,
+    removeCarrito,
+  } = useUser();
   const router = useRouter();
+
   const isFav = favoritos?.some((p) => p.id === producto.id);
   const inCart = carrito?.some((p) => p.id === producto.id);
-  const basePrice = Number((producto as any).precio || 0);
-  const discount = Number((producto as any).descuento || 0);
+  const sinStock = producto.stock === 0;
+
+  const basePrice = Number(producto?.precio || 0);
+  const discount = Number(producto?.descuento || 0);
   const hasDiscount = !isNaN(discount) && discount > 0 && discount < 100;
-  const finalPrice = hasDiscount ? basePrice * (1 - discount / 100) : basePrice;
-  // Navegación al detalle según rol
-  const goToDetail = (e) => {
+  const fakeOldPrice = hasDiscount
+    ? Math.ceil(basePrice / (1 - discount / 100))
+    : basePrice;
+  const finalPrice = basePrice;
+
+  const goToDetail = (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    // Prefer the /home detail when we're inside the home section
     let detailUrl = `/product-detail?id=${producto.id}`;
     try {
-      if (typeof window !== 'undefined' && window.location.pathname.startsWith('/home')) {
+      if (typeof window !== "undefined" && window.location.pathname.startsWith("/home")) {
         detailUrl = `/home/product-detail?id=${producto.id}`;
       } else {
         if (isAdmin) detailUrl = `/admin/product-detail?id=${producto.id}`;
         if (isCliente) detailUrl = `/home/product-detail?id=${producto.id}`;
       }
-    } catch (err) {
+    } catch {
       if (isAdmin) detailUrl = `/admin/product-detail?id=${producto.id}`;
       if (isCliente) detailUrl = `/home/product-detail?id=${producto.id}`;
     }
     router.push(detailUrl);
   };
+
+  const handleFav = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    isFav ? removeFavorito(producto.id) : addFavorito(producto);
+  };
+
+  const handleCart = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (sinStock) return;
+    if (onAddCart) { onAddCart(producto); return; }
+    inCart ? removeCarrito(producto.id) : addCarrito({ ...producto, cantidad: 1 });
+  };
+
   return (
     <div
-      className="bg-white dark:bg-slate-900 rounded-2xl shadow-md border border-slate-200 dark:border-slate-700 p-4 flex flex-col items-center cursor-pointer hover:shadow-xl transition group"
       onClick={onClick || goToDetail}
+      className="
+        group cursor-pointer
+        bg-white dark:bg-white/[0.04]
+        border border-slate-200 dark:border-white/10
+        rounded-2xl overflow-hidden
+        shadow-sm
+        hover:shadow-xl dark:hover:shadow-purple-950/60
+        hover:border-purple-300 dark:hover:border-purple-500/40
+        transition-all duration-300
+
+        /* ── MÓVIL: horizontal (imagen izq + info der) ── */
+        flex flex-row items-stretch
+
+        /* ── SM+: vertical (imagen arriba + info abajo) ── */
+        sm:flex-col
+      "
     >
-      <div className="w-full aspect-square flex items-center justify-center mb-3 relative">
+
+      {/* ══ IMAGEN ══════════════════════════════════════════════ */}
+      <div
+        className="
+          relative flex-shrink-0 overflow-hidden
+          bg-slate-50 dark:bg-white/[0.03]
+
+          /* móvil: cuadrado fijo a la izquierda */
+          w-[140px] h-[140px]
+
+          /* sm+: ancho completo, altura generosa */
+          sm:w-full sm:h-56
+        "
+      >
+        <img
+          src={producto.imagenes?.[0] || "/no-image.png"}
+          alt={producto.nombre}
+          className="
+            w-full h-full object-contain
+            p-3 sm:p-5
+            group-hover:scale-105
+            transition-transform duration-500
+          "
+        />
+
+        {/* Badge descuento */}
         {hasDiscount && (
-          <span className="absolute top-2 left-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-full shadow-md z-10">
+          <span className="
+            absolute top-2 left-2 z-10
+            bg-red-500 text-white
+            text-[10px] sm:text-xs font-bold
+            px-1.5 sm:px-2 py-0.5 sm:py-1
+            rounded-full shadow
+          ">
             -{discount}%
           </span>
         )}
-        {producto.imagenes?.[0] && !producto.imagenes[0].startsWith('blob:') ? (
-          <img
-            src={producto.imagenes[0]}
-            alt={producto.nombre}
-            className="object-contain max-h-40 max-w-full rounded-xl group-hover:scale-105 transition"
-            onError={e => { e.currentTarget.src = "/no-image.png"; }}
-          />
-        ) : (
-          <img
-            src="/no-image.png"
-            alt="Sin imagen"
-            className="object-contain max-h-40 max-w-full rounded-xl group-hover:scale-105 transition opacity-60"
-          />
+
+        {/* Overlay sin stock */}
+        {sinStock && (
+          <div className="absolute inset-0 bg-white/60 dark:bg-black/50 flex items-center justify-center z-10">
+            <span className="
+              text-[10px] sm:text-xs font-bold
+              text-slate-500 dark:text-white/60
+              bg-white dark:bg-slate-900
+              px-2 py-0.5 rounded-full
+              border border-slate-200 dark:border-white/10
+            ">
+              Sin stock
+            </span>
+          </div>
+        )}
+
+        {/* Botón favorito — solo si el usuario está logueado */}
+        {isLogged && (
+          <button
+            onClick={handleFav}
+            className={`
+              absolute top-2 right-2 z-20
+              w-8 h-8 rounded-full
+              flex items-center justify-center
+              transition-all duration-200 shadow-sm
+              ${isFav
+                ? "bg-pink-500 text-white scale-100"
+                : "bg-white/80 dark:bg-slate-900/80 text-slate-400 dark:text-white/40 opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100"
+              }
+            `}
+            title={isFav ? "Quitar de favoritos" : "Añadir a favoritos"}
+          >
+            <span className="material-icons-round text-[16px]">
+              {isFav ? "favorite" : "favorite_border"}
+            </span>
+          </button>
         )}
       </div>
-      <div className="w-full text-center">
-        <div className="font-bold text-lg mb-1 line-clamp-3 break-words" style={{display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', textOverflow: 'ellipsis', minHeight: '3.5em'}}>{producto.nombre}</div>
-        {producto.marca && (
-          <div className="text-xs text-green-700 font-semibold mb-1">{producto.marca}</div>
+
+      {/* ══ INFO ════════════════════════════════════════════════ */}
+      <div className="
+        flex flex-col flex-1 min-w-0
+        p-3 sm:p-4
+        justify-between
+      ">
+        {/* Nombre */}
+        <p className="
+          font-semibold leading-snug
+          text-slate-800 dark:text-white
+
+          /* móvil: más grande para aprovechar el espacio horizontal */
+          text-base
+          sm:text-sm
+
+          /* recortar si es muy largo */
+          line-clamp-2 sm:line-clamp-2
+        ">
+          {producto.nombre}
+        </p>
+
+        {/* Descripción corta — solo en móvil donde hay más espacio */}
+        {producto.descripcion && (
+          <p className="
+            mt-1 text-xs text-slate-400 dark:text-white/35
+            line-clamp-2
+            sm:hidden
+          ">
+            {producto.descripcion}
+          </p>
         )}
-        <div className="flex items-center justify-center gap-2 mb-2">
-          {hasDiscount ? (
-            <>
-              <span className="text-sm text-slate-400 line-through">${basePrice.toFixed(2)}</span>
-              <span className="text-purple-700 font-bold text-xl">${finalPrice.toFixed(2)}</span>
-            </>
-          ) : (
-            <span className="text-purple-700 font-bold text-xl">${basePrice.toFixed(2)}</span>
+
+        {/* Precios */}
+        <div className="mt-2 sm:mt-3 flex items-baseline gap-2 flex-wrap">
+          {hasDiscount && (
+            <span className="text-xs sm:text-sm text-slate-400 dark:text-white/30 line-through">
+              ${fakeOldPrice.toFixed(2)}
+            </span>
           )}
-          {isLogged && isCliente && showCart && (
-            <button
-              className={`ml-2 p-2 rounded-full ${inCart ? "bg-purple-300 text-purple-900" : "bg-purple-100 hover:bg-purple-200 text-purple-700"}`}
-              onClick={e => {
-                e.stopPropagation();
-                if (inCart) {
-                  removeCarrito(producto.id);
-                } else {
-                  addCarrito(producto);
-                }
-              }}
-              title={inCart ? "Quitar del carrito" : "Agregar al carrito"}
-            >
-              <span className="material-icons-round">{inCart ? "remove_shopping_cart" : "shopping_bag"}</span>
-            </button>
-          )}
-          {showEye && (
-            <button
-              className="ml-2 p-2 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700"
-              onClick={onEye ? (e => { e.stopPropagation(); onEye(producto); }) : goToDetail}
-              title="Ver detalle"
-            >
-              <span className="material-icons-round">visibility</span>
-            </button>
-          )}
-          {isLogged && isCliente && showFav && (
-            <button
-              className={`ml-2 p-2 rounded-full ${isFav ? "bg-pink-300 text-pink-800" : "bg-pink-100 hover:bg-pink-200 text-pink-600"}`}
-              onClick={e => {
-                e.stopPropagation();
-                if (isFav) {
-                  removeFavorito(producto.id);
-                } else {
-                  addFavorito(producto);
-                }
-              }}
-              title={isFav ? "Quitar de favoritos" : "Agregar a favoritos"}
-            >
-              <span className="material-icons-round">{isFav ? "favorite" : "favorite_border"}</span>
-            </button>
-          )}
-          {!isLogged && (showCart || showFav) && (
-            <button
-              className="ml-2 p-2 rounded-full bg-purple-700 hover:bg-purple-800 text-white"
-              onClick={e => { e.stopPropagation(); window.location.href = "/login"; }}
-              title="Inicia sesión"
-            >
-              <span className="material-icons-round">login</span>
-            </button>
-          )}
+          <span className="
+            text-xl sm:text-lg font-extrabold
+            text-purple-700 dark:text-purple-300
+          ">
+            ${finalPrice.toFixed(2)}
+          </span>
         </div>
+
+        {/* Acciones */}
+        {(showCart || showEye) && (
+          <div className="mt-3 flex gap-2">
+            {showCart && (
+              <button
+                onClick={handleCart}
+                disabled={sinStock}
+                className={`
+                  flex-1 flex items-center justify-center gap-1.5
+                  py-2 rounded-xl text-sm font-semibold
+                  transition-all duration-200
+                  ${sinStock
+                    ? "bg-slate-100 dark:bg-white/5 text-slate-400 dark:text-white/20 cursor-not-allowed"
+                    : inCart
+                      ? "bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-900/60"
+                      : "bg-purple-600 hover:bg-purple-700 text-white shadow-sm hover:shadow-md active:scale-95"
+                  }
+                `}
+              >
+                <span className="material-icons-round text-[16px]">
+                  {inCart ? "remove_shopping_cart" : "add_shopping_cart"}
+                </span>
+                <span className="hidden xs:inline sm:hidden lg:inline">
+                  {inCart ? "Quitar" : "Añadir"}
+                </span>
+              </button>
+            )}
+
+            {showEye && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onEye ? onEye(producto) : goToDetail(e); }}
+                className="
+                  flex items-center justify-center
+                  w-9 h-9 rounded-xl flex-shrink-0
+                  bg-slate-100 dark:bg-white/5
+                  text-slate-500 dark:text-white/50
+                  hover:bg-slate-200 dark:hover:bg-white/10
+                  hover:text-slate-700 dark:hover:text-white
+                  transition-all duration-200
+                "
+                title="Ver detalle"
+              >
+                <span className="material-icons-round text-[18px]">visibility</span>
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

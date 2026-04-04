@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { obtenerOrdenPorId } from "../../../lib/ordenes-db";
+import { Loading3DIcon } from "../../../components/Loading3DIcon";
 import type { Timestamp } from "firebase/firestore";
 
 interface OrdenProducto {
@@ -53,8 +54,8 @@ export default function OrdenDetallePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-[#3a1859] text-slate-900 dark:text-white">
-        Cargando orden...
+      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-black text-slate-900 dark:text-white ">
+        <Loading3DIcon />
       </div>
     );
   }
@@ -69,12 +70,10 @@ export default function OrdenDetallePage() {
 
   const creada = orden.createdAt?.toDate ? orden.createdAt.toDate().toLocaleString() : "";
 
+  // Unify price logic: always use basePrice (never apply real discount)
   const calcularPrecioUnitario = (p: OrdenProducto) => {
     const basePrice = p.precioBase !== undefined ? Number(p.precioBase || 0) : Number(p.precio || 0);
-    const discount = Number(p.descuento || 0);
-    const hasDiscount = !isNaN(discount) && discount > 0 && discount < 100;
-    if (p.precioUnitario !== undefined) return Number(p.precioUnitario || 0);
-    return hasDiscount ? basePrice * (1 - discount / 100) : basePrice;
+    return basePrice;
   };
 
   const calcularSubtotal = (p: OrdenProducto) => {
@@ -90,7 +89,7 @@ export default function OrdenDetallePage() {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#3a1859] text-slate-900 dark:text-white p-6">
+    <div className="min-h-screen bg-white dark:bg-[#3a1859] text-slate-900 dark:text-white px-6 py-6 sm:py-15">
       <div className="max-w-2xl mx-auto bg-white dark:bg-slate-800 rounded-xl shadow p-6 print:shadow-none print:border print:border-slate-300">
         <h1 className="text-2xl font-bold mb-2">Orden {orden.orderId || `#${orden.id.slice(-6)}`}</h1>
         <div className="text-sm text-slate-600 dark:text-slate-300 mb-4">Creada: {creada}</div>
@@ -130,17 +129,17 @@ export default function OrdenDetallePage() {
                     const base = p.precioBase !== undefined ? Number(p.precioBase || 0) : Number(p.precio || 0);
                     const discount = Number(p.descuento || 0);
                     const hasDiscount = !isNaN(discount) && discount > 0 && discount < 100;
-                    const unit = calcularPrecioUnitario(p);
+                    const fakeOldPrice = hasDiscount ? (Math.round((base / (1 - discount / 100)) * 100) / 100) : null;
                     if (hasDiscount) {
                       return (
                         <span>
-                          <span className="block text-xs text-slate-400 line-through">${base.toFixed(2)}</span>
-                          <span className="block text-sm font-semibold">${unit.toFixed(2)}</span>
+                          <span className="block text-xs text-slate-400 line-through">${fakeOldPrice?.toFixed(2)}</span>
+                          <span className="block text-sm font-semibold">${base.toFixed(2)}</span>
                           <span className="block text-[10px] text-red-600">-{discount}%</span>
                         </span>
                       );
                     }
-                    return <span>${unit.toFixed(2)}</span>;
+                    return <span>${base.toFixed(2)}</span>;
                   })()}
                 </td>
                 <td className="py-1 text-right">

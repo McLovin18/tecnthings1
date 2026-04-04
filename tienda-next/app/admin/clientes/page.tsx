@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { Loading3DIcon } from "../../components/Loading3DIcon";
 
 type Cliente = {
 	uid: string;
@@ -63,7 +64,7 @@ export default function ClientesAdminPage() {
 	}, [clientes, search]);
 
 	return (
-		<div className="min-h-screen flex flex-col bg-white dark:bg-[#3a1859] text-slate-900 dark:text-white p-6">
+		<div className="min-h-screen flex flex-col bg-white dark:bg-[#3a1859] text-slate-900 dark:text-white py-6 sm:py-12">
 			<h1 className="text-3xl font-bold mb-4">Clientes</h1>
 			<p className="text-sm text-slate-600 dark:text-slate-300 mb-6 max-w-2xl">
 				Inventario de clientes que han generado órdenes. La columna de pedidos aprobados indica cuántas órdenes
@@ -79,7 +80,9 @@ export default function ClientesAdminPage() {
 				/>
 			</div>
 			{loading ? (
-				<div>Cargando clientes...</div>
+				<div className="flex flex-col items-center justify-center py-24">
+				  <Loading3DIcon type="user" />
+				</div>
 			) : clientesFiltrados.length === 0 ? (
 				<div>No se encontraron clientes para este filtro.</div>
 			) : (

@@ -1,11 +1,11 @@
 "use client";
 
-
 import React, { useState, useEffect } from "react";
 import { useUser } from "../../context/UserContext";
 import { crearOrden } from "../../lib/ordenes-db";
 import { useRouter } from "next/navigation";
 import { loadStripe } from "@stripe/stripe-js";
+import { Loading3DIcon } from "@/app/components/Loading3DIcon";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 
 export default function CartPage() {
@@ -104,7 +104,6 @@ export default function CartPage() {
   const [stripeClientSecret, setStripeClientSecret] = useState<string | null>(null);
   const [stripeOrderId, setStripeOrderId] = useState<string>("");
   const [stripeLoading, setStripeLoading] = useState(false);
-  const [stripeDiag, setStripeDiag] = useState<string | null>(null);
 
   const handleStripeSuccess = () => {
     carrito.forEach((p) => removeCarrito(p.id));
@@ -136,36 +135,19 @@ export default function CartPage() {
     setStripeLoading(false);
   };
 
-  // Diagnostic check for PaymentRequest (Apple/Google Pay availability)
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        const stripe = await stripePromise;
-        if (!stripe) {
-          if (mounted) setStripeDiag("stripe.js not loaded");
-          return;
-        }
-        const pr = stripe.paymentRequest({ country: "US", currency: "usd", total: { label: "Test", amount: 100 } });
-        const can = await pr.canMakePayment();
-        if (!mounted) return;
-        if (!can) setStripeDiag("PaymentRequest.canMakePayment returned null/false — Apple/Google Pay not available on this device or domain not verified.");
-        else if ((can as any).applePay) setStripeDiag("Apple Pay available: true");
-        else if ((can as any).googlePay) setStripeDiag("Google Pay available: true");
-        else setStripeDiag(JSON.stringify(can));
-      } catch (err: any) {
-        console.error("stripe diag error", err);
-        if (mounted) setStripeDiag(String(err?.message || err));
-      }
-    })();
-    return () => { mounted = false; };
-  }, [stripePromise]);
+  // Note: removed PaymentRequest diagnostic checks to avoid exposing payment diagnostics in the UI.
 
-  const calcularPrecioUnitario = (p: any) => {
-    const basePrice = Number(p.precio || 0);
-    const discount = Number((p as any).descuento || 0);
+  // Unificar lógica de precios como en ProductoCard/productDetail
+  // Unify price logic: always use basePrice (never apply real discount)
+  const calcularPrecioData = (p: any) => {
+    const basePrice = Number(p.precioBase ?? p.precio ?? 0);
+    const discount = Number(p.descuento || 0);
     const hasDiscount = !isNaN(discount) && discount > 0 && discount < 100;
-    return hasDiscount ? basePrice * (1 - discount / 100) : basePrice;
+    const fakeOldPrice = hasDiscount
+      ? Math.round((basePrice / (1 - discount / 100)) * 100) / 100
+      : basePrice;
+    const finalPrice = basePrice;
+    return { basePrice, discount, hasDiscount, fakeOldPrice, finalPrice };
   };
 
   // Generar orden: crea orden en estado 'generada' (no actualiza stock)
@@ -208,8 +190,8 @@ export default function CartPage() {
 
   // Calcular totales
   const subtotal = carrito.reduce((sum, p) => {
-    const unit = calcularPrecioUnitario(p);
-    return sum + unit * (p.cantidad || 1);
+    const { finalPrice } = calcularPrecioData(p);
+    return sum + finalPrice * (p.cantidad || 1);
   }, 0);
   const envio = 0;
   const total = subtotal + envio;
@@ -240,8 +222,8 @@ export default function CartPage() {
           onSuccess={handleStripeSuccess}
         />
       )}
-      <div className="min-h-screen flex flex-col bg-white dark:bg-[#3a1859] text-slate-900 dark:text-white transition-colors">
-      <main className="max-w-6xl mx-auto px-4 py-8 lg:px-6 flex-1">
+      <div className="min-h-screen flex flex-col bg-white dark:bg-black text-slate-900 dark:text-white transition-colors">
+      <main className="max-w-6xl mx-auto px-4 py-6 sm:py-15 lg:px-6 flex-1">
         <h1 className="text-3xl font-bold mb-8 text-[#3a1859] dark:text-white">Carrito de compras</h1>
         {isGuest && carrito.length > 0 && (
           <div className="mb-4 p-3 bg-yellow-100 text-yellow-800 rounded-lg border border-yellow-300">
@@ -265,25 +247,20 @@ export default function CartPage() {
             ) : (
               <div className="space-y-4">
                 {carrito.map((p) => {
-                  const unit = calcularPrecioUnitario(p);
-                  const base = Number(p.precio || 0);
-                  const discount = Number((p as any).descuento || 0);
-                  const hasDiscount = !isNaN(discount) && discount > 0 && discount < 100;
-                  const lineTotal = unit * (p.cantidad || 1);
+                  const { basePrice, discount, hasDiscount, fakeOldPrice, finalPrice } = calcularPrecioData(p);
+                  const lineTotal = finalPrice * (p.cantidad || 1);
                   return (
                     <div key={p.id} className="flex flex-col sm:flex-row items-start sm:items-center gap-4 bg-white dark:bg-slate-800 rounded-xl shadow p-4">
                       <img src={p.imagenes?.[0] || "/no-image.png"} alt={p.nombre} className="w-20 h-20 sm:w-24 sm:h-24 object-contain rounded-lg border flex-shrink-0" />
                       <div className="flex-1 min-w-0">
                         <div className="font-bold text-lg">{p.nombre}</div>
                         <div className="flex items-baseline gap-2 text-slate-500 dark:text-slate-300">
-                          {hasDiscount ? (
-                            <>
-                              <span className="text-xs line-through text-slate-400 dark:text-slate-500">${base.toFixed(2)}</span>
-                              <span className="text-sm font-semibold text-purple-700 dark:text-purple-300">${unit.toFixed(2)} c/u</span>
-                              <span className="text-xs font-bold text-red-600 bg-red-100 dark:bg-red-900/40 px-2 py-0.5 rounded-full">-{discount}%</span>
-                            </>
-                          ) : (
-                            <span className="text-sm font-semibold text-purple-700 dark:text-purple-300">${unit.toFixed(2)} c/u</span>
+                          {hasDiscount && (
+                            <span className="text-xs line-through text-slate-400 dark:text-slate-500">${fakeOldPrice.toFixed(2)}</span>
+                          )}
+                          <span className="text-sm font-semibold text-purple-700 dark:text-purple-300">${finalPrice.toFixed(2)} c/u</span>
+                          {hasDiscount && (
+                            <span className="text-xs font-bold text-red-600 bg-red-100 dark:bg-red-900/40 px-2 py-0.5 rounded-full">-{discount}%</span>
                           )}
                         </div>
                         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mt-2">
@@ -356,7 +333,7 @@ export default function CartPage() {
                     onClick={handleGenerarOrden}
                     disabled={loading || !visitDate || !visitTime}
                   >
-                    {loading ? "Generando orden..." : "Generar orden"}
+                    {loading ? <><Loading3DIcon type="box" /><span className="ml-2">Generando orden...</span></> : "Generar orden"}
                   </button>
 
                   <button
@@ -364,17 +341,11 @@ export default function CartPage() {
                     onClick={handleIniciarPago}
                     disabled={stripeLoading || !visitDate || !visitTime}
                   >
-                    {stripeLoading ? "Preparando pago..." : `Pagar con tarjeta — $${total.toFixed(2)}`}
+                    {stripeLoading ? <><Loading3DIcon type="box" /><span className="ml-2">Preparando pago...</span></> : `Pagar con tarjeta — $${total.toFixed(2)}`}
                   </button>
                 </>
               )}
-              {stripeDiag && (
-                <div className="mt-4 p-3 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-sm text-slate-700 dark:text-slate-200">
-                  <strong className="block text-xs font-semibold mb-1">Stripe paymentRequest diagnosis</strong>
-                  <div className="break-words text-xs">{stripeDiag}</div>
-                  <div className="text-xs text-slate-400 mt-2">Si ves "PaymentRequest.canMakePayment returned null" puede ser por dominio no verificado, Safari/Wallet no configurado, o falta de HTTPS.</div>
-                </div>
-              )}
+              {/* PaymentRequest diagnostic removed from UI */}
             </div>
           </div>
         </div>

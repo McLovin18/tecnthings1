@@ -24,7 +24,7 @@ export default function AdminBlogDetailPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-slate-950">
-      <div className="flex-1 w-full px-4 pt-4 pb-24 flex justify-center">
+      <div className="flex-1 w-full px-4 pt-4 py-6 sm:py-12 pb-24 flex justify-center">
         <div className="w-full max-w-3xl">
           {loading ? (
             <div className="text-center py-12 text-slate-500 dark:text-slate-400">

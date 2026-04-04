@@ -1,5 +1,5 @@
 "use client";
-
+import { Loading3DIcon } from "@/app/components/Loading3DIcon";
 import { useEffect, useState, ChangeEvent, useRef } from "react";
 import {
   DragDropContext,
@@ -1010,10 +1010,10 @@ export default function LandingEditor() {
   ============================ */
 
   if (loading)
-    return <div className="p-8 text-center">Cargando landing...</div>;
+    return <div className="p-8 text-center flex flex-col items-center justify-center"><Loading3DIcon /><span className="mt-4 text-slate-400 dark:text-white/30 text-sm">Cargando landing...</span></div>;
 
   return (
-    <div className="min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-white p-6">
+    <div className="min-h-screen py-6 sm:py-12 bg-white dark:bg-slate-950 text-slate-900 dark:text-white px-6">
       <h1 className="text-2xl font-bold mb-6">Editor de Landing</h1>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
@@ -1469,7 +1469,10 @@ export default function LandingEditor() {
                                                     </button>
                                                   </div>
                                                   {googleCommentsLoading ? (
-                                                    <div className="text-center text-slate-500 py-8">Cargando comentarios...</div>
+                                                    <div className="flex flex-col items-center justify-center py-8">
+                                                      <Loading3DIcon type="user" />
+                                                      <span className="mt-4 text-slate-400 dark:text-white/30 text-sm">Cargando comentarios...</span>
+                                                    </div>
                                                   ) : (
                                                     <div className="grid gap-4 md:grid-cols-2">
                                                       {googleComments.slice(0, 5).map((c, idx) => {

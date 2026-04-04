@@ -8,7 +8,7 @@ export default function FavoritosPage() {
   const { favoritos, isLogged, isCliente } = useUser();
 
   return (
-    <div className="min-h-screen flex flex-col bg-white dark:bg-[#3a1859] text-slate-900 dark:text-white transition-colors px-4 py-8">
+    <div className="min-h-screen flex flex-col bg-white dark:bg-black text-slate-900 dark:text-white transition-colors px-4 py-6 sm:py-15">
       <div className="max-w-6xl mx-auto w-full">
         <h1 className="text-3xl font-bold mb-6 text-[#3a1859] dark:text-white">Mis favoritos</h1>
         {!isLogged || !isCliente ? (

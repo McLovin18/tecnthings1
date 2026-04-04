@@ -22,11 +22,10 @@ export default async function RootLayout({
       <head>
         <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet" />
       </head>
-      <body
-        className="relative"
-      >
+      <body className="relative">
         <UserProvider>
           <Navbar />
+
           {children}
           <Footer />
         </UserProvider>

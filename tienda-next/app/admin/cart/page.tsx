@@ -74,7 +74,7 @@ export default function CartPage() {
 
 	return (
 		<div className="min-h-screen flex flex-col bg-white dark:bg-[#3a1859] transition-colors">
-			<main className="max-w-6xl mx-auto px-4 py-8 lg:px-6 flex-1">
+			<main className="max-w-6xl mx-auto px-4 py-8 lg:px-6 py-6 sm:py-12 flex-1">
 				<h1 className="text-3xl font-bold mb-8 text-[#3a1859] dark:text-white">Carrito de compras (Admin)</h1>
 				{error && (
 					<div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg border border-red-300">

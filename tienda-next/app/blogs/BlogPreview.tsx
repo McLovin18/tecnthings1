@@ -13,8 +13,7 @@ function renderBlock(block: BlogBlock, index: number) {
     return (
       <h2
         key={block.id || index}
-        className="text-xl md:text-2xl font-semibold mt-6 mb-2"
-        style={block.style}
+        className="text-xl md:text-2xl font-semibold mt-6 mb-2 dark:text-white"
       >
         {block.text}
       </h2>
@@ -65,7 +64,7 @@ export default function BlogPreview({ blog, device }: BlogPreviewProps) {
   return (
     <article className={wrapperClass}>
       <header className="mb-6">
-        <h1 className="text-2xl md:text-3xl font-extrabold mb-2">
+        <h1 className="text-2xl md:text-3xl font-extrabold mb-2 dark:text-white">
           {blog.title || "(Sin título)"}
         </h1>
         {blog.description && (

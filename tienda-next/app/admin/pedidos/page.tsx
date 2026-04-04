@@ -110,7 +110,7 @@ export default function PedidosAdminPage() {
 	};
 
 	return (
-		<div className="min-h-screen flex flex-col bg-white dark:bg-[#3a1859] text-slate-900 dark:text-white p-6">
+		<div className="min-h-screen py-6 sm:py-12 flex flex-col bg-white dark:bg-[#3a1859] text-slate-900 dark:text-white px-6">
 			<h1 className="text-3xl font-bold mb-6">Gestión de órdenes</h1>
 			<div className="flex flex-wrap items-center gap-4 mb-4">
 				<div className="inline-flex rounded-lg border border-slate-300 dark:border-slate-700 overflow-hidden">

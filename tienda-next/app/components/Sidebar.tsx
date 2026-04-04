@@ -16,6 +16,7 @@ const Sidebar = ({ role = "client" }) => {
     { name: "Inventario", path: "/admin/inventario", icon: "inventory" },
     { name: "Pedidos", path: "/admin/pedidos", icon: "assignment" },
     { name: "Clientes", path: "/admin/clientes", icon: "people" },
+    { name: "Reseñas", path: "/admin/reviews", icon: "rate_review" },
     { name: "Editar landing", path: "/admin/edit-landing", icon: "edit" },
     { name: "Editar blogs", path: "/admin/edit-blogs", icon: "library_books" },
     { name: "Perfil", path: "/admin/perfil", icon: "person" },
@@ -23,7 +24,7 @@ const Sidebar = ({ role = "client" }) => {
   ];
   const items = role === "admin" ? adminItems : clientItems;
   return (
-    <aside className="hidden lg:flex flex-col w-56 min-h-screen bg-white dark:bg-[#2a1040] border-r border-slate-200 dark:border-slate-700 shadow-md p-4">
+    <aside className="hidden lg:flex flex-col w-56 min-h-screen bg-white dark:bg-black border-r border-slate-200 dark:border-slate-700 shadow-md px-6 py-15">
       <ul className="space-y-2">
         {items.map((item) => (
           <li key={item.path}>

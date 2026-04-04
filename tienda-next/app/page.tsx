@@ -7,6 +7,7 @@ import ProductoCard from "./components/ProductoCard";
 import { SectionRenderer } from "./landing/sectionRegistry";
 import type { LandingSection } from "./lib/landing-types";
 import { obtenerProductos } from "./lib/productos-db";
+import { Loading3DIcon } from "./components/Loading3DIcon";
 
 export default function Home() {
   const [landing, setLanding] = useState<any>(null);
@@ -29,8 +30,7 @@ export default function Home() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <span className="material-icons-round animate-spin text-4xl">sync</span>
-        <span className="ml-4 text-slate-500 dark:text-white">Cargando landing...</span>
+        <Loading3DIcon />
       </div>
     );
   }
@@ -78,7 +78,7 @@ export default function Home() {
   });
 
   return (
-    <div className="bg-white dark:bg-slate-950 text-slate-900 dark:text-white min-h-screen flex flex-col">
+    <div className="bg-white dark:bg-black text-slate-900 dark:text-white min-h-screen flex flex-col py-6 sm:py-15">
       <CategoriesBar />
       <main className="flex-1 pb-24 lg:pb-0">
         {/* Todas las secciones se renderizan de forma dinámica desde Firestore */}

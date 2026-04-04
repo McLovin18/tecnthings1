@@ -95,7 +95,7 @@ export default function CategoriasAdminPanel({ onCategoriasChange }: { onCategor
                   </span>
                 </button>
               )}
-              <span className="font-semibold text-purple-700">{cat.nombre}</span>
+              <span className="font-semibold text-black">{cat.nombre}</span>
               {/* Botón eliminar */}
               <button
                 className="ml-1 text-red-500 hover:text-red-700 text-base font-bold px-1"

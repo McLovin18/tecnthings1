@@ -1,7 +1,10 @@
 "use client";
 import { createContext, useContext, useState, useEffect, useRef } from "react";
 import { getInitialFavorites, getInitialCart, saveFavorites, saveCart, mergeGuestCartIntoUser } from "./userLocalStorage";
-import { getCurrentUser } from "../lib/firebase-auth";
+import { auth } from "../lib/firebase";
+import { onIdTokenChanged, getIdToken, getIdTokenResult } from "firebase/auth";
+import { Loading3DIcon } from "../components/Loading3DIcon";
+
 
 // Contexto de usuario global
 const UserContext = createContext({
@@ -28,12 +31,43 @@ export function UserProvider({ children }) {
   // Guarda el uid anterior para detectar transición de invitado → logueado
   const prevUidRef = useRef<string | null>(null);
 
-  // Obtener el usuario real desde Firebase Auth o backend
+  // Escuchar cambios en el token (incluye inicio de sesión y refresh de claims)
   useEffect(() => {
-    getCurrentUser().then((realUser) => {
-      setUser(realUser);
+    const unsubscribe = onIdTokenChanged(auth, async (realUser) => {
+      if (!realUser) {
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+      try {
+        // Forzar refresh del token para obtener claims actualizados
+        await getIdToken(realUser, true);
+        const idToken = await getIdToken(realUser);
+        // Intentar obtener rol desde backend si existe endpoint
+        try {
+          const res = await fetch("/api/auth/me", { headers: { Authorization: `Bearer ${idToken}` } });
+          if (res.ok) {
+            const data = await res.json();
+            setUser({ ...(realUser as any), role: data.role });
+            setLoading(false);
+            return;
+          }
+        } catch (e) {
+          // ignore and fallback to token claims
+        }
+        // Fallback: leer claims desde el token
+        try {
+          const tokenResult = await getIdTokenResult(realUser);
+          setUser({ ...(realUser as any), role: (tokenResult?.claims as any)?.role });
+        } catch (e) {
+          setUser(realUser);
+        }
+      } catch (err) {
+        setUser(realUser);
+      }
       setLoading(false);
     });
+    return () => unsubscribe();
   }, []);
 
   // Inicializar favoritos desde localStorage (una sola vez)
@@ -104,8 +138,13 @@ export function UserProvider({ children }) {
   const isCliente = user?.role === "client" || user?.role === "cliente";
   const isAdmin = user?.role === "admin";
 
+
   if (loading) {
-    return <div style={{width: '100vw', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>Cargando usuario...</div>;
+    return (
+      <div style={{width: '100vw', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+        <Loading3DIcon />
+      </div>
+    );
   }
 
   return (

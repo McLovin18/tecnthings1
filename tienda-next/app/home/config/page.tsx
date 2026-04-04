@@ -21,7 +21,7 @@ export default function ConfigPage() {
   const colors = themes[theme];
 
   return (
-    <div className="min-h-screen flex flex-col items-center bg-white dark:bg-[#3a1859] text-slate-900 dark:text-white transition-colors px-4 py-8">
+    <div className="min-h-screen flex flex-col items-center bg-white dark:bg-black text-slate-900 dark:text-white transition-colors px-4 py-6 sm:py-15">
       <div className="w-full max-w-xl">
       <h1 className="text-2xl font-bold mb-4">Configuración</h1>
       <div className="mb-8">

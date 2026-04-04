@@ -53,10 +53,10 @@ export default function BannerSection({
           <img
             src={finalBackgroundImage}
             alt={title || "Banner"}
-            className="absolute inset-0 w-full h-full object-cover opacity-70"
+            className="absolute inset-0 w-full h-full object-cover"
+            style={{ opacity: 1, filter: 'none' }}
           />
         )}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
         <div className="relative px-6 py-6 md:px-10 md:py-8 flex flex-col gap-2 max-w-3xl">
           {title && (
             <h2

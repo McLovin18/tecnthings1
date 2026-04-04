@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import CategoriesBar from "../components/CategoriesBar";
+import { Loading3DIcon } from "../components/Loading3DIcon";
 import { getPublishedBlogs } from "../lib/blogs-db";
 import type { Blog } from "../lib/blog-types";
 
@@ -43,16 +44,8 @@ export default function BlogsPage() {
         </p>
 
         {loading ? (
-          <div className="text-center py-12">
-            <span
-              className="material-icons-round animate-spin text-4xl"
-              style={{ color: "var(--textSecondary)" }}
-            >
-              sync
-            </span>
-            <p className="mt-4" style={{ color: "var(--textSecondary)" }}>
-              Cargando artículos...
-            </p>
+          <div className="flex items-center justify-center py-24">
+            <Loading3DIcon />
           </div>
         ) : blogs.length === 0 ? (
           <div className="text-center py-12">

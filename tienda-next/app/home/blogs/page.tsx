@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Loading3DIcon } from "../../components/Loading3DIcon";
 import { getPublishedBlogs } from "../../lib/blogs-db";
 import type { Blog } from "../../lib/blog-types";
 
@@ -24,7 +25,7 @@ export default function HomeBlogsPage() {
   const others = blogs.filter((b) => !b.featured);
 
   return (
-    <div className="min-h-screen flex flex-col bg-white dark:bg-[#3a1859] text-slate-900 dark:text-white transition-colors px-4 py-6 lg:px-6">
+    <div className="min-h-screen flex flex-col bg-white dark:bg-black text-slate-900 dark:text-white transition-colors px-4 py-14 lg:px-6">
       <h1 className="text-2xl font-bold mb-2 text-slate-900 dark:text-white">
         Blog
       </h1>
@@ -33,8 +34,8 @@ export default function HomeBlogsPage() {
       </p>
 
       {loading ? (
-        <div className="text-center py-12 text-slate-500 dark:text-slate-400">
-          Cargando artículos...
+        <div className="flex items-center justify-center py-24">
+          <Loading3DIcon type="blog" />
         </div>
       ) : blogs.length === 0 ? (
         <div className="text-center py-12 text-slate-500 dark:text-slate-400">

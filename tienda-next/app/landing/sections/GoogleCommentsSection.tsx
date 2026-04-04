@@ -2,6 +2,7 @@
 
 
 import React from "react";
+import { Loading3DIcon } from "../../components/Loading3DIcon";
 import Image from "next/image";
 import type { LandingSectionStyles, LandingFieldStyle } from "../../lib/landing-types";
 
@@ -45,6 +46,15 @@ export default function GoogleCommentsSection({
   const paddingTop = styles?.paddingTop || "2rem";
   const paddingBottom = styles?.paddingBottom || "2rem";
   const borderRadius = styles?.borderRadius || "1.5rem";
+
+  // Show loading icon if comments is undefined (loading state)
+  if (typeof window !== "undefined" && !comments) {
+    return (
+      <section className="flex justify-center items-center min-h-[200px]">
+        <Loading3DIcon type="box" />
+      </section>
+    );
+  }
 
   return (
     <section

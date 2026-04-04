@@ -61,8 +61,8 @@ export const themes = {
     textSecondary: colors.text.secondary.dark,
     border: colors.border.dark,
     hover: colors.hover.dark,
-    navBg: "rgba(0, 0, 0, 0.8)",
-    cardBg: "#1f2937",
+    navBg: "black",
+    cardBg: "black",
     dropdownBg: "#1f2937",
     accent: colors.accent.primary
   }

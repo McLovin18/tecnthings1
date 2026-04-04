@@ -25,7 +25,7 @@ export default function AdminBlogsPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-slate-950">
-      <div className="flex-1 w-full px-4 pt-4 pb-24">
+      <div className="flex-1 w-full py-6 sm:py-12 px-4 pt-4 pb-24">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">

@@ -66,7 +66,7 @@ export default function ProductsByCategoryPage() {
       style={{ background: 'var(--bg)', color: 'var(--text)' }}
       className="min-h-screen flex flex-col"
     >
-      <main className="max-w-7xl mx-auto px-4 py-8 lg:px-6 pb-24 lg:pb-8 flex-1">
+      <main className="max-w-7xl mx-auto px-4 py-6 sm:py-12 lg:px-6 pb-24 lg:pb-8 flex-1">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* SIDEBAR FILTROS */}
           <aside className="lg:col-span-1">

@@ -1,3 +1,20 @@
+// Obtener productos por subcategoría
+export async function obtenerProductosPorSubcategoria(subcategoria, excludeId = null, max = 4) {
+  const q = query(collection(db, COLLECTION), where("subcategoria", "==", subcategoria));
+  const snapshot = await getDocs(q);
+  let productos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  if (excludeId) productos = productos.filter(p => p.id !== excludeId);
+  return productos.slice(0, max);
+}
+
+// Obtener productos por subsubcategoría (último nivel)
+export async function obtenerProductosPorSubsubcategoria(subsubcategoria, excludeId = null, max = 4) {
+  const q = query(collection(db, COLLECTION), where("subsubcategoria", "==", subsubcategoria));
+  const snapshot = await getDocs(q);
+  let productos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  if (excludeId) productos = productos.filter(p => p.id !== excludeId);
+  return productos.slice(0, max);
+}
 import { db } from "./firebase";
 import {
   collection,
@@ -26,10 +43,12 @@ export async function obtenerProductos() {
 }
 
 // Obtener productos por categoría
-export async function obtenerProductosPorCategoria(categoria) {
+export async function obtenerProductosPorCategoria(categoria, excludeId = null, max = 4) {
   const q = query(collection(db, COLLECTION), where("categoria", "==", categoria));
   const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  let productos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  if (excludeId) productos = productos.filter(p => p.id !== excludeId);
+  return productos.slice(0, max);
 }
 
 // Obtener producto por ID

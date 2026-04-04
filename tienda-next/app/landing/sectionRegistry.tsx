@@ -23,11 +23,11 @@ export type SectionComponentProps = {
 };
 
 
-import HeroGoogleReviewSection, { HeroGoogleReviewSectionProps } from "./sections/HeroGoogleReviewSection";
+// import HeroGoogleReviewSection, { HeroGoogleReviewSectionProps } from "./sections/HeroGoogleReviewSection";
 
 export const sectionRegistry: Record<string, ComponentType<any>> = {
   hero: HeroSection,
-  heroGoogleReview: HeroGoogleReviewSection,
+  // heroGoogleReview: HeroGoogleReviewSection, // Eliminado de la landing
   googleComments: GoogleCommentsSection,
   banner: BannerSection,
   gallery: GallerySection,
@@ -61,8 +61,6 @@ export function SectionRenderer({ section }: { section: LandingSection }) {
     } catch {
       parsedProps.comments = [];
     }
-    // Log para depuración
-    console.log("[SectionRenderer] googleComments parsedProps.comments:", parsedProps.comments);
   }
   return <Component {...parsedProps} styles={styles} fieldStyles={fieldStyles} />;
 }

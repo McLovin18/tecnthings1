@@ -90,7 +90,7 @@ function MobileCategoriesAccordion({ basePath }: { basePath: string }) {
     </div>
   );
 }
-import { getCurrentUser } from "../lib/firebase-auth";
+import { useUser } from "../context/UserContext";
 
 export const Navbar = () => {
   // Hooks deben ir siempre al inicio y en el mismo orden
@@ -98,12 +98,13 @@ export const Navbar = () => {
   const [theme, setTheme] = useState("light");
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenu, setUserMenu] = useState(false);
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const { user, isLogged } = useUser();
   const [windowWidth, setWindowWidth] = useState<number | null>(null);
 
   // Search bar state
-  const [searchOpen, setSearchOpen] = useState(false);
+  // searchOpen siempre true
+  const searchOpen = true;
+  const setSearchOpen = () => {};
   const [searchValue, setSearchValue] = useState("");
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -111,12 +112,7 @@ export const Navbar = () => {
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { setMounted(true); }, []);
-  useEffect(() => {
-    getCurrentUser().then((u) => {
-      setUser(u);
-      setLoading(false);
-    });
-  }, []);
+  // User state comes from UserContext (onIdTokenChanged handles updates)
 
   // Fetch all products once for suggestions (could be optimized for large catalogs)
   useEffect(() => {
@@ -141,16 +137,11 @@ export const Navbar = () => {
     }
   }, []);
 
-  // Handle search input focus when opening
-  useEffect(() => {
-    if (searchOpen && searchInputRef.current) {
-      searchInputRef.current.focus();
-    }
-  }, [searchOpen]);
+
 
   // Update suggestions as user types
   useEffect(() => {
-    if (!searchOpen || !searchValue.trim()) {
+    if (!searchValue.trim()) {
       setSuggestions([]);
       return;
     }
@@ -175,12 +166,12 @@ export const Navbar = () => {
     });
     setSuggestions(filtered.slice(0, 6)); // Show up to 6 suggestions
     setSearchLoading(false);
-  }, [searchValue, searchOpen, allProducts]);
+  }, [searchValue, allProducts]);
 
   const isMobileOrTablet = windowWidth !== null && windowWidth < 1024;
   const showFloatingCart = isMobileOrTablet;
 
-  if (!mounted || loading) return null;
+  if (!mounted) return null;
 
   const isClient = user?.role === "client";
   const isAdmin = user?.role === "admin";
@@ -217,30 +208,18 @@ export const Navbar = () => {
               <span className="material-icons-round text-2xl">menu</span>
             </button>
             <a href={user ? (isClient ? "/home" : "/admin") : "/"} className="flex flex-col">
-              <span className="text-[10px] font-bold uppercase" style={{ color: "var(--textSecondary)" }}>
-                Tienda Autorizada
-              </span>
+
               <h1 className="text-xl font-extrabold flex items-center gap-2" style={{ color: "var(--text)" }}>
-                <span className="material-icons-round text-2xl text-purple-600">storefront</span>
                 TECNO THINGS
               </h1>
             </a>
             {/* Interactive Search Bar */}
-            <div className="hidden lg:flex items-center relative ml-2">
-              {/* Collapsed search icon */}
-              {!searchOpen && (
-                <button
-                  className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition"
-                  aria-label="Buscar"
-                  onClick={() => setSearchOpen(true)}
-                >
-                  <span className="material-icons-round">search</span>
-                </button>
-              )}
+            <div className=" hidden lg:flex items-center relative ml-2">
+
               {/* Expanded search input */}
               {searchOpen && (
                 <form
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-lg"
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white dark:bg-black border border-slate-200 dark:border-slate-700 shadow-lg"
                   style={{ background: "var(--hover)", minWidth: 220, position: 'relative' }}
                   onSubmit={e => {
                     e.preventDefault();
@@ -249,7 +228,7 @@ export const Navbar = () => {
                       if (user?.role === "client") target = `/home/search-results?query=${encodeURIComponent(searchValue.trim())}`;
                       if (user?.role === "admin") target = `/admin/search-results?query=${encodeURIComponent(searchValue.trim())}`;
                       window.location.href = target;
-                      setSearchOpen(false);
+                      // setSearchOpen(false); // deshabilitado
                       setSearchValue("");
                       setSuggestions([]);
                     }
@@ -265,7 +244,7 @@ export const Navbar = () => {
                     autoComplete="off"
                     value={searchValue}
                     onChange={e => setSearchValue(e.target.value)}
-                    onBlur={() => setTimeout(() => setSearchOpen(false), 150)}
+                    // onBlur deshabilitado para searchOpen
                   />
                   <button
                     type="button"
@@ -277,7 +256,7 @@ export const Navbar = () => {
                         if (user?.role === "client") target = `/home/search-results?query=${encodeURIComponent(searchValue.trim())}`;
                         if (user?.role === "admin") target = `/admin/search-results?query=${encodeURIComponent(searchValue.trim())}`;
                         window.location.href = target;
-                        setSearchOpen(false);
+                        // setSearchOpen(false); // deshabilitado
                         setSearchValue("");
                         setSuggestions([]);
                       }
@@ -291,7 +270,7 @@ export const Navbar = () => {
                     className="p-1 ml-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700"
                     aria-label="Cerrar búsqueda"
                     onClick={() => {
-                      setSearchOpen(false);
+                      // setSearchOpen(false); // deshabilitado
                       setSearchValue("");
                       setSuggestions([]);
                     }}
@@ -364,7 +343,7 @@ export const Navbar = () => {
                   )}
                 </button>
                 {userMenu && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 flex flex-col">
+                  <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-black rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 flex flex-col">
                     <a href={isClient ? "/home/perfil" : "/admin/perfil"} className="px-4 py-3 hover:bg-slate-100 dark:hover:bg-white/10 text-slate-900 dark:text-white">Perfil</a>
                     <a href={isClient ? "/home/config" : "/admin/config"} className="px-4 py-3 hover:bg-slate-100 dark:hover:bg-white/10 text-slate-900 dark:text-white flex items-center gap-2">
                       <span className="material-icons-round text-xl">settings</span>
@@ -413,7 +392,7 @@ export const Navbar = () => {
         <div className="fixed inset-0 bg-black/40 z-50" onClick={() => setMobileOpen(false)}>
           <div
             onClick={(e) => e.stopPropagation()}
-            className="absolute left-0 top-0 w-full bg-white text-slate-900 dark:bg-[#2a1040] dark:text-white max-h-[85vh] overflow-y-auto rounded-b-2xl shadow-xl p-6"
+            className="absolute left-0 top-0 w-full bg-white text-slate-900 dark:bg-black dark:text-white max-h-[85vh] overflow-y-auto rounded-b-2xl shadow-xl p-6"
           >
             <button
               onClick={() => setMobileOpen(false)}

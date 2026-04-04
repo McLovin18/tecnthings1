@@ -3,20 +3,28 @@ import nodemailer from "nodemailer";
 
 function buildProformaHTML(orden: any): string {
   const rows = orden.productos
-    .map(
-      (p: any) => `
-      <tr>
-        <td style="padding:10px 8px; border-bottom:1px solid #e5e7eb;">${p.nombre}</td>
-        <td style="padding:10px 8px; border-bottom:1px solid #e5e7eb; text-align:center;">${p.cantidad}</td>
-        <td style="padding:10px 8px; border-bottom:1px solid #e5e7eb; text-align:right;">
-          ${p.descuento > 0 ? `<span style="text-decoration:line-through;color:#9ca3af;font-size:12px;">$${Number(p.precioBase).toFixed(2)}</span><br/>` : ""}
-          $${Number(p.precioUnitario).toFixed(2)}
-          ${p.descuento > 0 ? `<span style="background:#fee2e2;color:#dc2626;border-radius:4px;padding:1px 5px;font-size:11px;margin-left:4px;">-${p.descuento}%</span>` : ""}
-        </td>
-        <td style="padding:10px 8px; border-bottom:1px solid #e5e7eb; text-align:right; font-weight:bold;">$${Number(p.subtotal).toFixed(2)}</td>
-      </tr>
-    `
-    )
+    .map((p: any) => {
+      const basePrice = Number(p.precioBase || p.precio || 0);
+      const discount = Number(p.descuento || 0);
+      const hasDiscount = !isNaN(discount) && discount > 0 && discount < 100;
+      const fakeOldPrice = hasDiscount
+        ? (Math.round((basePrice / (1 - discount / 100)) * 100) / 100)
+        : null;
+      const finalPrice = basePrice;
+      const subtotal = finalPrice * (p.cantidad || 1);
+      return `
+        <tr>
+          <td style="padding:10px 8px; border-bottom:1px solid #e5e7eb;">${p.nombre}</td>
+          <td style="padding:10px 8px; border-bottom:1px solid #e5e7eb; text-align:center;">${p.cantidad}</td>
+          <td style="padding:10px 8px; border-bottom:1px solid #e5e7eb; text-align:right;">
+            ${hasDiscount ? `<span style="text-decoration:line-through;color:#9ca3af;font-size:12px;">$${fakeOldPrice?.toFixed(2)}</span><br/>` : ""}
+            $${finalPrice.toFixed(2)}
+            ${hasDiscount ? `<span style="background:#fee2e2;color:#dc2626;border-radius:4px;padding:1px 5px;font-size:11px;margin-left:4px;">-${discount}%</span>` : ""}
+          </td>
+          <td style="padding:10px 8px; border-bottom:1px solid #e5e7eb; text-align:right; font-weight:bold;">$${subtotal.toFixed(2)}</td>
+        </tr>
+      `;
+    })
     .join("");
 
   return `

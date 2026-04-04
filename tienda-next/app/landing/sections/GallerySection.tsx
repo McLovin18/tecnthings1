@@ -8,7 +8,7 @@ import type {
 
 export type GallerySectionProps = {
   title?: string;
-  images?: string[]; // compatibilidad con datos antiguos
+  images?: string[];
   items?: { title?: string; image?: string }[];
   styles?: LandingSectionStyles;
   fieldStyles?: Record<string, LandingFieldStyle>;
@@ -24,33 +24,27 @@ export default function GallerySection({
   const paddingTop = styles?.paddingTop || "3rem";
   const paddingBottom = styles?.paddingBottom || "3rem";
 
-   // Normalizar datos: si vienen items nuevos los usamos, si no
-   // caemos al array antiguo de imágenes.
-  const galleryItems = (items && items.length
-    ? items
-    : images.map((src) => ({ title: "", image: src }))) as {
-    title?: string;
-    image?: string;
-  }[];
+  // Normalizar datos: si vienen items nuevos los usamos, si no
+  // caemos al array antiguo de imágenes.
+  const galleryItems = (
+    items && items.length
+      ? items
+      : images.map((src) => ({ title: "", image: src }))
+  ) as { title?: string; image?: string }[];
 
-  if (!galleryItems.length) return null;
-
+  // ── Hooks SIEMPRE arriba, antes de cualquier return condicional ──
   const [currentIndex, setCurrentIndex] = useState(0);
   const [itemsPerView, setItemsPerView] = useState(4);
+  const [isPaused, setIsPaused] = useState(false);
 
   useEffect(() => {
     const updateItemsPerView = () => {
       if (typeof window === "undefined") return;
       const width = window.innerWidth;
-      if (width < 640) {
-        setItemsPerView(1); // móviles
-      } else if (width < 1024) {
-        setItemsPerView(3); // tablets
-      } else {
-        setItemsPerView(4); // desktop
-      }
+      if (width < 640) setItemsPerView(1);
+      else if (width < 1024) setItemsPerView(3);
+      else setItemsPerView(4);
     };
-
     updateItemsPerView();
     window.addEventListener("resize", updateItemsPerView);
     return () => window.removeEventListener("resize", updateItemsPerView);
@@ -58,6 +52,17 @@ export default function GallerySection({
 
   const effectiveItemsPerView = Math.min(itemsPerView, galleryItems.length);
   const hasCarousel = galleryItems.length > effectiveItemsPerView;
+
+  useEffect(() => {
+    if (!hasCarousel || isPaused) return;
+    const id = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % galleryItems.length);
+    }, 3000);
+    return () => clearInterval(id);
+  }, [hasCarousel, galleryItems.length, isPaused]);
+
+  // ── Return condicional DESPUÉS de todos los hooks ──
+  if (!galleryItems.length) return null;
 
   const getVisibleItems = () => {
     const count = hasCarousel ? effectiveItemsPerView : galleryItems.length;
@@ -68,14 +73,6 @@ export default function GallerySection({
     }
     return slice;
   };
-
-  useEffect(() => {
-    if (!hasCarousel) return;
-    const id = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % galleryItems.length);
-    }, 3000);
-    return () => clearInterval(id);
-  }, [hasCarousel, galleryItems.length]);
 
   const visibleItems = getVisibleItems();
   const isSingleVisible = effectiveItemsPerView === 1;
@@ -91,72 +88,113 @@ export default function GallerySection({
     setCurrentIndex((prev) => (prev + 1) % galleryItems.length);
   };
 
+  // Dots: cuántos "slides" posibles hay
+  const totalSlides = hasCarousel
+    ? galleryItems.length
+    : 1;
+
   return (
     <section
       style={{ paddingTop, paddingBottom }}
-      className="px-4 lg:px-6 flex flex-col items-center"
+      className="px-4 lg:px-8 flex flex-col items-center"
     >
+      {/* Título */}
       {title && (
-        <h2 className="text-3xl font-bold mb-4 text-center text-slate-900 dark:text-white">{title}</h2>
+        <h2 className="text-3xl font-extrabold mb-8 text-center text-slate-900 dark:text-white tracking-tight">
+          {title}
+        </h2>
       )}
 
-      {hasCarousel && (
-        <div className="flex items-center justify-center gap-3 mb-3">
+      {/* Contenedor del carrusel */}
+      <div
+        className="w-full max-w-6xl mx-auto relative"
+        onMouseEnter={() => setIsPaused(true)}
+        onMouseLeave={() => setIsPaused(false)}
+      >
+        {/* Flecha izquierda */}
+        {hasCarousel && (
           <button
             type="button"
             onClick={handlePrev}
-            className="h-8 w-8 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-600 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+            aria-label="Anterior"
+            className="absolute -left-4 md:-left-6 top-1/2 -translate-y-1/2 z-20 h-10 w-10 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-200 shadow-md hover:bg-purple-50 dark:hover:bg-purple-900/40 hover:border-purple-300 hover:scale-105 transition-all"
           >
-            <span className="material-icons-round text-[18px]">chevron_left</span>
+            <span className="material-icons-round text-[20px]">chevron_left</span>
           </button>
-          <span className="text-xs text-slate-500 dark:text-slate-300">
-            Mostrando {effectiveItemsPerView} de {galleryItems.length} logos
-          </span>
+        )}
+
+        {/* Flecha derecha */}
+        {hasCarousel && (
           <button
             type="button"
             onClick={handleNext}
-            className="h-8 w-8 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-600 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+            aria-label="Siguiente"
+            className="absolute -right-4 md:-right-6 top-1/2 -translate-y-1/2 z-20 h-10 w-10 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-200 shadow-md hover:bg-purple-50 dark:hover:bg-purple-900/40 hover:border-purple-300 hover:scale-105 transition-all"
           >
-            <span className="material-icons-round text-[18px]">chevron_right</span>
+            <span className="material-icons-round text-[20px]">chevron_right</span>
           </button>
-        </div>
-      )}
+        )}
 
-      <div
-        className={
-          isSingleVisible
-            ? "flex justify-center w-full max-w-md mx-auto"
-            : "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 place-items-center w-full max-w-6xl mx-auto"
-        }
-      >
-        {visibleItems.map((item, idx) => (
-          <div
-            key={idx}
-            className={
-              isSingleVisible
-                ? "w-full flex flex-col items-center text-center"
-                : "w-full max-w-xs flex flex-col items-center text-center"
-            }
-          >
-            {item.title && (
-              <p
-                className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-200"
-                style={itemTitleStyle}
-              >
-                {item.title}
-              </p>
-            )}
-            <div className="aspect-square rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 w-full">
+        {/* Grid / items visibles */}
+        <div
+          className={
+            isSingleVisible
+              ? "flex justify-center w-full max-w-sm mx-auto"
+              : `grid gap-5 place-items-center w-full ${
+                  effectiveItemsPerView === 2
+                    ? "grid-cols-2"
+                    : effectiveItemsPerView === 3
+                    ? "grid-cols-3"
+                    : "grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+                }`
+          }
+        >
+          {visibleItems.map((item, idx) => (
+            <div
+              key={`${currentIndex}-${idx}`}
+              className={`group flex flex-col items-center text-center transition-all duration-300 ${
+                isSingleVisible ? "w-full" : "w-full max-w-[220px]"
+              }`}
+            >
               {item.image && (
-                <img
-                  src={item.image}
-                  alt={item.title || title || "Logo"}
-                  className="w-full h-full object-contain p-4"
-                />
+                <div className="w-full flex items-center justify-center rounded-2xl overflow-hidden bg-white dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700 shadow-sm group-hover:shadow-md group-hover:border-purple-200 dark:group-hover:border-purple-700 transition-all duration-300 p-4 aspect-square">
+                  <img
+                    src={item.image}
+                    alt={item.title || title || "Imagen"}
+                    className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-300"
+                    style={{ background: "none", boxShadow: "none" }}
+                  />
+                </div>
+              )}
+              {item.title && (
+                <p
+                  className="mt-3 text-sm font-semibold text-slate-700 dark:text-slate-200 group-hover:text-purple-600 dark:group-hover:text-purple-300 transition-colors"
+                  style={itemTitleStyle}
+                >
+                  {item.title}
+                </p>
               )}
             </div>
+          ))}
+        </div>
+
+        {/* Dots indicadores */}
+        {hasCarousel && totalSlides > 1 && (
+          <div className="flex justify-center gap-1.5 mt-6">
+            {Array.from({ length: totalSlides }).map((_, i) => (
+              <button
+                key={i}
+                aria-label={`Ir a slide ${i + 1}`}
+                onClick={() => setCurrentIndex(i)}
+                className={`rounded-full transition-all duration-300 ${
+                  i === currentIndex
+                    ? "w-6 h-2 bg-purple-600 dark:bg-purple-400"
+                    : "w-2 h-2 bg-slate-300 dark:bg-slate-600 hover:bg-purple-300 dark:hover:bg-purple-600"
+                }`}
+              />
+            ))}
           </div>
-        ))}
+        )}
       </div>
     </section>
   );

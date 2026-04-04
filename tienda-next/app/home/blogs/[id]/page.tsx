@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { getBlogById } from "../../../lib/blogs-db";
+import { Loading3DIcon } from "../../../components/Loading3DIcon";
 import type { Blog } from "../../../lib/blog-types";
 import BlogPreview from "../../../blogs/BlogPreview";
 
@@ -23,10 +24,10 @@ export default function HomeBlogDetailPage() {
   }, [params?.id]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-white dark:bg-[#3a1859] text-slate-900 dark:text-white transition-colors px-4 py-6 lg:px-6">
+    <div className="min-h-screen flex flex-col bg-white dark:bg-black text-slate-900 dark:text-white transition-colors px-4 sm:py-15 py-8 lg:px-6">
       {loading ? (
-        <div className="text-center py-12 text-slate-500 dark:text-slate-400">
-          Cargando artículo...
+        <div className="flex items-center justify-center py-24">
+          <Loading3DIcon type="blog" />
         </div>
       ) : !blog ? (
         <div className="text-center py-12 text-slate-500 dark:text-slate-400">

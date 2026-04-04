@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback, useEffect } from "react";
 import { useUser } from "../context/UserContext";
+import { Loading3DIcon } from "../components/Loading3DIcon";
 import { crearOrden } from "../lib/ordenes-db";
 import { useRouter } from "next/navigation";
 import { loadStripe } from "@stripe/stripe-js";
@@ -177,16 +178,28 @@ function StripePaymentModal({
           {/* Mini resumen de productos */}
           <div className="mt-4 bg-white/10 rounded-2xl px-4 py-3 space-y-1.5">
             {productos.slice(0, 3).map((p, i) => {
-              const unit = Number(p.precioUnitario || p.precio || 0);
-              const cant = Number(p.cantidad || 1);
-              return (
-                <div key={i} className="flex justify-between text-sm text-white/90">
-                  <span className="truncate mr-2">
-                    {p.nombre} <span className="opacity-60">x{cant}</span>
-                  </span>
-                  <span className="font-semibold shrink-0">${(unit * cant).toFixed(2)}</span>
-                </div>
-              );
+            const basePrice = Number(p.precioBase || p.precio || 0);
+            const discount = Number(p.descuento || 0);
+            const hasDiscount = !isNaN(discount) && discount > 0 && discount < 100;
+            const fakeOldPrice = hasDiscount
+              ? (Math.round((basePrice / (1 - discount / 100)) * 100) / 100).toFixed(2)
+              : null;
+            const finalPrice = basePrice;
+            const cant = Number(p.cantidad || 1);
+            return (
+              <div key={i} className="flex justify-between text-sm text-white/90 items-center">
+                <span className="truncate mr-2">{p.nombre} <span className="opacity-60">x{cant}</span></span>
+                <span className="font-semibold shrink-0 flex items-center gap-2">
+                  {hasDiscount && (
+                    <span className="text-xs line-through text-slate-400">${fakeOldPrice}</span>
+                  )}
+                  <span className="text-white font-bold">${finalPrice.toFixed(2)}</span>
+                  {hasDiscount && (
+                    <span className="text-[10px] bg-red-500 text-white px-1.5 py-0.5 rounded-full">-{discount}%</span>
+                  )}
+                </span>
+              </div>
+            );
             })}
             {productos.length > 3 && (
               <p className="text-xs text-purple-200">+{productos.length - 3} producto(s) mas...</p>
@@ -294,22 +307,40 @@ function ProformaView({
                 </tr>
               </thead>
               <tbody>
-                {orden.productos.map((p: any, i: number) => (
-                  <tr key={i} className="border-b border-slate-100 dark:border-slate-800">
-                    <td className="py-3 pr-4 font-medium">{p.nombre}</td>
-                    <td className="py-3 text-center">{p.cantidad}</td>
-                    <td className="py-3 text-right">
-                      {p.descuento > 0 && (
-                        <span className="text-xs line-through text-slate-400 mr-1">${Number(p.precioBase).toFixed(2)}</span>
-                      )}
-                      <span className="text-purple-700 dark:text-purple-300 font-semibold">${Number(p.precioUnitario).toFixed(2)}</span>
-                      {p.descuento > 0 && (
-                        <span className="ml-1 text-xs text-red-600 bg-red-100 dark:bg-red-900/40 px-1.5 py-0.5 rounded-full">-{p.descuento}%</span>
-                      )}
-                    </td>
-                    <td className="py-3 text-right font-bold">${Number(p.subtotal).toFixed(2)}</td>
-                  </tr>
-                ))}
+                {orden.productos.map((p: any, i: number) => {
+                  // ... dentro de orden.productos.map en ProformaView
+                  const basePrice = Number(p.precioBase || p.precio || 0);
+                  const discount = Number(p.descuento || 0);
+                  const hasDiscount = !isNaN(discount) && discount > 0 && discount < 100;
+                  const fakeOldPrice = hasDiscount
+                    ? (Math.round((basePrice / (1 - discount / 100)) * 100) / 100)
+                    : null;
+                  const finalPrice = basePrice;
+                  return (
+                    <tr key={i} className="border-b border-slate-100 dark:border-slate-800">
+                      <td className="py-3 pr-4 font-medium">{p.nombre}</td>
+                      <td className="py-3 text-center">{p.cantidad}</td>
+                      <td className="py-3 text-right">
+                        {hasDiscount && (
+                          <span className="text-xs line-through text-slate-400 mr-1">
+                            ${fakeOldPrice?.toFixed(2)}
+                          </span>
+                        )}
+                        <span className="text-purple-700 dark:text-purple-300 font-semibold">
+                          ${finalPrice.toFixed(2)}
+                        </span>
+                        {hasDiscount && (
+                          <span className="ml-1 text-xs text-red-600 bg-red-100 dark:bg-red-900/40 px-1.5 py-0.5 rounded-full">
+                            -{discount}%
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-3 text-right font-bold">
+                        ${(finalPrice * Number(p.cantidad || 1)).toFixed(2)}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
             </div>
@@ -365,26 +396,29 @@ export default function CartPage() {
   const [stripeClientSecret, setStripeClientSecret] = useState<string | null>(null);
   const [stripeOrderId, setStripeOrderId] = useState<string>("");
   const [stripeLoading, setStripeLoading] = useState(false);
-  const [stripeDiag, setStripeDiag] = useState<string | null>(null);
   const router = useRouter();
   const todayStr = new Date().toISOString().split("T")[0];
 
-  const calcularPrecioUnitario = (p: any) => {
-    const basePrice = Number(p.precio || 0);
+  // Unify price logic for all calculations (matches ProductoCard, proforma, etc)
+  const calcularPrecioData = (p: any) => {
+    const basePrice = Number(p.precioBase || p.precio || 0);
     const discount = Number(p.descuento || 0);
     const hasDiscount = !isNaN(discount) && discount > 0 && discount < 100;
-    return hasDiscount ? basePrice * (1 - discount / 100) : basePrice;
+    const fakeOldPrice = hasDiscount
+      ? Math.round((basePrice / (1 - discount / 100)) * 100) / 100
+      : basePrice;
+    const finalPrice = basePrice;
+    return { basePrice, discount, hasDiscount, fakeOldPrice, finalPrice };
   };
 
-  // FLUJO 1: Generar Orden (proforma)
   const handleVerProforma = async () => {
     setError("");
     if (!visitDate || !visitTime) {
-      setError("Selecciona el dia y la hora aproximada en que iras al local.");
+      setError("Selecciona el día y la hora aproximada en que irás al local.");
       return;
     }
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setError("Ingresa un correo electronico valido para recibir la proforma.");
+      setError("Ingresa un correo electrónico válido para recibir la proforma.");
       return;
     }
     for (const p of carrito) {
@@ -430,7 +464,6 @@ export default function CartPage() {
     setLoading(false);
   };
 
-  // FLUJO 2: Pago virtual (Stripe)
   const handleIniciarPago = async () => {
     setError("");
     if (!visitDate || !visitTime) {
@@ -438,7 +471,7 @@ export default function CartPage() {
       return;
     }
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setError("Ingresa un correo valido para recibir el comprobante de pago.");
+      setError("Ingresa un correo válido para recibir el comprobante de pago.");
       return;
     }
     for (const p of carrito) {
@@ -475,43 +508,20 @@ export default function CartPage() {
     router.push(`/order-confirmation?orderId=${stripeOrderId}&paid=true`);
   }, [carrito, removeCarrito, router, stripeOrderId]);
 
-  // Calcular totales (mover antes del useEffect para evitar "Cannot access 'total' before initialization")
-  const subtotal = carrito.reduce((sum, p) => sum + calcularPrecioUnitario(p) * (p.cantidad || 1), 0);
+  const subtotal = carrito.reduce((sum, p) => {
+    const { finalPrice } = calcularPrecioData(p);
+    return sum + finalPrice * (p.cantidad || 1);
+  }, 0);
   const total = subtotal;
-
-  // Diagnostic: check PaymentRequest.canMakePayment to see available wallets (Apple Pay / Google Pay)
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        const stripe = await stripePromise;
-        if (!stripe) {
-          if (mounted) setStripeDiag("stripe.js not loaded");
-          return;
-        }
-        // Use a small total for the check; amount must be integer cents
-        const amount = Math.max(100, Math.round((total || 1) * 100));
-        const pr = stripe.paymentRequest({ country: "US", currency: "usd", total: { label: "Total", amount } });
-        const can = await pr.canMakePayment();
-        if (!mounted) return;
-        if (!can) setStripeDiag("PaymentRequest.canMakePayment returned null/false — Apple/Google Pay not available on this device or domain not verified.");
-        else if ((can as any).applePay) setStripeDiag("Apple Pay available: true");
-        else if ((can as any).googlePay) setStripeDiag("Google Pay available: true");
-        else setStripeDiag(JSON.stringify(can));
-      } catch (err: any) {
-        console.error("stripe diag error", err);
-        if (mounted) setStripeDiag(String(err?.message || err));
-      }
-    })();
-    return () => { mounted = false; };
-  }, [stripePromise, total]);
 
   const handleCantidad = (id: string, cantidad: number) => {
     if (cantidad < 1) return;
     const prod = carrito.find((p) => p.id === id);
     if (prod) {
       if (cantidad > prod.stock) {
-        setError(`Solo hay ${prod.stock} unidades disponibles en stock de "${prod.nombre}".`);
+        setError(
+          `Solo hay ${prod.stock} unidades disponibles en stock de "${prod.nombre}".`
+        );
         return;
       }
       setError("");
@@ -520,9 +530,6 @@ export default function CartPage() {
     }
   };
 
-  
-
-  // Vista: Proforma
   if (step === "proforma" && ordenCreada) {
     return (
       <ProformaView
@@ -535,9 +542,34 @@ export default function CartPage() {
     );
   }
 
+  // ── Carrito vacío ───────────────────────────────────────────────────────────
+  const EmptyCart = () => (
+    <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
+      <div className="w-20 h-20 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+        <span className="material-icons-round text-4xl text-slate-400 dark:text-slate-500">
+          shopping_bag
+        </span>
+      </div>
+      <div>
+        <h3 className="text-lg font-semibold text-slate-700 dark:text-white">
+          Tu carrito está vacío
+        </h3>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+          Agrega productos para continuar
+        </p>
+      </div>
+      <a
+        href="/products-by-category"
+        className="mt-2 inline-flex items-center gap-2 bg-purple-700 hover:bg-purple-800 text-white font-semibold px-6 py-2.5 rounded-xl transition-colors shadow"
+      >
+        <span className="material-icons-round text-base">storefront</span>
+        Ver productos
+      </a>
+    </div>
+  );
+
   return (
     <>
-      {/* Modal de pago Stripe */}
       {stripeClientSecret && (
         <StripePaymentModal
           clientSecret={stripeClientSecret}
@@ -550,271 +582,325 @@ export default function CartPage() {
         />
       )}
 
-      <div className="min-h-screen flex flex-col bg-white dark:bg-[#3a1859] text-slate-900 dark:text-white transition-colors">
-        <main className="max-w-6xl mx-auto px-4 py-8 lg:px-6 flex-1">
-          <h1 className="text-3xl font-bold mb-8 text-[#3a1859] dark:text-white">Carrito de compras</h1>
-          <div className="mb-4 p-3 bg-yellow-100 text-yellow-800 rounded-lg border border-yellow-300 text-sm">
-            Si quieres tener una mejor experiencia de compra,{" "}
-            <a href="/login?tab=register" className="underline font-semibold">registrate e inicia sesion</a>.
+      <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-900 dark:text-white transition-colors">
+        <main className="max-w-6xl mx-auto px-3 sm:px-6 py-6 sm:py-10">
+
+          {/* Cabecera */}
+          <div className="flex items-center gap-3 mb-6">
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-800 dark:text-white">
+              Carrito
+            </h1>
+            {carrito.length > 0 && (
+              <span className="bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 text-xs font-bold px-2.5 py-1 rounded-full">
+                {carrito.length} {carrito.length === 1 ? "producto" : "productos"}
+              </span>
+            )}
           </div>
+
+          {/* Banner login */}
+          <div className="flex items-start gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 text-amber-800 dark:text-amber-300 rounded-xl px-4 py-3 text-sm mb-6">
+            <span className="material-icons-round text-base mt-0.5 flex-shrink-0">info</span>
+            <span>
+              ¿Quieres guardar tu carrito y tener mejor experiencia?{" "}
+              <a
+                href="/login?tab=register"
+                className="underline font-semibold hover:text-amber-600 transition-colors"
+              >
+                Regístrate e inicia sesión
+              </a>
+            </span>
+          </div>
+
+          {/* Error global */}
           {error && (
-            <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg border border-red-300">{error}</div>
+            <div className="flex items-start gap-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 text-red-700 dark:text-red-400 rounded-xl px-4 py-3 text-sm mb-6">
+              <span className="material-icons-round text-base mt-0.5 flex-shrink-0">error_outline</span>
+              {error}
+            </div>
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Lista de productos */}
-            <div className="lg:col-span-2">
-              {carrito.length === 0 ? (
-                <div className="text-center py-12">
-                  <span className="material-icons-round text-6xl opacity-30 text-[#3a1859] dark:text-white">shopping_bag</span>
-                  <h3 className="text-xl font-semibold mt-4 text-[#3a1859] dark:text-white">Carrito vacio</h3>
-                  <a href="/products-by-category" className="inline-block mt-4 px-6 py-2 bg-accent text-white rounded-lg">
-                    Continuar comprando
-                  </a>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {carrito.map((p) => {
-                    const unit = calcularPrecioUnitario(p);
-                    const base = Number(p.precio || 0);
-                    const discount = Number(p.descuento || 0);
-                    const hasDiscount = !isNaN(discount) && discount > 0 && discount < 100;
-                    const lineTotal = unit * (p.cantidad || 1);
-                    return (
-                      <div key={p.id} className="flex flex-col sm:flex-row items-start sm:items-center gap-4 bg-white dark:bg-slate-800 rounded-xl shadow p-4">
+          {carrito.length === 0 ? (
+            <EmptyCart />
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+
+              {/* ── Lista de productos ─────────────────────────────────── */}
+              <div className="lg:col-span-2 space-y-3">
+                {carrito.map((p) => {
+                  const { basePrice, discount, hasDiscount, fakeOldPrice, finalPrice } = calcularPrecioData(p);
+                  const lineTotal = finalPrice * (p.cantidad || 1);
+
+                  return (
+                    <div
+                      key={p.id}
+                      className="bg-white dark:bg-slate-800/70 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm p-4 flex gap-3 sm:gap-4 items-start"
+                    >
+                      {/* Imagen */}
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0 rounded-xl overflow-hidden bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 flex items-center justify-center">
                         <img
                           src={p.imagenes?.[0] || "/no-image.png"}
                           alt={p.nombre}
-                          className="w-20 h-20 sm:w-24 sm:h-24 object-contain rounded-lg border flex-shrink-0"
+                          className="w-full h-full object-contain"
                         />
-                        <div className="flex-1 min-w-0">
-                          <div className="font-bold text-lg">{p.nombre}</div>
-                          <div className="flex items-baseline gap-2 text-slate-500 dark:text-slate-300">
-                            {hasDiscount ? (
-                              <>
-                                <span className="text-xs line-through text-slate-400">${base.toFixed(2)}</span>
-                                <span className="text-sm font-semibold text-purple-700 dark:text-purple-300">${unit.toFixed(2)} c/u</span>
-                                <span className="text-xs font-bold text-red-600 bg-red-100 dark:bg-red-900/40 px-2 py-0.5 rounded-full">
-                                  -{discount}%
-                                </span>
-                              </>
-                            ) : (
-                              <span className="text-sm font-semibold text-purple-700 dark:text-purple-300">${unit.toFixed(2)} c/u</span>
-                            )}
-                          </div>
-                          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mt-2">
-                            <label className="text-sm">Cantidad:</label>
-                            <input
-                              type="number"
-                              min={1}
-                              value={p.cantidad || 1}
-                              onChange={(e) => handleCantidad(p.id, Number(e.target.value))}
-                              className="w-16 sm:w-20 px-2 py-1 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
-                            />
-                            <button className="ml-2 text-red-600 hover:text-red-800" onClick={() => removeCarrito(p.id)}>
-                              <span className="material-icons-round">delete</span>
+                      </div>
+
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm sm:text-base leading-tight line-clamp-2">
+                          {p.nombre}
+                        </p>
+
+                        {/* Precio */}
+                        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                          {hasDiscount && (
+                            <span className="text-xs text-slate-400 line-through">
+                              ${fakeOldPrice.toFixed(2)}
+                            </span>
+                          )}
+                          <span className="text-sm font-bold text-purple-700 dark:text-purple-300">
+                            ${finalPrice.toFixed(2)}
+                          </span>
+                          {hasDiscount && (
+                            <span className="text-[10px] font-bold bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded-full">
+                              -{discount}%
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Cantidad */}
+                        <div className="flex items-center gap-2 mt-2.5 flex-wrap">
+                          <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-900 rounded-lg p-0.5">
+                            <button
+                              onClick={() => handleCantidad(p.id, (p.cantidad || 1) - 1)}
+                              className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-white dark:hover:bg-slate-700 transition-colors text-slate-600 dark:text-slate-300 font-bold text-base"
+                            >
+                              −
+                            </button>
+                            <span className="w-7 text-center text-sm font-semibold">
+                              {p.cantidad || 1}
+                            </span>
+                            <button
+                              onClick={() => handleCantidad(p.id, (p.cantidad || 1) + 1)}
+                              className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-white dark:hover:bg-slate-700 transition-colors text-slate-600 dark:text-slate-300 font-bold text-base"
+                            >
+                              +
                             </button>
                           </div>
+                          <span className="text-xs text-slate-400">
+                            {p.stock} en stock
+                          </span>
                         </div>
-                        <div className="font-bold text-lg text-right min-w-[4.5rem] mt-3 sm:mt-0">${lineTotal.toFixed(2)}</div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            {/* Sidebar: Resumen + checkout */}
-            <div className="lg:col-span-1">
-              <div className="rounded-2xl p-6 md:sticky md:top-20 relative bg-white text-slate-900 dark:bg-[#1e0a3c] dark:text-white shadow-xl border border-slate-100 dark:border-purple-900/50">
-                <h2 className="text-lg font-bold mb-4">Resumen</h2>
-                <div className="space-y-3 border-b border-slate-200 dark:border-purple-900/50 pb-4 mb-4">
-                  <div className="flex justify-between text-sm">
-                    <span>Subtotal</span>
-                    <span>${subtotal.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>Envio</span>
-                    <span className="text-green-600 dark:text-green-400">Gratis</span>
-                  </div>
-                </div>
-                <div className="flex justify-between text-lg font-bold mb-6">
-                  <span>Total</span>
-                  <span>${total.toFixed(2)}</span>
-                </div>
-
-                {carrito.length > 0 && (
-                  <>
-                    {/* Selector de metodo de pago */}
-                    <div className="mb-5">
-                      <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Como deseas pagar?</p>
-                      <div className="grid grid-cols-2 gap-2.5">
-                        {/* Boton: Generar Orden */}
-                        <button
-                          onClick={() => setPayMode("order")}
-                          className={`relative flex flex-col items-center gap-1.5 py-3 px-2 rounded-2xl border-2 font-bold text-sm transition-all duration-200
-                            ${payMode === "order"
-                              ? "border-purple-600 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 shadow-md shadow-purple-200/50 dark:shadow-purple-900/30"
-                              : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:border-purple-400 hover:bg-purple-50/50 dark:hover:bg-purple-900/10"
-                            }`}
-                        >
-                          {payMode === "order" && (
-                            <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-purple-600 rounded-full flex items-center justify-center">
-                              <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                              </svg>
-                            </span>
-                          )}
-                          <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 013 8.125v11.75A2.25 2.25 0 005.25 22.1H10.5m0-18.375a2.25 2.25 0 014.5 0M3 15.75h3.75M3 12h3.75M3 18.75h3.75" />
-                          </svg>
-                          <span className="text-xs leading-tight text-center">Generar orden</span>
-                        </button>
-
-                        {/* Boton: Pago Virtual */}
-                        <button
-                          onClick={() => setPayMode("stripe")}
-                          className={`relative flex flex-col items-center gap-1.5 py-3 px-2 rounded-2xl border-2 font-bold text-sm transition-all duration-200
-                            ${payMode === "stripe"
-                              ? "border-transparent bg-gradient-to-br from-[#6d28d9] via-[#7c3aed] to-[#a855f7] text-white shadow-md shadow-purple-500/40"
-                              : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:border-purple-400 hover:bg-purple-50/50 dark:hover:bg-purple-900/10"
-                            }`}
-                        >
-                          {payMode === "stripe" && (
-                            <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-white rounded-full flex items-center justify-center">
-                              <svg className="w-2.5 h-2.5 text-purple-600" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                              </svg>
-                            </span>
-                          )}
-                          <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
-                          </svg>
-                          <span className="text-xs leading-tight text-center">Pago virtual</span>
-                        </button>
                       </div>
 
-                      {/* Indicadores de metodos aceptados (solo modo stripe) */}
-                      {payMode === "stripe" && (
-                        <div className="mt-2.5 flex flex-wrap gap-1 justify-center">
-                          {["Visa", "Mastercard", "Amex", "Link", "G Pay", "Apple Pay"].map((m) => (
-                            <span key={m} className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
-                              {m}
-                            </span>
-                          ))}
-                        </div>
-                      )}
+                      {/* Precio total + eliminar */}
+                      <div className="flex flex-col items-end justify-between h-full gap-3 flex-shrink-0">
+                        <span className="font-bold text-sm sm:text-base">
+                          ${lineTotal.toFixed(2)}
+                        </span>
+                        <button
+                          onClick={() => removeCarrito(p.id)}
+                          className="text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+                          title="Eliminar"
+                        >
+                          <span className="material-icons-round text-xl">delete_outline</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* Link continuar comprando */}
+                <a
+                  href="/products-by-category"
+                  className="inline-flex items-center gap-1.5 text-sm text-purple-600 dark:text-purple-400 hover:underline mt-1"
+                >
+                  <span className="material-icons-round text-base">arrow_back</span>
+                  Continuar comprando
+                </a>
+              </div>
+
+              {/* ── Sidebar resumen ────────────────────────────────────── */}
+              <div className="lg:col-span-1">
+                <div className="bg-white dark:bg-[#1e0a3c] rounded-2xl border border-slate-100 dark:border-purple-900/40 shadow-md p-5 md:sticky md:top-20 space-y-4">
+
+                  {/* Resumen de precios */}
+                  <div>
+                    <p className="text-base font-bold mb-3">Resumen del pedido</p>
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between text-sm text-slate-500 dark:text-slate-400">
+                        <span>
+                          Subtotal ({carrito.reduce((n, p) => n + (p.cantidad || 1), 0)} items)
+                        </span>
+                        <span>${subtotal.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm text-slate-500 dark:text-slate-400">
+                        <span>Envío</span>
+                        <span className="text-green-600 dark:text-green-400 font-medium">
+                          Gratis
+                        </span>
+                      </div>
+                    </div>
+                    <div className="border-t border-slate-100 dark:border-purple-900/40 mt-3 pt-3 flex justify-between font-bold text-base">
+                      <span>Total</span>
+                      <span className="text-purple-700 dark:text-purple-300">
+                        ${total.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Selector de método de pago */}
+                  <div>
+                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
+                      ¿Cómo deseas pagar?
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => setPayMode("order")}
+                        className={`relative flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border-2 text-xs font-semibold transition-all ${
+                          payMode === "order"
+                            ? "border-purple-600 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300"
+                            : "border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:border-purple-300"
+                        }`}
+                      >
+                        {payMode === "order" && (
+                          <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-purple-600 rounded-full flex items-center justify-center">
+                            <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                          </span>
+                        )}
+                        <span className="material-icons-round text-lg">description</span>
+                        Generar orden
+                      </button>
+
+                      <button
+                        onClick={() => setPayMode("stripe")}
+                        className={`relative flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border-2 text-xs font-semibold transition-all ${
+                          payMode === "stripe"
+                            ? "border-transparent bg-purple-700 text-white"
+                            : "border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:border-purple-300"
+                        }`}
+                      >
+                        {payMode === "stripe" && (
+                          <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-white rounded-full flex items-center justify-center">
+                            <svg className="w-2.5 h-2.5 text-purple-600" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                          </span>
+                        )}
+                        <span className="material-icons-round text-lg">credit_card</span>
+                        Pago virtual
+                      </button>
                     </div>
 
-                    {/* Campos del modo seleccionado */}
-                    <div className="space-y-3 mb-4 text-sm">
-                      {(payMode === "order" || payMode === "stripe") && (
+                    {payMode === "stripe" && (
+                      <div className="mt-2 flex flex-wrap gap-1 justify-center">
+                        {["Visa", "Mastercard", "Amex", "G Pay", "Apple Pay"].map((m) => (
+                          <span
+                            key={m}
+                            className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700"
+                          >
+                            {m}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Campos del formulario */}
+                  <div className="space-y-3">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                        Día de visita al local
+                      </label>
+                      <input
+                        type="date"
+                        min={todayStr}
+                        value={visitDate}
+                        onChange={(e) => setVisitDate(e.target.value)}
+                        className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-400"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                        Hora aproximada de visita
+                      </label>
+                      <input
+                        type="time"
+                        value={visitTime}
+                        onChange={(e) => setVisitTime(e.target.value)}
+                        className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-400"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                        Correo electrónico
+                      </label>
+                      <input
+                        type="email"
+                        placeholder="tu@correo.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-400"
+                      />
+                      <p className="text-[11px] text-slate-400 dark:text-slate-500">
+                        {payMode === "order"
+                          ? "Recibirás la proforma en este correo."
+                          : "Recibirás el comprobante de pago aquí."}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Botón de acción */}
+                  {payMode === "order" ? (
+                    <button
+                      onClick={handleVerProforma}
+                      disabled={loading || !visitDate || !visitTime || !email}
+                      className="w-full flex items-center justify-center gap-2 py-3.5 px-6 bg-purple-700 hover:bg-purple-800 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-sm rounded-xl transition-colors shadow-md"
+                    >
+                      {loading ? (
                         <>
-                          <div className="flex flex-col gap-1">
-                            <label className="font-semibold">Dia de visita al local</label>
-                            <input
-                              type="date"
-                              min={todayStr}
-                              value={visitDate}
-                              onChange={(e) => setVisitDate(e.target.value)}
-                              className="w-full px-3 py-2 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
-                            />
-                          </div>
-                          <div className="flex flex-col gap-1">
-                            <label className="font-semibold">Hora aproximada de visita</label>
-                            <input
-                              type="time"
-                              value={visitTime}
-                              onChange={(e) => setVisitTime(e.target.value)}
-                              className="w-full px-3 py-2 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
-                            />
-                          </div>
+                          <Loading3DIcon />
+                          <span className="ml-2">Generando...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="material-icons-round text-base">description</span>
+                          Generar orden
                         </>
                       )}
-                      <div className="flex flex-col gap-1">
-                        <label className="font-semibold">Correo electronico</label>
-                        <input
-                          type="email"
-                          placeholder="tu@correo.com"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          className="w-full px-3 py-2 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
-                        />
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                          {payMode === "order"
-                            ? "Recibiras la proforma en este correo."
-                            : "Recibiras el comprobante de pago aqui."}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Boton de accion principal */}
-                      {payMode === "order" ? (
-                      <button
-                        className="w-full flex items-center justify-center gap-2 px-6 py-4 mt-2 text-base bg-[#3a1859] hover:bg-[#2d1244] text-white font-extrabold rounded-2xl shadow-lg border-2 border-purple-900 transition-all duration-200 disabled:opacity-60"
-                        onClick={handleVerProforma}
-                        disabled={loading || !visitDate || !visitTime || !email}
-                      >
-                        {loading ? (
-                          <>
-                            <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-                            </svg>
-                            Generando...
-                          </>
-                        ) : (
-                          <>
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 013 8.125v11.75A2.25 2.25 0 005.25 22.1H10.5m0-18.375a2.25 2.25 0 014.5 0M3 15.75h3.75M3 12h3.75M3 18.75h3.75" />
-                            </svg>
-                            Generar orden
-                          </>
-                        )}
-                      </button>
-                    ) : (
-                      <button
-                        className="w-full flex items-center justify-center gap-2 px-6 py-4 mt-2 text-base font-extrabold rounded-2xl shadow-xl
-                          bg-gradient-to-r from-[#6d28d9] via-[#7c3aed] to-[#a855f7]
-                          hover:from-[#5b21b6] hover:via-[#6d28d9] hover:to-[#9333ea]
-                          text-white border-0 transition-all duration-200 disabled:opacity-60
-                          active:scale-[0.98]"
-                        onClick={handleIniciarPago}
-                        disabled={stripeLoading || !email || !visitDate || !visitTime}
-                      >
-                        {stripeLoading ? (
-                          <>
-                            <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-                            </svg>
-                            Preparando pago...
-                          </>
-                        ) : (
-                          <>
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
-                            </svg>
-                            Ir al pago  ${total.toFixed(2)}
-                          </>
-                        )}
-                      </button>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleIniciarPago}
+                      disabled={stripeLoading || !email || !visitDate || !visitTime}
+                      className="w-full flex items-center justify-center gap-2 py-3.5 px-6 bg-gradient-to-r from-purple-700 via-purple-600 to-violet-500 hover:from-purple-800 hover:to-violet-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-sm rounded-xl transition-all shadow-md active:scale-[0.98]"
+                    >
+                      {stripeLoading ? (
+                        <>
+                          <Loading3DIcon />
+                          <span className="ml-2">Preparando pago...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="material-icons-round text-base">lock</span>
+                          Ir al pago · ${total.toFixed(2)}
+                        </>
                       )}
-                  </>
-                )}
+                    </button>
+                  )}
 
-                {/* Diagnostic info for PaymentRequest availability (for Apple Pay / Google Pay) */}
-                {stripeDiag && (
-                  <div className="mt-4 p-3 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-sm text-slate-700 dark:text-slate-200">
-                    <strong className="block text-xs font-semibold mb-1">Stripe paymentRequest diagnosis</strong>
-                    <div className="break-words text-xs">{stripeDiag}</div>
-                    <div className="text-xs text-slate-400 mt-2">Si ves "PaymentRequest.canMakePayment returned null" puede ser por dominio no verificado, Safari/Wallet no configurado, o falta de HTTPS.</div>
+                  {/* Sello de seguridad */}
+                  <div className="flex items-center justify-center gap-1.5 text-slate-400 dark:text-slate-500">
+                    <span className="material-icons-round text-sm">lock</span>
+                    <span className="text-[11px]">Pago seguro y encriptado</span>
                   </div>
-                )}
 
+                </div>
               </div>
+
             </div>
-          </div>
+          )}
         </main>
       </div>
     </>

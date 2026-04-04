@@ -4,7 +4,7 @@ import Link from "next/link";
 
 export default function PaymentSuccessPage() {
 	return (
-		<div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-green-100 via-white to-purple-100 dark:from-[#1e293b] dark:via-[#3a1859] dark:to-[#1e293b] transition-colors">
+		<div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-green-100 via-white to-purple-100 dark:from-[#1e293b] dark:via-[#3a1859] dark:to-[#1e293b] transition-colors py-6 sm:py-15">
 			<div className="bg-white dark:bg-[#3a1859] rounded-3xl shadow-2xl p-10 flex flex-col items-center max-w-md w-full border-2 border-green-400">
 				<span className="material-icons-round text-green-500 text-7xl mb-4 animate-bounce">check_circle</span>
 				<h1 className="text-3xl font-extrabold mb-2 text-green-700 dark:text-green-300 text-center">¡Pago realizado con éxito!</h1>

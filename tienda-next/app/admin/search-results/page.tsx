@@ -42,7 +42,7 @@ export default function SearchResultsPage() {
   return (
     <div style={{ background: 'var(--bg)', color: 'var(--text)' }} className="min-h-screen flex flex-col mt-2">
       <CategoriesBar />
-      <main className="px-4 lg:px-6 py-8 flex-1">
+      <main className="px-4 lg:px-6 py-6 sm:py-12 flex-1">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 mb-6">
           <a href="/" className="text-sm text-slate-500 dark:text-white hover:text-accent">Inicio</a>

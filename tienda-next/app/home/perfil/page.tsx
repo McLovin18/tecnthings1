@@ -96,7 +96,7 @@ export default function PerfilPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-white dark:bg-[#3a1859] text-slate-900 dark:text-white transition-colors px-4 py-8">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-white dark:bg-black text-slate-900 dark:text-white transition-colors px-4 py-8">
       <h1 className="text-3xl font-bold mb-6 text-[#3a1859] dark:text-white">Mi perfil</h1>
       <div className="bg-white dark:bg-[#4b267a] rounded-xl shadow-lg p-8 flex flex-col items-center w-full max-w-md">
         {/* Foto de perfil */}

@@ -25,7 +25,7 @@ export default function BottomBar({ role = "client" }) {
   // Si hay más de 4 opciones, scroll horizontal
   const items = role === "admin" ? adminItems : clientItems;
   return (
-    <nav className="lg:hidden fixed bottom-0 left-0 w-full bg-white dark:bg-[#2a1040] border-t border-slate-200 dark:border-slate-700 flex overflow-x-auto z-50">
+    <nav className="lg:hidden fixed bottom-0 left-0 w-full bg-white dark:bg-black border-t border-slate-200 dark:border-slate-700 flex overflow-x-auto z-50">
       <ul className="flex w-full justify-between items-center">
         {items.map((item) => (
           <li key={item.path} className="flex-1">

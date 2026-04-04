@@ -46,8 +46,8 @@ export async function crearOrden(orden: any) {
     const basePrice = Number(data.precio || 0);
     const discount = Number(data.descuento || 0);
     const hasDiscount = !isNaN(discount) && discount > 0 && discount < 100;
-    const unitPrice = hasDiscount ? basePrice * (1 - discount / 100) : basePrice;
     const cantidad = Number(item.cantidad || 1);
+    const unitPrice = basePrice; // SIEMPRE el precio base, nunca aplicar descuento real
     const lineTotal = unitPrice * cantidad;
 
     total += lineTotal;

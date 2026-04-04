@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
+import { Loading3DIcon } from "../../components/Loading3DIcon";
 import { useUser } from "../../context/UserContext";
 import { obtenerOrdenesPorUsuario } from "../../lib/ordenes-db";
 
@@ -49,19 +50,21 @@ export default function OrdenesPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center bg-white dark:bg-[#3a1859] text-slate-900 dark:text-white transition-colors py-8">
+    <div className="min-h-screen flex flex-col items-center bg-white dark:bg-black text-slate-900 dark:text-white transition-colors px-5 py-6 sm:py-15">
       <h1 className="text-3xl font-bold mb-4 text-[#3a1859] dark:text-white">Mis órdenes</h1>
       <div className="w-full max-w-2xl mb-6 text-sm bg-blue-50 dark:bg-slate-800 border border-blue-200 dark:border-slate-600 text-slate-700 dark:text-slate-100 rounded-lg p-3">
         Para completar tu compra, acércate al local con el PDF de tu orden (ID como <span className="font-mono">ord-00001</span>). El equipo validará tu orden en el sistema y la marcará como <span className="font-semibold">aprobada</span> una vez realizado el pago.
       </div>
       {loading ? (
-        <div className="text-lg text-[#3a1859] dark:text-white/80">Cargando órdenes...</div>
+        <div className="flex items-center justify-center py-24">
+          <Loading3DIcon type="box" />
+        </div>
       ) : ordenes.length === 0 ? (
         <div className="text-lg text-[#3a1859] dark:text-white/80">No tienes órdenes registradas.</div>
       ) : (
         <div className="w-full max-w-2xl space-y-6">
           {ordenes.map((orden) => (
-            <div key={orden.id} className="bg-white dark:bg-slate-800 rounded-xl shadow p-4 border">
+            <div key={orden.id} className="bg-white dark:bg-black rounded-xl shadow p-4 border">
               <div className="flex justify-between items-center mb-2">
                 <div className="font-bold text-lg">Orden {orden.orderId || `#${orden.id.slice(-6)}`}</div>
                 <span className={`text-sm px-2 py-1 rounded font-semibold ${

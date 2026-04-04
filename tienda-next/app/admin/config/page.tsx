@@ -21,7 +21,7 @@ export default function ConfigPage() {
   const colors = themes[theme];
 
   return (
-    <div className="p-8 max-w-xl mx-auto">
+    <div className="px-6 py-6 sm:py-12 max-w-xl mx-auto">
       <h1 className="text-2xl font-bold mb-4">Configuración</h1>
       <div className="mb-8">
         <h2 className="text-lg font-semibold mb-2">Tema</h2>
