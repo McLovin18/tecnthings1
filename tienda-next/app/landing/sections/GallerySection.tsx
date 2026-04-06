@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import ThemeToggle from "@/app/components/ThemeToggle";
+import React, { useEffect, useState, useCallback } from "react";
 import type {
   LandingSectionStyles,
   LandingFieldStyle,
@@ -14,6 +15,15 @@ export type GallerySectionProps = {
   fieldStyles?: Record<string, LandingFieldStyle>;
 };
 
+// Cuántas columnas mostrar según breakpoint
+function getColumns(width: number, total: number): number {
+  if (width < 480) return 2;
+  if (width < 768) return 3;
+  if (width < 1024) return 3;
+  if (width < 1280) return 4;
+  return Math.min(5, total); // máximo 5 en desktop, nunca más que el total
+}
+
 export default function GallerySection({
   title,
   images = [],
@@ -21,184 +31,288 @@ export default function GallerySection({
   styles,
   fieldStyles,
 }: GallerySectionProps) {
-  const paddingTop = styles?.paddingTop || "3rem";
-  const paddingBottom = styles?.paddingBottom || "3rem";
+  const paddingTop = styles?.paddingTop || "3.5rem";
+  const paddingBottom = styles?.paddingBottom || "3.5rem";
 
-  // Normalizar datos: si vienen items nuevos los usamos, si no
-  // caemos al array antiguo de imágenes.
   const galleryItems = (
     items && items.length
       ? items
       : images.map((src) => ({ title: "", image: src }))
   ) as { title?: string; image?: string }[];
 
-  // ── Hooks SIEMPRE arriba, antes de cualquier return condicional ──
+  // ── State ──
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [itemsPerView, setItemsPerView] = useState(4);
+  const [cols, setCols] = useState(4);
   const [isPaused, setIsPaused] = useState(false);
+  const [animDir, setAnimDir] = useState<"left" | "right">("right");
+  const [isAnimating, setIsAnimating] = useState(false);
 
+  // ── Responsive columns ──
   useEffect(() => {
-    const updateItemsPerView = () => {
+    const update = () => {
       if (typeof window === "undefined") return;
-      const width = window.innerWidth;
-      if (width < 640) setItemsPerView(1);
-      else if (width < 1024) setItemsPerView(3);
-      else setItemsPerView(5);
+      setCols(getColumns(window.innerWidth, galleryItems.length));
     };
-    updateItemsPerView();
-    window.addEventListener("resize", updateItemsPerView);
-    return () => window.removeEventListener("resize", updateItemsPerView);
-  }, []);
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, [galleryItems.length]);
 
-  const effectiveItemsPerView = Math.min(itemsPerView, galleryItems.length);
-  const hasCarousel = galleryItems.length > effectiveItemsPerView;
+  const effectiveCols = Math.min(cols, galleryItems.length);
+  const needsCarousel = galleryItems.length > effectiveCols;
+  const totalSlides = needsCarousel ? galleryItems.length : 1;
 
+  // ── Autoplay ──
   useEffect(() => {
-    if (!hasCarousel || isPaused) return;
+    if (!needsCarousel || isPaused) return;
     const id = setInterval(() => {
+      setAnimDir("right");
       setCurrentIndex((prev) => (prev + 1) % galleryItems.length);
-    }, 3000);
+    }, 3500);
     return () => clearInterval(id);
-  }, [hasCarousel, galleryItems.length, isPaused]);
+  }, [needsCarousel, galleryItems.length, isPaused]);
 
-  // ── Return condicional DESPUÉS de todos los hooks ──
+  // ── Navegación con animación ──
+  const navigate = useCallback(
+    (dir: "left" | "right") => {
+      if (!needsCarousel || isAnimating) return;
+      setAnimDir(dir);
+      setIsAnimating(true);
+      setTimeout(() => setIsAnimating(false), 300);
+      setCurrentIndex((prev) =>
+        dir === "right"
+          ? (prev + 1) % galleryItems.length
+          : (prev - 1 + galleryItems.length) % galleryItems.length
+      );
+    },
+    [needsCarousel, isAnimating, galleryItems.length]
+  );
+
   if (!galleryItems.length) return null;
 
-  const getVisibleItems = () => {
-    const count = hasCarousel ? effectiveItemsPerView : galleryItems.length;
-    const slice: typeof galleryItems = [];
-    for (let i = 0; i < count; i++) {
-      const idx = (currentIndex + i) % galleryItems.length;
-      slice.push(galleryItems[idx]);
-    }
-    return slice;
-  };
+  // ── Items visibles ──
+  const visibleItems: typeof galleryItems = [];
+  for (let i = 0; i < effectiveCols; i++) {
+    visibleItems.push(galleryItems[(currentIndex + i) % galleryItems.length]);
+  }
 
-  const visibleItems = getVisibleItems();
-  const isSingleVisible = effectiveItemsPerView === 1;
   const itemTitleStyle = fieldStyles?.itemTitle;
-
-  const handlePrev = () => {
-    if (!hasCarousel) return;
-    setCurrentIndex((prev) => (prev - 1 + galleryItems.length) % galleryItems.length);
-  };
-
-  const handleNext = () => {
-    if (!hasCarousel) return;
-    setCurrentIndex((prev) => (prev + 1) % galleryItems.length);
-  };
-
-  // Dots: cuántos "slides" posibles hay
-  const totalSlides = hasCarousel
-    ? galleryItems.length
-    : 1;
 
   return (
     <section
       style={{ paddingTop, paddingBottom }}
-      className="w-full max-w-full px-2 flex flex-col items-center overflow-x-hidden"
+      className="w-full px-4 sm:px-6 lg:px-8 flex flex-col items-center"
     >
-      {/* Título */}
+      {/* ── Título ── */}
       {title && (
-        <h2 className="text-3xl font-extrabold mb-8 text-center text-slate-900 dark:text-white tracking-tight">
-          {title}
-        </h2>
+        <div className="mb-10 text-center">
+          <h2
+            className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight"
+            style={{ color: "var(--text)" }}
+          >
+            {title}
+          </h2>
+          {/* Línea decorativa bajo el título */}
+          <div
+            className="mx-auto mt-3 h-1 w-16 rounded-full"
+            style={{ background: "var(--accent, #7c3aed)" }}
+          />
+        </div>
       )}
 
-      {/* Contenedor del carrusel */}
+      {/* ── Contenedor principal ── */}
       <div
-        className="w-full max-w-7xl mx-auto relative overflow-x-auto"
+        className="w-full max-w-7xl mx-auto relative"
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
-        style={{ WebkitOverflowScrolling: 'touch' }}
       >
         {/* Flecha izquierda */}
-        {hasCarousel && (
+        {needsCarousel && (
           <button
             type="button"
-            onClick={handlePrev}
+            onClick={() => navigate("left")}
             aria-label="Anterior"
-            className="absolute -left-4 md:-left-6 top-1/2 -translate-y-1/2 z-20 h-10 w-10 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-200 shadow-md hover:bg-purple-50 dark:hover:bg-purple-900/40 hover:border-purple-300 hover:scale-105 transition-all"
+            className="
+              absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 lg:-translate-x-6
+              z-20 h-10 w-10 rounded-full flex items-center justify-center
+              shadow-lg border transition-all duration-200
+              hover:scale-110 active:scale-95
+            "
+            style={{
+              background: "var(--cardBg, #fff)",
+              borderColor: "var(--border)",
+              color: "var(--text)",
+            }}
           >
-            <span className="material-icons-round text-[20px]">chevron_left</span>
+            <span className="material-icons-round" style={{ fontSize: 20 }}>chevron_left</span>
           </button>
         )}
 
         {/* Flecha derecha */}
-        {hasCarousel && (
+        {needsCarousel && (
           <button
             type="button"
-            onClick={handleNext}
+            onClick={() => navigate("right")}
             aria-label="Siguiente"
-            className="absolute -right-4 md:-right-6 top-1/2 -translate-y-1/2 z-20 h-10 w-10 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-200 shadow-md hover:bg-purple-50 dark:hover:bg-purple-900/40 hover:border-purple-300 hover:scale-105 transition-all"
+            className="
+              absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 lg:translate-x-6
+              z-20 h-10 w-10 rounded-full flex items-center justify-center
+              shadow-lg border transition-all duration-200
+              hover:scale-110 active:scale-95
+            "
+            style={{
+              background: "var(--cardBg, #fff)",
+              borderColor: "var(--border)",
+              color: "var(--text)",
+            }}
           >
-            <span className="material-icons-round text-[20px]">chevron_right</span>
+            <span className="material-icons-round" style={{ fontSize: 20 }}>chevron_right</span>
           </button>
         )}
 
-        {/* Grid / items visibles */}
+        {/* ── Grid de cards ── */}
         <div
-          className={
-            isSingleVisible
-              ? "flex justify-center w-full max-w-xs mx-auto"
-              : `grid gap-5 place-items-center w-full ${
-                  effectiveItemsPerView === 2
-                    ? "grid-cols-2"
-                    : effectiveItemsPerView === 3
-                    ? "grid-cols-3"
-                    : "grid-cols-2 md:grid-cols-3 lg:grid-cols-5"
-                }`
-          }
-          style={{ minWidth: 0 }}
+          className="grid gap-3 sm:gap-4 lg:gap-5 w-full"
+          style={{
+            gridTemplateColumns: `repeat(${effectiveCols}, minmax(0, 1fr))`,
+            // Animación de entrada según dirección
+            animation: isAnimating
+              ? `slideIn${animDir === "right" ? "Right" : "Left"} 0.28s ease`
+              : undefined,
+          }}
         >
           {visibleItems.map((item, idx) => (
-            <div
+            <GalleryCard
               key={`${currentIndex}-${idx}`}
-              className={`group flex flex-col items-center text-center transition-all duration-300 ${
-                isSingleVisible ? "w-full" : "w-full max-w-[220px] sm:max-w-[240px] md:max-w-[260px]"
-              }`}
-              style={{ width: '100%', minWidth: 0 }}
-            >
-              {item.image && (
-                <div className="w-full flex items-center justify-center rounded-2xl overflow-hidden bg-white dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700 shadow-sm group-hover:shadow-md group-hover:border-purple-200 dark:group-hover:border-purple-700 transition-all duration-300 p-4 aspect-square">
-                  <img
-                    src={item.image}
-                    alt={item.title || title || "Imagen"}
-                    className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-300"
-                    style={{ background: "none", boxShadow: "none" }}
-                  />
-                </div>
-              )}
-              {item.title && (
-                <p
-                  className="mt-3 text-sm font-semibold text-slate-700 dark:text-slate-200 group-hover:text-purple-600 dark:group-hover:text-purple-300 transition-colors"
-                  style={itemTitleStyle}
-                >
-                  {item.title}
-                </p>
-              )}
-            </div>
+              item={item}
+              index={idx}
+              titleStyle={itemTitleStyle}
+            />
           ))}
         </div>
 
-        {/* Dots indicadores */}
-        {hasCarousel && totalSlides > 1 && (
-          <div className="flex justify-center gap-1.5 mt-6">
+        {/* ── Dots ── */}
+        {needsCarousel && totalSlides > 1 && (
+          <div className="flex justify-center gap-2 mt-7">
             {Array.from({ length: totalSlides }).map((_, i) => (
               <button
                 key={i}
                 aria-label={`Ir a slide ${i + 1}`}
-                onClick={() => setCurrentIndex(i)}
-                className={`rounded-full transition-all duration-300 ${
-                  i === currentIndex
-                    ? "w-6 h-2 bg-purple-600 dark:bg-purple-400"
-                    : "w-2 h-2 bg-slate-300 dark:bg-slate-600 hover:bg-purple-300 dark:hover:bg-purple-600"
-                }`}
+                onClick={() => {
+                  setAnimDir(i > currentIndex ? "right" : "left");
+                  setCurrentIndex(i);
+                }}
+                className="rounded-full transition-all duration-300"
+                style={{
+                  width: i === currentIndex ? 24 : 8,
+                  height: 8,
+                  background:
+                    i === currentIndex
+                      ? "var(--accent, #7c3aed)"
+                      : "var(--border, #e2e8f0)",
+                }}
               />
             ))}
           </div>
         )}
       </div>
+
+      {/* Keyframes de animación */}
+      <style>{`
+        @keyframes slideInRight {
+          from { opacity: 0; transform: translateX(32px); }
+          to   { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes slideInLeft {
+          from { opacity: 0; transform: translateX(-32px); }
+          to   { opacity: 1; transform: translateX(0); }
+        }
+      `}</style>
     </section>
+  );
+}
+
+// ────────────────────────────────────────────────
+// Card individual
+// ────────────────────────────────────────────────
+function GalleryCard({
+  item,
+  index,
+  titleStyle,
+}: {
+  item: { title?: string; image?: string };
+  index: number;
+  titleStyle?: React.CSSProperties;
+}) {
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <div
+      className="flex flex-col items-center group cursor-pointer"
+      style={{
+        // Entrada escalonada por índice
+        animation: `fadeUp 0.4s ease both`,
+        animationDelay: `${index * 60}ms`,
+      }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      {/* Imagen */}
+      <div
+        className="w-full relative overflow-hidden rounded-2xl border transition-all duration-300 dark:bg-slate-900"
+        style={{
+          aspectRatio: "1 / 1",
+          borderColor: hovered ? "var(--accent, #7c3aed)" : "var(--border, #e2e8f0)",
+          boxShadow: hovered
+            ? "0 8px 32px 0 rgba(124,58,237,0.13)"
+            : "0 1px 4px 0 rgba(0,0,0,0.06)",
+          transform: hovered ? "translateY(-4px)" : "translateY(0)",
+        }}
+      >
+        {item.image ? (
+          <img
+            src={item.image}
+            alt={item.title || "Imagen"}
+            className="absolute inset-0 w-full h-full object-contain p-3 sm:p-4 transition-transform duration-500"
+            style={{
+              transform: hovered ? "scale(1.07)" : "scale(1)",
+            }}
+          />
+        ) : (
+          // Placeholder si no hay imagen
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span
+              className="material-icons-round"
+              style={{ fontSize: 40, color: "var(--border, #cbd5e1)" }}
+            >
+              image
+            </span>
+          </div>
+        )}
+
+        {/* Shimmer overlay en hover */}
+        <div
+          className="absolute inset-0 rounded-2xl transition-opacity duration-300 pointer-events-none"
+          style={{
+            opacity: hovered ? 1 : 0,
+            background:
+              "linear-gradient(135deg, rgba(255,255,255,0.08) 0%, transparent 60%)",
+          }}
+        />
+      </div>
+
+      {/* Título del item */}
+      {item.title && (
+        <p
+          className="mt-3 text-center text-xs sm:text-sm font-semibold leading-tight transition-colors duration-200 px-1"
+          style={{
+            ...(titleStyle || {}),
+            color: hovered ? "var(--accent, #7c3aed)" : "var(--text, #1e293b)",
+          }}
+        >
+          {item.title}
+        </p>
+      )}
+    </div>
   );
 }

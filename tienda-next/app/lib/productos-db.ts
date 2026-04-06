@@ -30,10 +30,25 @@ import {
 
 const COLLECTION = "productos";
 
+// Elimina recursivamente los campos undefined de un objeto
+function cleanUndefinedDeep(obj) {
+  if (Array.isArray(obj)) {
+    return obj.map(cleanUndefinedDeep);
+  } else if (obj && typeof obj === "object") {
+    return Object.fromEntries(
+      Object.entries(obj)
+        .filter(([_, v]) => v !== undefined)
+        .map(([k, v]) => [k, cleanUndefinedDeep(v)])
+    );
+  }
+  return obj;
+}
+
 // Crear producto
 export async function crearProducto(producto) {
-  const docRef = await addDoc(collection(db, COLLECTION), producto);
-  return { ...producto, id: docRef.id };
+  const cleanProducto = cleanUndefinedDeep(producto);
+  const docRef = await addDoc(collection(db, COLLECTION), cleanProducto);
+  return { ...cleanProducto, id: docRef.id };
 }
 
 // Obtener todos los productos
@@ -60,7 +75,7 @@ export async function obtenerProductoPorId(id) {
 
 // Actualizar producto
 export async function actualizarProducto(id, data) {
-  await updateDoc(doc(db, COLLECTION, id), data);
+  await updateDoc(doc(db, COLLECTION, id), cleanUndefinedDeep(data));
 }
 
 // Eliminar producto

@@ -51,3 +51,14 @@ body {
     opacity: 0.7;
   }
 }
+
+
+/* Light mode */
+:root {
+  --galleryImgBg: #f8fafc;
+}
+
+/* Dark mode */
+.dark {
+  --galleryImgBg: #0f172a;
+}
