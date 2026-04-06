@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Loading3DIcon } from "../components/Loading3DIcon";
 import { getPublishedBlogs } from "../lib/blogs-db";
 import type { Blog } from "../lib/blog-types";
+import BottomBarPublic from "../components/BottomBarPublic";
 
 export default function BlogsPage() {
   const [blogs, setBlogs] = useState<Blog[]>([]);
@@ -31,6 +32,7 @@ export default function BlogsPage() {
       className="min-h-screen flex flex-col"
     >
       <main className="max-w-6xl mx-auto px-4 py-8 lg:px-6 flex-1">
+        <BottomBarPublic/>
         <h1 className="text-4xl font-bold mb-4" style={{ color: "var(--text)" }}>
           Blog de Tecno Things
         </h1>

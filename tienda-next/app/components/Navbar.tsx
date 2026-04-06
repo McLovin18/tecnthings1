@@ -560,19 +560,18 @@ export const Navbar = () => {
 
           {/* Categorías dinámicas */}
           {categorias.map((cat) => (
-            <div key={cat.id} className="relative group flex-shrink-0">
+            <div key={cat.id} className="relative group  flex-shrink-0">
               {cat.subcategorias?.length > 0 ? (
                 <button
-                  className="flex items-center gap-1 px-3 py-2.5 text-sm font-medium whitespace-nowrap transition-colors rounded-xl hover:opacity-80"
-                  style={{ color: "var(--textMuted)" }}
+                  className="flex items-center gap-1 px-3 py-2.5 text-sm font-medium whitespace-nowrap transition-colors rounded-xl hover:opacity-80 text-black dark:text-white"
                 >
                   {cat.icono && (
-                    <span className="material-icons-round" style={{ fontSize: 15 }}>{cat.icono}</span>
+                    <span className="material-icons-round dark:text-white" style={{ fontSize: 15 }}>{cat.icono}</span>
                   )}
-                  {cat.nombre}
+                  <span className="dark:text-white">{cat.nombre}</span>
                   <span
-                    className="material-icons-round transition-transform duration-200 group-hover:rotate-180"
-                    style={{ fontSize: 14, color: "var(--textMuted)" }}
+                    className="material-icons-round dark:text-white transition-transform duration-200 group-hover:rotate-180"
+                    style={{ fontSize: 14 }}
                   >
                     expand_more
                   </span>
@@ -580,13 +579,12 @@ export const Navbar = () => {
               ) : (
                 <Link
                   href={`${basePath}?cat=${cat.id}`}
-                  className="flex items-center gap-1 px-3 py-2.5 text-sm font-medium whitespace-nowrap transition-colors rounded-xl hover:opacity-80"
-                  style={{ color: "var(--textMuted)" }}
+                  className="flex items-center gap-1 px-3 py-2.5 text-sm font-medium whitespace-nowrap transition-colors rounded-xl hover:opacity-80 text-black dark:text-white"
                 >
                   {cat.icono && (
-                    <span className="material-icons-round" style={{ fontSize: 15 }}>{cat.icono}</span>
+                    <span className="material-icons-round dark:text-white" style={{ fontSize: 15 }}>{cat.icono}</span>
                   )}
-                  {cat.nombre}
+                  <span className="dark:text-white">{cat.nombre}</span>
                 </Link>
               )}
 
@@ -596,18 +594,17 @@ export const Navbar = () => {
                   className="absolute left-0 top-full min-w-52 rounded-2xl border shadow-xl py-1.5 z-50
                              opacity-0 pointer-events-none translate-y-1
                              group-hover:opacity-100 group-hover:pointer-events-auto group-hover:translate-y-0
-                             transition-all duration-150"
-                  style={{ background: "var(--cardBg)", borderColor: "var(--border)" }}
+                             transition-all duration-150 bg-white dark:bg-[#181028]"
+                  style={{ borderColor: "var(--border)" }}
                 >
                   {cat.subcategorias.map((sub: any) => (
                     <div key={sub.id} className="relative group/sub">
                       {sub.subcategorias?.length > 0 ? (
                         <button
-                          className="w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors"
-                          style={{ color: "var(--text)" }}
+                          className="w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors text-black dark:text-white"
                         >
-                          <span>{sub.nombre}</span>
-                          <span className="material-icons-round text-sm" style={{ color: "var(--textMuted)" }}>
+                          <span className="dark:text-white">{sub.nombre}</span>
+                          <span className="material-icons-round text-sm dark:text-white">
                             chevron_right
                           </span>
 
@@ -616,17 +613,16 @@ export const Navbar = () => {
                             className="absolute left-full top-0 ml-1 min-w-44 rounded-2xl border shadow-xl py-1.5 z-60
                                        opacity-0 pointer-events-none translate-x-1
                                        group-hover/sub:opacity-100 group-hover/sub:pointer-events-auto group-hover/sub:translate-x-0
-                                       transition-all duration-150"
-                            style={{ background: "var(--cardBg)", borderColor: "var(--border)" }}
+                                       transition-all duration-150 bg-white dark:bg-[#181028]"
+                            style={{ borderColor: "var(--border)" }}
                           >
                             {sub.subcategorias.map((subsub: any) => (
                               <Link
                                 key={subsub.id}
                                 href={`${basePath}?cat=${cat.id}&sub=${sub.id}&subsub=${subsub.id}`}
-                                className="block px-4 py-2.5 text-sm transition-colors"
-                                style={{ color: "var(--text)" }}
+                                className="block px-4 py-2.5 text-sm transition-colors text-black dark:text-white"
                               >
-                                {subsub.nombre}
+                                <span className="dark:text-white">{subsub.nombre}</span>
                               </Link>
                             ))}
                           </div>
@@ -634,10 +630,9 @@ export const Navbar = () => {
                       ) : (
                         <Link
                           href={`${basePath}?cat=${cat.id}&sub=${sub.id}`}
-                          className="block px-4 py-2.5 text-sm transition-colors"
-                          style={{ color: "var(--text)" }}
+                          className="block px-4 py-2.5 text-sm transition-colors text-black dark:text-white"
                         >
-                          {sub.nombre}
+                          <span className="dark:text-white">{sub.nombre}</span>
                         </Link>
                       )}
                     </div>
@@ -768,17 +763,6 @@ export const Navbar = () => {
         </div>
       )}
 
-      {/* ══════════════════ CARRITO FLOTANTE MÓVIL ══════════════════ */}
-      {isMobileOrTablet && (
-        <a
-          href={user ? (isClient ? "/home/cart" : "/admin/cart") : "/cart"}
-          className="fixed bottom-28 right-4 z-50 rounded-full p-4 shadow-lg flex items-center justify-center lg:hidden transition-transform hover:scale-105 active:scale-95"
-          style={{ background: "var(--accent)", color: "#fff" }}
-          aria-label="Carrito flotante"
-        >
-          <span className="material-icons-round text-2xl">shopping_bag</span>
-        </a>
-      )}
     </>
   );
 };

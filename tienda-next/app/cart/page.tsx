@@ -1,11 +1,14 @@
 ﻿"use client";
 
+
 import React, { useState, useCallback, useEffect } from "react";
-import { useUser } from "../context/UserContext";
 import { Loading3DIcon } from "../components/Loading3DIcon";
 import { crearOrden } from "../lib/ordenes-db";
 import { useRouter } from "next/navigation";
 import { loadStripe } from "@stripe/stripe-js";
+import { useUser } from "../context/UserContext";
+import BottomBarPublic from "../components/BottomBarPublic";
+
 import {
   Elements,
   PaymentElement,
@@ -398,6 +401,8 @@ export default function CartPage() {
   const [stripeLoading, setStripeLoading] = useState(false);
   const router = useRouter();
   const todayStr = new Date().toISOString().split("T")[0];
+  const { isLogged } = useUser();
+
 
   // Unify price logic for all calculations (matches ProductoCard, proforma, etc)
   const calcularPrecioData = (p: any) => {
@@ -903,6 +908,8 @@ export default function CartPage() {
           )}
         </main>
       </div>
+      {!isLogged && <BottomBarPublic />}
+
     </>
   );
 }

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useUser } from "../context/UserContext";
+import BottomBarPublic from "../components/BottomBarPublic";
 
 // Helper for price logic (unified)
 function calcularPrecioData(p: any) {
@@ -54,6 +55,7 @@ export default function OrderConfirmationPage() {
       className="min-h-screen flex flex-col mt-2"
     >
       <main className="max-w-2xl mx-auto px-4 py-16 flex-1 flex flex-col items-center text-center">
+        <BottomBarPublic/>
         {/* Icono de éxito */}
         {isPaidOrder ? (
           <div className="w-20 h-20 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center shadow-xl shadow-green-500/30 mb-4">

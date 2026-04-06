@@ -1,11 +1,14 @@
 "use client";
+import BottomBarPublic from "../components/BottomBarPublic";
 import { useSearchParams } from "next/navigation";
 import ProductoCard from "../components/ProductoCard";
 import { Loading3DIcon } from "../components/Loading3DIcon";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { obtenerProductos } from "../lib/productos-db";
+import { useUser } from "../context/UserContext";
 
 export default function ProductsByCategoryPage() {
+  const isLogged = useUser();
   const searchParams = useSearchParams();
   const categoria = searchParams.get("cat") || searchParams.get("category") || "";
   const subcategoria = searchParams.get("subcat") || searchParams.get("subcategory") || "";
@@ -106,6 +109,8 @@ export default function ProductsByCategoryPage() {
 
   return (
     <div className="min-h-screen flex flex-col mt-2 bg-white dark:bg-black text-slate-900 dark:text-white transition-colors">
+        <BottomBarPublic />
+
 
       <main className="max-w-7xl mx-auto w-full px-3 sm:px-5 py-8 flex-1">
         {/* Cabecera */}
@@ -201,6 +206,8 @@ export default function ProductsByCategoryPage() {
           </div>
         )}
       </main>
+      
     </div>
+    
   );
 }

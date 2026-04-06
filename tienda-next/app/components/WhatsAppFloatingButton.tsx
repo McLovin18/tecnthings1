@@ -8,9 +8,10 @@ const WhatsAppFloatingButton: React.FC = () => {
       <style>{`
         .wa-float {
           position: fixed;
-          bottom: 1.25rem;
+          bottom: 5.25rem;
           left: 1.25rem;
           z-index: 50;
+
         }
 
         @media (min-width: 768px) {

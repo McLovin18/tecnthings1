@@ -1,4 +1,6 @@
 "use client";
+import BottomBarPublic from "../components/BottomBarPublic";
+import { useUser } from "../context/UserContext";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import ProductoCard from "../components/ProductoCard";
@@ -8,6 +10,7 @@ import { obtenerProductos } from "../lib/productos-db";
 export default function SearchResultsPage() {
   const searchParams = useSearchParams();
   const queryParam = searchParams?.get("query") || "";
+  const isLogger = useUser();
 
   const [productos, setProductos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -155,6 +158,7 @@ export default function SearchResultsPage() {
 
   return (
     <div className="min-h-screen flex flex-col mt-2 dark:bg-black">
+      <BottomBarPublic/>
 
       <main className="max-w-7xl mx-auto w-full px-4 py-6 sm:py-15 flex-1">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">

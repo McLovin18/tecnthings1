@@ -40,7 +40,7 @@ export default function FeaturedProductsSection({
       const width = window.innerWidth;
       if (width < 640) setItemsPerView(1);
       else if (width < 1024) setItemsPerView(3);
-      else setItemsPerView(5);
+      else setItemsPerView(4);
     };
     updateItemsPerView();
     window.addEventListener("resize", updateItemsPerView);
@@ -84,17 +84,21 @@ export default function FeaturedProductsSection({
     setCurrentIndex((prev) => (prev + 1) % products.length);
   };
 
+// Forzar 4 columnas en desktop para ocupar casi todo el ancho
+// Forzar 4 columnas en desktop para que solo se vean 4 productos por vista
 const gridCols =
-  effectiveItemsPerView === 2
+  effectiveItemsPerView === 1
+    ? "grid-cols-1"
+    : effectiveItemsPerView === 2
     ? "grid-cols-2"
     : effectiveItemsPerView === 3
     ? "grid-cols-3"
-    : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-5";
+    : "grid-cols-4";
 
   return (
     <section
       style={{ paddingTop, paddingBottom }}
-      className="px-4 lg:px-4 flex flex-col items-center"
+      className="w-full max-w-full px-2 flex flex-col items-center overflow-x-hidden"
     >
       {/* Título */}
       {title && (
@@ -140,16 +144,18 @@ const gridCols =
         <div
           className={
             isSingleVisible
-              ? "flex bg-b justify-center w-full max-w-sm mx-auto"
+              ? "flex justify-center w-full max-w-xl mx-auto"
               : `grid gap-6 place-items-center w-full ${gridCols}`
           }
+          style={{ minWidth: 0, overflowX: 'hidden' }}
         >
           {visibleProducts.map((prod: any, idx: number) => (
             <div
               key={`${prod.id}-${currentIndex}-${idx}`}
-              className={`transition-all duration-300 ${
-                isSingleVisible ? "w-full" : "w-full max-w-xs"
+              className={`transition-all duration-300 flex flex-col items-stretch justify-stretch ${
+                isSingleVisible ? "w-full" : "w-full max-w-[320px] min-h-[420px] h-[420px]"
               }`}
+              style={{ width: '100%', minWidth: 0 }}
             >
               <ProductoCard producto={prod} />
             </div>

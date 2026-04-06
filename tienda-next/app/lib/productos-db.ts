@@ -1,5 +1,5 @@
 // Obtener productos por subcategoría
-export async function obtenerProductosPorSubcategoria(subcategoria, excludeId = null, max = 5) {
+export async function obtenerProductosPorSubcategoria(subcategoria, excludeId = null, max = 4) {
   const q = query(collection(db, COLLECTION), where("subcategoria", "==", subcategoria));
   const snapshot = await getDocs(q);
   let productos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -8,7 +8,7 @@ export async function obtenerProductosPorSubcategoria(subcategoria, excludeId = 
 }
 
 // Obtener productos por subsubcategoría (último nivel)
-export async function obtenerProductosPorSubsubcategoria(subsubcategoria, excludeId = null, max = 5) {
+export async function obtenerProductosPorSubsubcategoria(subsubcategoria, excludeId = null, max = 4) {
   const q = query(collection(db, COLLECTION), where("subsubcategoria", "==", subsubcategoria));
   const snapshot = await getDocs(q);
   let productos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -43,7 +43,7 @@ export async function obtenerProductos() {
 }
 
 // Obtener productos por categoría
-export async function obtenerProductosPorCategoria(categoria, excludeId = null, max = 5) {
+export async function obtenerProductosPorCategoria(categoria, excludeId = null, max = 4) {
   const q = query(collection(db, COLLECTION), where("categoria", "==", categoria));
   const snapshot = await getDocs(q);
   let productos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));

@@ -1,5 +1,10 @@
 "use client";
 
+
+import BottomBarPublic from "./components/BottomBarPublic";
+import WhatsAppFloatingButton from "./components/WhatsAppFloatingButton";
+import { useUser } from "./context/UserContext";
+
 import { useEffect, useState } from "react";
 import { getLandingPage } from "./lib/landing-db";
 import ProductoCard from "./components/ProductoCard";
@@ -9,6 +14,7 @@ import { obtenerProductos } from "./lib/productos-db";
 import { Loading3DIcon } from "./components/Loading3DIcon";
 
 export default function Home() {
+  const { isLogged } = useUser();
   const [landing, setLanding] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [productos, setProductos] = useState<any[]>([]);
@@ -77,16 +83,22 @@ export default function Home() {
   });
 
   return (
-    <div className="bg-white dark:bg-black text-slate-900 dark:text-white min-h-screen flex flex-col py-6 sm:py-15">
-      <main className="flex-1 pb-24 lg:pb-0">
-        {/* Todas las secciones se renderizan de forma dinámica desde Firestore */}
-        {sections
-          .slice()
-          .sort((a, b) => (a.order || 0) - (b.order || 0))
-          .map((section) => (
-            <SectionRenderer key={section.id} section={section} />
-          ))}
-      </main>
-    </div>
+    <>
+      {/* Botón flotante de WhatsApp aún más arriba */}
+      <WhatsAppFloatingButton />
+      <div className="bg-white dark:bg-black text-slate-900 dark:text-white min-h-screen flex flex-col py-6 sm:py-15">
+        <main className="flex-1 pb-24 lg:pb-0">
+          {/* Todas las secciones se renderizan de forma dinámica desde Firestore */}
+          {sections
+            .slice()
+            .sort((a, b) => (a.order || 0) - (b.order || 0))
+            .map((section) => (
+              <SectionRenderer key={section.id} section={section} />
+            ))}
+        </main>
+      </div>
+      {/* Mostrar BottomBarPublic solo si NO está autenticado */}
+      {!isLogged && <BottomBarPublic />}
+    </>
   );
 }

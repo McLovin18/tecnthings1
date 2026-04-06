@@ -2,6 +2,7 @@
 
 import React from "react";
 import type { Blog, BlogBlock } from "../lib/blog-types";
+import BottomBarPublic from "../components/BottomBarPublic";
 
 export type BlogPreviewProps = {
   blog: Blog;
@@ -62,7 +63,10 @@ export default function BlogPreview({ blog, device }: BlogPreviewProps) {
       : "w-full max-w-3xl mx-auto";
 
   return (
+    <>
+  <BottomBarPublic/>
     <article className={wrapperClass}>
+      
       <header className="mb-6">
         <h1 className="text-2xl md:text-3xl font-extrabold mb-2 dark:text-white">
           {blog.title || "(Sin título)"}
@@ -84,5 +88,6 @@ export default function BlogPreview({ blog, device }: BlogPreviewProps) {
         )}
       </section>
     </article>
+    </>
   );
 }

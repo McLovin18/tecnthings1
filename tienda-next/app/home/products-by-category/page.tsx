@@ -261,5 +261,6 @@ export default function ProductsByCategoryPage() {
 
       </main>
     </div>
+    
   );
 }

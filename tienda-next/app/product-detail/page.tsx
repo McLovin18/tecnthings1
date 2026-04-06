@@ -7,10 +7,10 @@ import React, { useState, useEffect } from "react";
 import { ProductReview } from "../lib/reviews-types";
 import { useUser } from "../context/UserContext";
 import { useSearchParams } from "next/navigation";
+import BottomBarPublic from "../components/BottomBarPublic";
 
 export default function ProductDetailPage({ params }) {
   const [relacionados, setRelacionados] = useState([]);
-
   const [producto, setProducto] = useState(null);
   const [imgIdx, setImgIdx] = useState(0);
   const [reviews, setReviews] = useState<ProductReview[]>([]);
@@ -206,6 +206,7 @@ const fakeOldPrice = hasDiscount ? Math.round(basePrice / (1 - discount / 100)) 
 
   return (
     <div className="min-h-screen flex flex-col mt-2 bg-white dark:bg-black text-slate-900 dark:text-white transition-colors">
+      <BottomBarPublic/>
 
       <div className="max-w-5xl mx-auto w-full px-3 sm:px-6 py-6 sm:py-10">
         <div className="flex flex-col md:flex-row gap-8 lg:gap-14">
