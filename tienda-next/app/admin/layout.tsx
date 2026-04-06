@@ -3,7 +3,6 @@ import Sidebar from "../components/Sidebar";
 import BottomBar from "../components/BottomBar";
 import { useEffect, useState } from "react";
 import { getCurrentUser } from "../lib/firebase-auth";
-import CategoriesBar from "../components/CategoriesBar";
 
 export default function HomeLayout({ children }) {
   const [role, setRole] = useState("client");
@@ -19,7 +18,6 @@ export default function HomeLayout({ children }) {
 
       <Sidebar role={role} />
       <main className="flex-1">
-        <CategoriesBar />
         {children}
       </main>
       <BottomBar role={role} />
