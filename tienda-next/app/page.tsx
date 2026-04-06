@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import CategoriesBar from "./components/CategoriesBar";
 import { getLandingPage } from "./lib/landing-db";
 import ProductoCard from "./components/ProductoCard";
 import { SectionRenderer } from "./landing/sectionRegistry";
@@ -79,7 +78,6 @@ export default function Home() {
 
   return (
     <div className="bg-white dark:bg-black text-slate-900 dark:text-white min-h-screen flex flex-col py-6 sm:py-15">
-      <CategoriesBar />
       <main className="flex-1 pb-24 lg:pb-0">
         {/* Todas las secciones se renderizan de forma dinámica desde Firestore */}
         {sections

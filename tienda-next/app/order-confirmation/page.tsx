@@ -1,5 +1,4 @@
 "use client";
-import CategoriesBar from "../components/CategoriesBar";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
@@ -54,7 +53,6 @@ export default function OrderConfirmationPage() {
       style={{ background: 'var(--bg)', color: 'var(--text)' }}
       className="min-h-screen flex flex-col mt-2"
     >
-      <CategoriesBar />
       <main className="max-w-2xl mx-auto px-4 py-16 flex-1 flex flex-col items-center text-center">
         {/* Icono de éxito */}
         {isPaidOrder ? (

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import CategoriesBar from "../components/CategoriesBar";
 import { Loading3DIcon } from "../components/Loading3DIcon";
 import { getPublishedBlogs } from "../lib/blogs-db";
 import type { Blog } from "../lib/blog-types";
@@ -31,7 +30,6 @@ export default function BlogsPage() {
       }}
       className="min-h-screen flex flex-col"
     >
-      <CategoriesBar />
       <main className="max-w-6xl mx-auto px-4 py-8 lg:px-6 flex-1">
         <h1 className="text-4xl font-bold mb-4" style={{ color: "var(--text)" }}>
           Blog de Tecno Things

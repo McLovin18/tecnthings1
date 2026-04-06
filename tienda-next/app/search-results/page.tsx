@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
-import CategoriesBar from "../components/CategoriesBar";
 import ProductoCard from "../components/ProductoCard";
 import { Loading3DIcon } from "../components/Loading3DIcon";
 import { obtenerProductos } from "../lib/productos-db";
@@ -156,7 +155,6 @@ export default function SearchResultsPage() {
 
   return (
     <div className="min-h-screen flex flex-col mt-2 dark:bg-black">
-      <CategoriesBar />
 
       <main className="max-w-7xl mx-auto w-full px-4 py-6 sm:py-15 flex-1">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">

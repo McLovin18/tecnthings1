@@ -96,7 +96,7 @@ export default function GallerySection({
   return (
     <section
       style={{ paddingTop, paddingBottom }}
-      className="px-2 lg:px-2 flex flex-col items-center"
+      className="w-full max-w-full px-2 flex flex-col items-center overflow-x-hidden"
     >
       {/* Título */}
       {title && (
@@ -107,9 +107,10 @@ export default function GallerySection({
 
       {/* Contenedor del carrusel */}
       <div
-        className="w-full max-w-7xl mx-auto relative"
+        className="w-full max-w-7xl mx-auto relative overflow-x-auto"
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
+        style={{ WebkitOverflowScrolling: 'touch' }}
       >
         {/* Flecha izquierda */}
         {hasCarousel && (
@@ -139,22 +140,24 @@ export default function GallerySection({
         <div
           className={
             isSingleVisible
-              ? "flex justify-center w-full max-w-sm mx-auto"
-          : `grid gap-5 place-items-center w-full ${
-              effectiveItemsPerView === 2
-                ? "grid-cols-2"
-                : effectiveItemsPerView === 3
-                ? "grid-cols-3"
-                : "grid-cols-2 md:grid-cols-3 lg:grid-cols-5"
-            }`
+              ? "flex justify-center w-full max-w-xs mx-auto"
+              : `grid gap-5 place-items-center w-full ${
+                  effectiveItemsPerView === 2
+                    ? "grid-cols-2"
+                    : effectiveItemsPerView === 3
+                    ? "grid-cols-3"
+                    : "grid-cols-2 md:grid-cols-3 lg:grid-cols-5"
+                }`
           }
+          style={{ minWidth: 0 }}
         >
           {visibleItems.map((item, idx) => (
             <div
               key={`${currentIndex}-${idx}`}
               className={`group flex flex-col items-center text-center transition-all duration-300 ${
-                isSingleVisible ? "w-full" : "w-full max-w-[220px]"
+                isSingleVisible ? "w-full" : "w-full max-w-[220px] sm:max-w-[240px] md:max-w-[260px]"
               }`}
+              style={{ width: '100%', minWidth: 0 }}
             >
               {item.image && (
                 <div className="w-full flex items-center justify-center rounded-2xl overflow-hidden bg-white dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700 shadow-sm group-hover:shadow-md group-hover:border-purple-200 dark:group-hover:border-purple-700 transition-all duration-300 p-4 aspect-square">

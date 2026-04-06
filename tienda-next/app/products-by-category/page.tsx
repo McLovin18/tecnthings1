@@ -4,7 +4,6 @@ import ProductoCard from "../components/ProductoCard";
 import { Loading3DIcon } from "../components/Loading3DIcon";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { obtenerProductos } from "../lib/productos-db";
-import CategoriesBar from "../components/CategoriesBar";
 
 export default function ProductsByCategoryPage() {
   const searchParams = useSearchParams();
@@ -107,7 +106,6 @@ export default function ProductsByCategoryPage() {
 
   return (
     <div className="min-h-screen flex flex-col mt-2 bg-white dark:bg-black text-slate-900 dark:text-white transition-colors">
-      <CategoriesBar />
 
       <main className="max-w-7xl mx-auto w-full px-3 sm:px-5 py-8 flex-1">
         {/* Cabecera */}

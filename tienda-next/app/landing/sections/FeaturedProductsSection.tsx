@@ -140,7 +140,7 @@ const gridCols =
         <div
           className={
             isSingleVisible
-              ? "flex justify-center w-full max-w-sm mx-auto"
+              ? "flex bg-b justify-center w-full max-w-sm mx-auto"
               : `grid gap-6 place-items-center w-full ${gridCols}`
           }
         >
@@ -167,7 +167,7 @@ const gridCols =
                 className={`rounded-full transition-all duration-300 ${
                   i === currentIndex
                     ? "w-6 h-2 bg-purple-600 dark:bg-purple-400"
-                    : "w-2 h-2 bg-slate-300 dark:bg-slate-600 hover:bg-purple-300 dark:hover:bg-purple-600"
+                    : "w-2 h-2 bg-white dark:bg-slate-600 hover:bg-purple-300 dark:hover:bg-purple-600"
                 }`}
               />
             ))}

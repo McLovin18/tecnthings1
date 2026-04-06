@@ -1,74 +1,115 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { themeManager } from "./themeManager";
 import ThemeToggle from "./ThemeToggle";
 import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { obtenerProductos } from "../lib/productos-db";
-// Componente acordeón de categorías dinámicas para móvil/tablet
+import { useUser } from "../context/UserContext";
+
+// ─────────────────────────────────────────────
+// Acordeón de categorías para el drawer móvil
+// ─────────────────────────────────────────────
 function MobileCategoriesAccordion({ basePath }: { basePath: string }) {
   const [categorias, setCategorias] = React.useState<any[]>([]);
   const [openCat, setOpenCat] = React.useState<string | null>(null);
   const [openSub, setOpenSub] = React.useState<string | null>(null);
+
   React.useEffect(() => {
     const unsub = onSnapshot(collection(db, "categorias"), (snap) => {
       setCategorias(snap.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
     });
     return () => unsub();
   }, []);
+
   return (
-    <div className="flex flex-col gap-2 my-2">
+    <div className="flex flex-col gap-1 my-3">
+      <p className="text-xs font-semibold uppercase tracking-wider px-2 mb-1"
+        style={{ color: "var(--textMuted)" }}>
+        Categorías
+      </p>
       {categorias.map((cat) => (
-        <div key={cat.id} className="relative">
+        <div key={cat.id}>
           <button
-            className="w-full flex items-center justify-between px-4 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 transition-colors text-sm font-medium"
-            type="button"
-            onClick={() => setOpenCat(openCat === cat.id ? null : cat.id)}
+            className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-colors"
+            style={{ color: "var(--text)" }}
+            onClick={() =>
+              setOpenCat(openCat === cat.id ? null : cat.id)
+            }
           >
             <span className="flex items-center gap-2">
               {cat.icono && (
-                <span className="material-icons-round text-base">{cat.icono}</span>
+                <span className="material-icons-round text-base"
+                  style={{ color: "var(--accent)" }}>
+                  {cat.icono}
+                </span>
               )}
-              <span>{cat.nombre}</span>
+              {cat.nombre}
             </span>
-            <span className="material-icons-round text-base">
-              {openCat === cat.id ? "expand_less" : "expand_more"}
-            </span>
+            {cat.subcategorias?.length > 0 && (
+              <span
+                className="material-icons-round text-sm transition-transform duration-200"
+                style={{
+                  color: "var(--textMuted)",
+                  transform: openCat === cat.id ? "rotate(180deg)" : "rotate(0deg)",
+                }}
+              >
+                expand_more
+              </span>
+            )}
           </button>
-          {cat.subcategorias && cat.subcategorias.length > 0 && openCat === cat.id && (
-            <div className="ml-4 space-y-1 bg-slate-50 dark:bg-slate-800/50 rounded-lg p-2 my-1">
+
+          {cat.subcategorias?.length > 0 && openCat === cat.id && (
+            <div className="ml-4 mb-1 rounded-xl overflow-hidden border"
+              style={{ borderColor: "var(--border)" }}>
               {cat.subcategorias.map((sub: any) => (
-                <div key={sub.id} className="relative">
-                  <button
-                    className="w-full flex items-center justify-between px-3 py-2 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-xs"
-                    type="button"
-                    onClick={() => setOpenSub(openSub === sub.id ? null : sub.id)}
-                  >
-                    <span>{sub.nombre}</span>
-                    {sub.subcategorias && sub.subcategorias.length > 0 && (
-                      <span className="material-icons-round text-base">
-                        {openSub === sub.id ? "expand_less" : "expand_more"}
-                      </span>
-                    )}
-                  </button>
-                  {sub.subcategorias && sub.subcategorias.length > 0 && openSub === sub.id && (
-                    <div className="ml-4 space-y-1">
-                      {sub.subcategorias.map((subsub: any) => (
-                        <a
-                          key={subsub.id}
-                          href={`${basePath}?cat=${cat.id}&sub=${sub.id}&subsub=${subsub.id}`}
-                          className="block px-3 py-2 rounded text-xs hover:bg-slate-200 dark:hover:bg-slate-700"
+                <div key={sub.id}>
+                  {sub.subcategorias?.length > 0 ? (
+                    <>
+                      <button
+                        className="w-full flex items-center justify-between px-3 py-2 text-sm transition-colors"
+                        style={{ color: "var(--text)" }}
+                        onClick={() =>
+                          setOpenSub(openSub === sub.id ? null : sub.id)
+                        }
+                      >
+                        <span>{sub.nombre}</span>
+                        <span
+                          className="material-icons-round text-sm transition-transform duration-200"
+                          style={{
+                            color: "var(--textMuted)",
+                            transform:
+                              openSub === sub.id
+                                ? "rotate(180deg)"
+                                : "rotate(0deg)",
+                          }}
                         >
-                          {subsub.nombre}
-                        </a>
-                      ))}
-                    </div>
-                  )}
-                  {(!sub.subcategorias || sub.subcategorias.length === 0) && (
+                          expand_more
+                        </span>
+                      </button>
+                      {openSub === sub.id && (
+                        <div className="ml-3 border-l"
+                          style={{ borderColor: "var(--border)" }}>
+                          {sub.subcategorias.map((subsub: any) => (
+                            <a
+                              key={subsub.id}
+                              href={`${basePath}?cat=${cat.id}&sub=${sub.id}&subsub=${subsub.id}`}
+                              className="block px-4 py-2 text-xs transition-colors"
+                              style={{ color: "var(--textMuted)" }}
+                            >
+                              {subsub.nombre}
+                            </a>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  ) : (
                     <a
                       href={`${basePath}?cat=${cat.id}&sub=${sub.id}`}
-                      className="block px-3 py-2 rounded text-xs hover:bg-slate-200 dark:hover:bg-slate-700"
+                      className="block px-3 py-2 text-sm transition-colors"
+                      style={{ color: "var(--text)" }}
                     >
                       {sub.nombre}
                     </a>
@@ -77,10 +118,12 @@ function MobileCategoriesAccordion({ basePath }: { basePath: string }) {
               ))}
             </div>
           )}
-          {(!cat.subcategorias || cat.subcategorias.length === 0) && openCat === cat.id && (
+
+          {!cat.subcategorias?.length && openCat === cat.id && (
             <a
               href={`${basePath}?cat=${cat.id}`}
-              className="block px-4 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 transition-colors text-sm font-medium"
+              className="block px-3 py-2 text-sm"
+              style={{ color: "var(--text)" }}
             >
               {cat.nombre}
             </a>
@@ -90,10 +133,11 @@ function MobileCategoriesAccordion({ basePath }: { basePath: string }) {
     </div>
   );
 }
-import { useUser } from "../context/UserContext";
 
+// ─────────────────────────────────────────────
+// Navbar principal
+// ─────────────────────────────────────────────
 export const Navbar = () => {
-  // Hooks deben ir siempre al inicio y en el mismo orden
   const [mounted, setMounted] = useState(false);
   const [theme, setTheme] = useState("light");
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -101,26 +145,33 @@ export const Navbar = () => {
   const { user, isLogged } = useUser();
   const [windowWidth, setWindowWidth] = useState<number | null>(null);
 
-  // Search bar state
-  // searchOpen siempre true
-  const searchOpen = true;
-  const setSearchOpen = () => {};
+  // Barra de búsqueda
   const [searchValue, setSearchValue] = useState("");
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [allProducts, setAllProducts] = useState<any[]>([]);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => { setMounted(true); }, []);
-  // User state comes from UserContext (onIdTokenChanged handles updates)
+  // Categorías integradas
+  const [categorias, setCategorias] = useState<any[]>([]);
 
-  // Fetch all products once for suggestions (could be optimized for large catalogs)
+  useEffect(() => { setMounted(true); }, []);
+
   useEffect(() => {
     obtenerProductos().then((prods) => setAllProducts(prods));
   }, []);
+
+  // Escuchar categorías desde Firestore
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, "categorias"), (snap) => {
+      setCategorias(snap.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+    });
+    return () => unsub();
+  }, []);
+
   useEffect(() => {
     themeManager.applyTheme(
-      themeManager.getStoredTheme() || themeManager.getSystemTheme(),
+      themeManager.getStoredTheme() || themeManager.getSystemTheme()
     );
     setTheme(themeManager.getTheme());
     const handler = (e: any) => setTheme(e.detail.theme);
@@ -129,448 +180,607 @@ export const Navbar = () => {
   }, []);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       setWindowWidth(window.innerWidth);
       const handleResize = () => setWindowWidth(window.innerWidth);
-      window.addEventListener('resize', handleResize);
-      return () => window.removeEventListener('resize', handleResize);
+      window.addEventListener("resize", handleResize);
+      return () => window.removeEventListener("resize", handleResize);
     }
   }, []);
 
-
-
-  // Update suggestions as user types
+  // Sugerencias de búsqueda
   useEffect(() => {
-    if (!searchValue.trim()) {
-      setSuggestions([]);
-      return;
-    }
+    if (!searchValue.trim()) { setSuggestions([]); return; }
     setSearchLoading(true);
     const texto = searchValue.trim().toLowerCase();
-    // Filter products by name, description, brand, category, subcategory, subsubcategoria
     const filtered = allProducts.filter((p) => {
-      const nombre = p.nombre?.toLowerCase() || "";
-      const desc = p.descripcion?.toLowerCase() || "";
-      const marcaProd = p.marca?.toLowerCase() || "";
-      const categoria = p.categoria?.toLowerCase() || "";
-      const subcategoria = p.subcategoria?.toLowerCase() || "";
-      const subsubcategoria = p.subsubcategoria?.toLowerCase() || "";
       return (
-        nombre.includes(texto) ||
-        desc.includes(texto) ||
-        marcaProd.includes(texto) ||
-        categoria.includes(texto) ||
-        subcategoria.includes(texto) ||
-        subsubcategoria.includes(texto)
+        p.nombre?.toLowerCase().includes(texto) ||
+        p.descripcion?.toLowerCase().includes(texto) ||
+        p.marca?.toLowerCase().includes(texto) ||
+        p.categoria?.toLowerCase().includes(texto) ||
+        p.subcategoria?.toLowerCase().includes(texto) ||
+        p.subsubcategoria?.toLowerCase().includes(texto)
       );
     });
-    setSuggestions(filtered.slice(0, 6)); // Show up to 6 suggestions
+    setSuggestions(filtered.slice(0, 6));
     setSearchLoading(false);
   }, [searchValue, allProducts]);
-
-  const isMobileOrTablet = windowWidth !== null && windowWidth < 1024;
-  const showFloatingCart = isMobileOrTablet;
 
   if (!mounted) return null;
 
   const isClient = user?.role === "client";
   const isAdmin = user?.role === "admin";
+  const isMobileOrTablet = windowWidth !== null && windowWidth < 1024;
 
-  // Links según rol
-  const links = user ? [
-    { href: isClient ? "/home" : "/admin", label: "Inicio" },
-    { href: isClient ? "/home/blogs" : "/admin/blogs", label: "Blogs" },
-  ] : [
-    { href: "/", label: "Inicio" },
-    { href: "/blogs", label: "Blogs" },
-  ];
+  const basePath = isClient
+    ? "/home/products-by-category"
+    : isAdmin
+    ? "/admin/products-by-category"
+    : "/products-by-category";
 
-  const handleToggleTheme = () => {
-    themeManager.toggleTheme();
-    setTheme(themeManager.getTheme());
+  const links = user
+    ? [
+        { href: isClient ? "/home" : "/admin", label: "Inicio" },
+        { href: isClient ? "/home/blogs" : "/admin/blogs", label: "Blogs" },
+      ]
+    : [
+        { href: "/", label: "Inicio" },
+        { href: "/blogs", label: "Blogs" },
+      ];
+
+  const handleSearch = () => {
+    if (!searchValue.trim()) return;
+    let target = `/search-results?query=${encodeURIComponent(searchValue.trim())}`;
+    if (isClient) target = `/home/search-results?query=${encodeURIComponent(searchValue.trim())}`;
+    if (isAdmin) target = `/admin/search-results?query=${encodeURIComponent(searchValue.trim())}`;
+    window.location.href = target;
+    setSearchValue("");
+    setSuggestions([]);
   };
 
   return (
     <>
-      {/* ================= NAVBAR SUPERIOR ================= */}
+      {/* ══════════════════ NAVBAR ══════════════════ */}
       <nav
-        className="sticky top-0 z-40 px-4 py-3 lg:px-6 lg:py-4 backdrop-blur-md border-b shadow-lg"
-        style={{ background: "var(--navBg)", color: "var(--text)", borderColor: "var(--border)" }}
+        className="sticky top-0 z-40 border-b shadow-sm backdrop-blur-md"
+        style={{ background: "var(--navBg)", borderColor: "var(--border)" }}
       >
-        <div className="flex items-center justify-between max-w-full mx-auto">
-          {/* LEFT */}
-          <div className="flex items-center gap-4">
+        {/* ── Fila 1: Logo + Search | Centro: info + redes | Derecha: carrito + usuario ── */}
+        <div
+          className="flex items-center justify-between gap-4 px-4 py-3 lg:px-6"
+          style={{ color: "var(--text)" }}
+        >
+          {/* ── LEFT: hamburger + logo + búsqueda ── */}
+          <div className="flex items-center gap-3 flex-shrink-0">
+            {/* Hamburger móvil */}
             <button
-              className="lg:hidden p-2 rounded-lg hover:bg-(--hover) transition"
+              className="lg:hidden p-2 rounded-xl transition-colors"
+              style={{ color: "var(--text)" }}
               onClick={() => setMobileOpen(true)}
               aria-label="Abrir menú"
             >
               <span className="material-icons-round text-2xl">menu</span>
             </button>
-            <a href={user ? (isClient ? "/home" : "/admin") : "/"} className="flex flex-col">
 
-              <h1 className="text-xl font-extrabold flex items-center gap-2" style={{ color: "var(--text)" }}>
-                TECNO THINGS
-              </h1>
+            {/* Logo */}
+            <a
+              href={user ? (isClient ? "/home" : "/admin") : "/"}
+              className="text-lg font-bold tracking-tight whitespace-nowrap"
+              style={{ color: "var(--text)" }}
+            >
+              TECNO THINGS
             </a>
-            {/* Interactive Search Bar */}
-            <div className=" hidden lg:flex items-center relative ml-2">
 
-              {/* Expanded search input */}
-              {searchOpen && (
-                <form
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white dark:bg-black border border-slate-200 dark:border-slate-700 shadow-lg"
-                  style={{ background: "var(--hover)", minWidth: 220, position: 'relative' }}
-                  onSubmit={e => {
-                    e.preventDefault();
-                    if (searchValue.trim()) {
-                      let target = `/search-results?query=${encodeURIComponent(searchValue.trim())}`;
-                      if (user?.role === "client") target = `/home/search-results?query=${encodeURIComponent(searchValue.trim())}`;
-                      if (user?.role === "admin") target = `/admin/search-results?query=${encodeURIComponent(searchValue.trim())}`;
-                      window.location.href = target;
-                      // setSearchOpen(false); // deshabilitado
-                      setSearchValue("");
-                      setSuggestions([]);
-                    }
-                  }}
-                >
-                  <input
-                    ref={searchInputRef}
-                    name="navbar-search"
-                    type="text"
-                    placeholder="Buscar productos..."
-                    className="bg-transparent outline-none px-2 py-1 text-sm flex-1"
-                    style={{ minWidth: 120 }}
-                    autoComplete="off"
-                    value={searchValue}
-                    onChange={e => setSearchValue(e.target.value)}
-                    // onBlur deshabilitado para searchOpen
-                  />
+            {/* Search bar — desktop */}
+            <div className="hidden lg:flex items-center relative">
+              <form
+                className="flex items-center gap-2 px-3 py-2 rounded-xl border"
+                style={{
+                  background: "var(--hover)",
+                  borderColor: "var(--border)",
+                  minWidth: 260,
+                }}
+                onSubmit={(e) => { e.preventDefault(); handleSearch(); }}
+              >
+                <span className="material-icons-round text-lg" style={{ color: "var(--textMuted)" }}>
+                  search
+                </span>
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  placeholder="Buscar un producto..."
+                  className="bg-transparent outline-none text-sm flex-1"
+                  style={{ color: "var(--text)", minWidth: 140 }}
+                  autoComplete="off"
+                  value={searchValue}
+                  onChange={(e) => setSearchValue(e.target.value)}
+                />
+                {searchValue && (
                   <button
                     type="button"
-                    className="p-1"
-                    aria-label="Buscar"
-                    onClick={() => {
-                      if (searchValue.trim()) {
-                        let target = `/search-results?query=${encodeURIComponent(searchValue.trim())}`;
-                        if (user?.role === "client") target = `/home/search-results?query=${encodeURIComponent(searchValue.trim())}`;
-                        if (user?.role === "admin") target = `/admin/search-results?query=${encodeURIComponent(searchValue.trim())}`;
-                        window.location.href = target;
-                        // setSearchOpen(false); // deshabilitado
-                        setSearchValue("");
-                        setSuggestions([]);
-                      }
+                    onClick={() => { setSearchValue(""); setSuggestions([]); }}
+                    className="rounded-full p-0.5 transition-colors"
+                    style={{ color: "var(--textMuted)" }}
+                  >
+                    <span className="material-icons-round text-base">close</span>
+                  </button>
+                )}
+
+                {/* Dropdown sugerencias */}
+                {searchValue.trim() && (
+                  <div
+                    className="absolute left-0 top-full mt-1 w-full rounded-xl border shadow-xl z-50 overflow-hidden"
+                    style={{
+                      background: "var(--cardBg)",
+                      borderColor: "var(--border)",
+                      maxHeight: 300,
+                      overflowY: "auto",
                     }}
                   >
-                    <span className="material-icons-round">search</span>
-                  </button>
-                  {/* Close button */}
-                  <button
-                    type="button"
-                    className="p-1 ml-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700"
-                    aria-label="Cerrar búsqueda"
-                    onClick={() => {
-                      // setSearchOpen(false); // deshabilitado
-                      setSearchValue("");
-                      setSuggestions([]);
-                    }}
-                  >
-                    <span className="material-icons-round">close</span>
-                  </button>
-                  {/* Suggestions dropdown */}
-                  {searchOpen && searchValue.trim() && (
-                    <div className="absolute left-0 top-full mt-1 w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl z-50 max-h-80 overflow-y-auto">
-                      {searchLoading ? (
-                        <div className="p-4 text-center text-slate-500 text-sm">Buscando...</div>
-                      ) : suggestions.length > 0 ? (
-                        suggestions.map((prod) => {
-                          let detailHref = `/product-detail?id=${prod.id}`;
-                          if (user?.role === "client") detailHref = `/home/product-detail?id=${prod.id}`;
-                          if (user?.role === "admin") detailHref = `/admin/product-detail?id=${prod.id}`;
-                          return (
-                            <a
-                              key={prod.id}
-                              href={detailHref}
-                              className="flex items-center gap-2 px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-sm"
-                              onMouseDown={e => e.preventDefault()}
-                            >
-                              {prod.imagen && (
-                                <img src={prod.imagen} alt={prod.nombre} className="w-8 h-8 object-cover rounded" />
-                              )}
-                              <span className="truncate flex-1">{prod.nombre}</span>
-                              {prod.marca && <span className="ml-2 text-xs text-slate-400">{prod.marca}</span>}
-                            </a>
-                          );
-                        })
-                      ) : (
-                        <div className="p-4 text-center text-slate-500 text-sm">No hay resultados</div>
-                      )}
-                    </div>
-                  )}
-                </form>
-              )}
+                    {searchLoading ? (
+                      <div className="p-4 text-center text-sm" style={{ color: "var(--textMuted)" }}>
+                        Buscando...
+                      </div>
+                    ) : suggestions.length > 0 ? (
+                      suggestions.map((prod) => {
+                        let href = `/product-detail?id=${prod.id}`;
+                        if (isClient) href = `/home/product-detail?id=${prod.id}`;
+                        if (isAdmin) href = `/admin/product-detail?id=${prod.id}`;
+                        return (
+                          <a
+                            key={prod.id}
+                            href={href}
+                            className="flex items-center gap-3 px-4 py-2.5 transition-colors text-sm"
+                            style={{ color: "var(--text)" }}
+                            onMouseDown={(e) => e.preventDefault()}
+                          >
+                            {prod.imagen && (
+                              <img
+                                src={prod.imagen}
+                                alt={prod.nombre}
+                                className="w-8 h-8 object-cover rounded-lg flex-shrink-0"
+                              />
+                            )}
+                            <span className="truncate flex-1">{prod.nombre}</span>
+                            {prod.marca && (
+                              <span className="text-xs flex-shrink-0" style={{ color: "var(--textMuted)" }}>
+                                {prod.marca}
+                              </span>
+                            )}
+                          </a>
+                        );
+                      })
+                    ) : (
+                      <div className="p-4 text-center text-sm" style={{ color: "var(--textMuted)" }}>
+                        Sin resultados
+                      </div>
+                    )}
+                  </div>
+                )}
+              </form>
             </div>
           </div>
-          {/* CENTER */}
-          <div className="hidden lg:flex items-center gap-6">
-            {links.map((link) => (
-              <a key={link.href} href={link.href} className="hover:text-purple-600 transition">{link.label}</a>
-            ))}
-          </div>
-          {/* RIGHT */}
-          <div className="hidden lg:flex items-center gap-3">
-            {/* Carrito en navbar para todos, excepto en móvil/tablet */}
-            {(!isMobileOrTablet) && (
-              <a href={user ? (isClient ? "/home/cart" : "/admin/cart") : "/cart"} className="relative p-2 hover:bg-(--hover) rounded-full transition" aria-label="Carrito">
-                <span className="material-icons-round text-2xl">shopping_bag</span>
+
+          {/* ── CENTER: Hablemos + Dirección + Redes (solo desktop) ── */}
+          <div className="hidden lg:flex items-center gap-5 flex-1 justify-center">
+            {/* Hablemos */}
+            <a
+              href="tel:+593999999999"
+              className="flex items-center gap-1.5 text-sm font-medium transition-opacity hover:opacity-70 whitespace-nowrap"
+              style={{ color: "var(--text)" }}
+            >
+              <span className="material-icons-round text-base " style={{ color: "bg"}}>
+                headset_mic
+              </span>
+              Hablemos
+            </a>
+
+            {/* Separador */}
+            <span className="w-px h-4" style={{ background: "var(--border)" }} />
+
+            {/* Dirección */}
+            <a
+              href="https://www.google.com/maps/place/TECNOTHINGS+GYE/@-2.129417,-79.928368,15z/data=!3m1!5s0x902d72a2e57c3531:0xb16e2945969c517f!4m14!1m7!3m6!1s0x902d733792952ed1:0x2fda88783fa806f2!2sTECNOTHINGS+GYE!8m2!3d-2.1294174!4d-79.9283685!16s%2Fg%2F11t6z91sqm!3m5!1s0x902d733792952ed1:0x2fda88783fa806f2!8m2!3d-2.1294174!4d-79.9283685!16s%2Fg%2F11t6z91sqm?hl=es-419&entry=ttu&g_ep=EgoyMDI2MDQwMS4wIKXMDSoASAFQAw%3D%3D"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 text-sm transition-opacity hover:opacity-70 whitespace-nowrap"
+              style={{ color: "var(--textMuted)" }}
+            >
+              <span className="material-icons-round text-base" style={{ color: "bg" }}>
+                near_me
+              </span>
+              DIAGONAL ANAI, SAN FELIPE, Guayaquil
+            </a>
+
+            {/* Separador */}
+            <span className="w-px h-4" style={{ background: "var(--border)" }} />
+
+            {/* Redes sociales */}
+            <div className="flex items-center gap-1">
+              {/* Facebook */}
+              <a
+                href="https://www.facebook.com/TecnothingsEc/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-1.5 rounded-lg transition-opacity hover:opacity-70"
+                style={{ color: "var(--text)" }}
+                aria-label="Facebook"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/>
+                </svg>
               </a>
-            )}
+              {/* Instagram */}
+              <a
+                href="https://www.instagram.com/tecnothings_ec/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-1.5 rounded-lg transition-opacity hover:opacity-70"
+                style={{ color: "var(--text)" }}
+                aria-label="Instagram"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+                  <circle cx="12" cy="12" r="4"/>
+                  <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/>
+                </svg>
+              </a>
+              {/* TikTok */}
+              <a
+                href="https://www.tiktok.com/@tecnothings_ec"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-1.5 rounded-lg transition-opacity hover:opacity-70"
+                style={{ color: "var(--text)" }}
+                aria-label="TikTok"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.18 8.18 0 004.78 1.52V6.75a4.85 4.85 0 01-1.01-.06z"/>
+                </svg>
+              </a>
+            </div>
+          </div>
+
+          {/* ── RIGHT: ThemeToggle + Carrito + Usuario ── */}
+          <div className="hidden lg:flex items-center  gap-2 ">
+            <ThemeToggle />
+
+            {/* Carrito */}
+            <a
+              href={user ? (isClient ? "/home/cart" : "/admin/cart") : "/cart"}
+              className="flex  items-center dark:color-white justify-center px-2 rounded-xl transition-colors"
+              style={{ background: "bg"}}
+              aria-label="Carrito"
+            >
+              <span className="material-icons-round dark:color-white text-xl">shopping_bag</span>
+            </a>
+
+            {/* Usuario: si está logueado → avatar + menú; si no → botón "Ingresa" */}
             {user ? (
               <div className="relative">
                 <button
-                  className="p-2 rounded-full hover:bg-(--hover) transition"
+                  className="rounded-full transition-opacity hover:opacity-80"
                   onClick={() => setUserMenu(!userMenu)}
                   title="Opciones de usuario"
                 >
-                  {user && user.photoURL ? (
+                  {user.photoURL ? (
                     <img
                       src={user.photoURL}
                       alt="Foto de perfil"
-                      className="w-11 h-11 rounded-full object-cover border-2 border-[#3a1859] dark:border-white"
+                      className="w-9 h-9 rounded-full object-cover border-2"
+                      style={{  }}
                     />
                   ) : (
-                    <span className="material-icons-round text-2xl">account_circle</span>
+                    <span className="material-icons-round text-3xl" style={{ color: "bg" }}>
+                      account_circle
+                    </span>
                   )}
                 </button>
+
                 {userMenu && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-black rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 flex flex-col">
-                    <a href={isClient ? "/home/perfil" : "/admin/perfil"} className="px-4 py-3 hover:bg-slate-100 dark:hover:bg-white/10 text-slate-900 dark:text-white">Perfil</a>
-                    <a href={isClient ? "/home/config" : "/admin/config"} className="px-4 py-3 hover:bg-slate-100 dark:hover:bg-white/10 text-slate-900 dark:text-white flex items-center gap-2">
-                      <span className="material-icons-round text-xl">settings</span>
+                  <div
+                    className="absolute right-0 mt-2 w-48 rounded-2xl border shadow-xl overflow-hidden z-50"
+                    style={{ background: "var(--cardBg)", borderColor: "var(--border)" }}
+                  >
+                    <a
+                      href={isClient ? "/home/perfil" : "/admin/perfil"}
+                      className="flex items-center gap-2 px-4 py-3 text-sm transition-colors"
+                      style={{ color: "var(--text)" }}
+                    >
+                      <span className="material-icons-round text-base">person</span>
+                      Perfil
+                    </a>
+                    <a
+                      href={isClient ? "/home/config" : "/admin/config"}
+                      className="flex items-center gap-2 px-4 py-3 text-sm transition-colors"
+                      style={{ color: "var(--text)" }}
+                    >
+                      <span className="material-icons-round text-base">settings</span>
                       Configuración
                     </a>
+                    <div className="border-t" style={{ borderColor: "var(--border)" }} />
                     <button
-                      className="px-4 py-3 text-left hover:bg-slate-100 dark:hover:bg-white/10 text-red-600 font-semibold"
+                      className="w-full flex items-center gap-2 px-4 py-3 text-sm text-left text-red-500 font-medium transition-colors"
                       onClick={async () => {
                         const { logoutUser } = await import("../lib/firebase-auth");
                         await logoutUser();
-                        try {
-                          await fetch("/api/auth/logout", { method: "POST" });
-                        } catch (e) {}
+                        try { await fetch("/api/auth/logout", { method: "POST" }); } catch {}
                         window.location.href = "/";
                       }}
                     >
+                      <span className="material-icons-round text-base">logout</span>
                       Cerrar sesión
                     </button>
                   </div>
                 )}
               </div>
             ) : (
-              <>
-                <a href="/login" className="p-2 hover:bg-(--hover) rounded-full transition" aria-label="Cuenta">
-                  <span className="material-icons-round text-2xl">account_circle</span>
-                </a>
-                <ThemeToggle />
-              </>
-            )}
-          </div>
-          {/* MOBILE RIGHT */}
-          <div className="lg:hidden flex gap-2">
-            {/* Carrito en navbar solo si no es móvil/tablet */}
-            {!isMobileOrTablet && (
-              <a href={user ? (isClient ? "/home/cart" : "/admin/cart") : "/cart"} aria-label="Carrito">
-                <span className="material-icons-round">shopping_bag</span>
-              </a>
-            )}
-          </div>
-        </div>
-      </nav>
-      {/* ================= CATEGORIES DESKTOP ================= */}
-      {/* Categorías eliminadas del Navbar para evitar doble barra, ahora se renderizan en el layout correspondiente */}
-      {/* ================= MOBILE DRAWER ================= */}
-      {mobileOpen && (
-        <div className="fixed inset-0 bg-black/40 z-50" onClick={() => setMobileOpen(false)}>
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="absolute left-0 top-0 w-full bg-white text-slate-900 dark:bg-black dark:text-white max-h-[85vh] overflow-y-auto rounded-b-2xl shadow-xl p-6"
-          >
-            <button
-              onClick={() => setMobileOpen(false)}
-              className="mb-6 text-xl font-bold text-slate-900 dark:text-white hover:text-red-500 dark:hover:text-red-400 transition"
-              aria-label="Cerrar menú"
-            >
-              ✕
-            </button>
-            {links.map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                className="block mb-4 font-bold text-slate-900 dark:text-white hover:text-purple-600 dark:hover:text-purple-300 transition"
-              >
-                {link.label}
-              </a>
-            ))}
-            {/* Categorías dinámicas tipo acordeón */}
-            <MobileCategoriesAccordion basePath={isClient ? "/home/products-by-category" : "/products-by-category"} />
-            {user ? (
-              <>
-                <a
-                  href={isClient ? "/home/perfil" : "/admin/perfil"}
-                  className="block mb-3 text-slate-900 dark:text-white hover:text-purple-600 dark:hover:text-purple-300"
-                >
-                  Perfil
-                </a>
-                <button
-                  className="mt-1 text-left text-red-600 dark:text-red-400 hover:underline"
-                  onClick={async () => {
-                    const { logoutUser } = await import("../lib/firebase-auth");
-                    await logoutUser();
-                    try {
-                      await fetch("/api/auth/logout", { method: "POST" });
-                    } catch (e) {}
-                    window.location.href = "/";
-                  }}
-                >
-                  Cerrar sesión
-                </button>
-              </>
-            ) : (
               <a
                 href="/login"
-                className="text-slate-900 dark:text-white hover:text-purple-600 dark:hover:text-purple-300 transition"
+                className="flex color:black dark:color-white items-center gap-2 p-1 rounded-xl border-2 text-sm font-semibold transition-opacity hover:opacity-80 whitespace-nowrap"
+                style={{ }}
               >
-                Iniciar sesión
+                <span className="material-icons-round text-base">person</span>
+                Ingresa
               </a>
             )}
+          </div>
+
+          {/* ── RIGHT móvil ── */}
+          <div className="lg:hidden flex items-center gap-2">
+            <ThemeToggle />
+          </div>
+        </div>
+
+        {/* ── Fila 2: Links de nav + Categorías centrados (solo desktop) ── */}
+        <div
+          className="hidden lg:flex items-center justify-center gap-1 px-6 border-t flex-wrap"
+          style={{ borderColor: "var(--border)" }}
+        >
+          {/* Links fijos: Inicio, Blogs */}
+          {links.map((link) => (
+            <a
+              key={link.href}
+              href={link.href}
+              className="px-3 py-2.5 text-sm font-medium whitespace-nowrap transition-colors rounded-xl hover:opacity-80"
+              style={{ color: "var(--text)" }}
+            >
+              {link.label}
+            </a>
+          ))}
+
+          {/* Separador visual */}
+          {categorias.length > 0 && (
+            <span
+              className="w-px h-4 mx-1 self-center"
+              style={{ background: "var(--border)" }}
+            />
+          )}
+
+          {/* Categorías dinámicas */}
+          {categorias.map((cat) => (
+            <div key={cat.id} className="relative group flex-shrink-0">
+              {cat.subcategorias?.length > 0 ? (
+                <button
+                  className="flex items-center gap-1 px-3 py-2.5 text-sm font-medium whitespace-nowrap transition-colors rounded-xl hover:opacity-80"
+                  style={{ color: "var(--textMuted)" }}
+                >
+                  {cat.icono && (
+                    <span className="material-icons-round" style={{ fontSize: 15 }}>{cat.icono}</span>
+                  )}
+                  {cat.nombre}
+                  <span
+                    className="material-icons-round transition-transform duration-200 group-hover:rotate-180"
+                    style={{ fontSize: 14, color: "var(--textMuted)" }}
+                  >
+                    expand_more
+                  </span>
+                </button>
+              ) : (
+                <Link
+                  href={`${basePath}?cat=${cat.id}`}
+                  className="flex items-center gap-1 px-3 py-2.5 text-sm font-medium whitespace-nowrap transition-colors rounded-xl hover:opacity-80"
+                  style={{ color: "var(--textMuted)" }}
+                >
+                  {cat.icono && (
+                    <span className="material-icons-round" style={{ fontSize: 15 }}>{cat.icono}</span>
+                  )}
+                  {cat.nombre}
+                </Link>
+              )}
+
+              {/* Dropdown nivel 1 */}
+              {cat.subcategorias?.length > 0 && (
+                <div
+                  className="absolute left-0 top-full min-w-52 rounded-2xl border shadow-xl py-1.5 z-50
+                             opacity-0 pointer-events-none translate-y-1
+                             group-hover:opacity-100 group-hover:pointer-events-auto group-hover:translate-y-0
+                             transition-all duration-150"
+                  style={{ background: "var(--cardBg)", borderColor: "var(--border)" }}
+                >
+                  {cat.subcategorias.map((sub: any) => (
+                    <div key={sub.id} className="relative group/sub">
+                      {sub.subcategorias?.length > 0 ? (
+                        <button
+                          className="w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors"
+                          style={{ color: "var(--text)" }}
+                        >
+                          <span>{sub.nombre}</span>
+                          <span className="material-icons-round text-sm" style={{ color: "var(--textMuted)" }}>
+                            chevron_right
+                          </span>
+
+                          {/* Dropdown nivel 2 */}
+                          <div
+                            className="absolute left-full top-0 ml-1 min-w-44 rounded-2xl border shadow-xl py-1.5 z-60
+                                       opacity-0 pointer-events-none translate-x-1
+                                       group-hover/sub:opacity-100 group-hover/sub:pointer-events-auto group-hover/sub:translate-x-0
+                                       transition-all duration-150"
+                            style={{ background: "var(--cardBg)", borderColor: "var(--border)" }}
+                          >
+                            {sub.subcategorias.map((subsub: any) => (
+                              <Link
+                                key={subsub.id}
+                                href={`${basePath}?cat=${cat.id}&sub=${sub.id}&subsub=${subsub.id}`}
+                                className="block px-4 py-2.5 text-sm transition-colors"
+                                style={{ color: "var(--text)" }}
+                              >
+                                {subsub.nombre}
+                              </Link>
+                            ))}
+                          </div>
+                        </button>
+                      ) : (
+                        <Link
+                          href={`${basePath}?cat=${cat.id}&sub=${sub.id}`}
+                          className="block px-4 py-2.5 text-sm transition-colors"
+                          style={{ color: "var(--text)" }}
+                        >
+                          {sub.nombre}
+                        </Link>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </nav>
+
+      {/* ══════════════════ MOBILE DRAWER ══════════════════ */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
+          onClick={() => setMobileOpen(false)}
+        >
+          <div
+            className="absolute left-0 top-0 w-[85vw] max-w-xs h-full overflow-y-auto shadow-2xl flex flex-col"
+            style={{ background: "var(--cardBg)", color: "var(--text)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header drawer */}
+            <div
+              className="flex items-center justify-between px-5 py-4 border-b"
+              style={{ borderColor: "var(--border)" }}
+            >
+              <span className="font-bold text-base" style={{ color: "var(--text)" }}>
+                TECNO THINGS
+              </span>
+              <button
+                onClick={() => setMobileOpen(false)}
+                className="p-1.5 rounded-xl transition-colors"
+                style={{ color: "var(--textMuted)" }}
+              >
+                <span className="material-icons-round text-xl">close</span>
+              </button>
+            </div>
+
+            <div className="flex-1 px-4 py-4 flex flex-col gap-1">
+              {/* Búsqueda móvil */}
+              <form
+                className="flex items-center gap-2 px-3 py-2 rounded-xl border mb-3"
+                style={{ background: "var(--hover)", borderColor: "var(--border)" }}
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (searchValue.trim()) {
+                    handleSearch();
+                    setMobileOpen(false);
+                  }
+                }}
+              >
+                <span className="material-icons-round text-lg" style={{ color: "var(--textMuted)" }}>
+                  search
+                </span>
+                <input
+                  type="text"
+                  placeholder="Buscar productos..."
+                  className="bg-transparent outline-none text-sm flex-1"
+                  style={{ color: "var(--text)" }}
+                  value={searchValue}
+                  onChange={(e) => setSearchValue(e.target.value)}
+                />
+              </form>
+
+              {/* Links */}
+              {links.map((link) => (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors"
+                  style={{ color: "var(--text)" }}
+                >
+                  {link.label}
+                </a>
+              ))}
+
+              {/* Categorías en acordeón */}
+              <MobileCategoriesAccordion basePath={basePath} />
+
+              {/* Divisor */}
+              <div className="border-t my-2" style={{ borderColor: "var(--border)" }} />
+
+              {/* Usuario */}
+              {user ? (
+                <>
+                  <a
+                    href={isClient ? "/home/perfil" : "/admin/perfil"}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors"
+                    style={{ color: "var(--text)" }}
+                  >
+                    <span className="material-icons-round text-base">person</span>
+                    Perfil
+                  </a>
+                  <a
+                    href={isClient ? "/home/config" : "/admin/config"}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors"
+                    style={{ color: "var(--text)" }}
+                  >
+                    <span className="material-icons-round text-base">settings</span>
+                    Configuración
+                  </a>
+                  <button
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-left text-red-500 font-medium transition-colors"
+                    onClick={async () => {
+                      const { logoutUser } = await import("../lib/firebase-auth");
+                      await logoutUser();
+                      try { await fetch("/api/auth/logout", { method: "POST" }); } catch {}
+                      window.location.href = "/";
+                    }}
+                  >
+                    <span className="material-icons-round text-base">logout</span>
+                    Cerrar sesión
+                  </button>
+                </>
+              ) : (
+                <a
+                  href="/login"
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors"
+                  style={{ color: "var(--text)" }}
+                >
+                  <span className="material-icons-round text-base">account_circle</span>
+                  Iniciar sesión
+                </a>
+              )}
+            </div>
           </div>
         </div>
       )}
-      {/* Carrito flotante móvil/tablet para todos los usuarios */}
-      {showFloatingCart && (
+
+      {/* ══════════════════ CARRITO FLOTANTE MÓVIL ══════════════════ */}
+      {isMobileOrTablet && (
         <a
           href={user ? (isClient ? "/home/cart" : "/admin/cart") : "/cart"}
-          className="fixed bottom-28 right-4 z-50 bg-purple-600 text-white rounded-full shadow-lg p-4 flex items-center justify-center lg:hidden animate-bounce hover:bg-purple-700 transition"
-          style={{ boxShadow: '0 4px 24px 0 rgba(80,0,120,0.15)' }}
+          className="fixed bottom-28 right-4 z-50 rounded-full p-4 shadow-lg flex items-center justify-center lg:hidden transition-transform hover:scale-105 active:scale-95"
+          style={{ background: "var(--accent)", color: "#fff" }}
           aria-label="Carrito flotante"
         >
-          <span className="material-icons-round text-3xl">shopping_bag</span>
+          <span className="material-icons-round text-2xl">shopping_bag</span>
         </a>
       )}
     </>
   );
 };
-
-function CategoryDesktop({ category }: any) {
-  const [activeSub, setActiveSub] = useState<string | null>(null);
-  return (
-    <div className="relative group flex">
-      <button
-        className="flex gap-2 px-4 py-2 rounded-lg border"
-        style={{
-          background: "var(--cardBg)",
-
-          borderColor: "var(--border)",
-        }}
-      >
-        <span className="material-icons-round">{category.icon}</span>
-        {category.name}
-      </button>
-      {category.subcategories && (
-        <div
-          className="absolute top-full left-0 hidden group-hover:block w-64 border rounded-xl shadow-xl bg-(--dropdownBg)"
-          style={{ borderColor: "var(--border)" }}
-        >
-          {Object.values(category.subcategories).map((sub: any) => (
-            <div key={sub.id} className="relative">
-              {/* Si tiene subsubcategorías, muestra panel derecho, si no, es clickeable */}
-              {sub.subsubcategories ? (
-                <button
-                  className="block w-full text-left px-4 py-3 hover:bg-purple-100 dark:hover:bg-purple-900"
-                  onMouseEnter={() => setActiveSub(sub.id)}
-                  onMouseLeave={() => setActiveSub(null)}
-                  onClick={() => setActiveSub(sub.id)}
-                >
-                  {sub.name}
-                </button>
-              ) : (
-                <a
-                  href={`/products-by-category?category=${category.id}&subcategory=${sub.id}`}
-                  className="block px-4 py-3 hover:bg-purple-100 dark:hover:bg-purple-900"
-                >
-                  {sub.name}
-                </a>
-              )}
-              {/* Subsubcategorías en panel derecho */}
-              {activeSub === sub.id && sub.subsubcategories && (
-                <div
-                  className="absolute top-0 left-full w-56 border rounded-xl shadow-xl bg-(--dropdownBg) z-10"
-                  style={{ borderColor: "var(--border)" }}
-                  onMouseEnter={() => setActiveSub(sub.id)}
-                  onMouseLeave={() => setActiveSub(null)}
-                >
-                  {Object.values(sub.subsubcategories).map((subsub: any) => (
-                    <a
-                      key={subsub.id}
-                      href={`/products-by-category?category=${category.id}&subcategory=${sub.id}&subsubcategory=${subsub.id}`}
-                      className="block px-4 py-2 text-sm hover:bg-purple-50 dark:hover:bg-purple-900"
-                    >
-                      {subsub.name}
-                    </a>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function MobileCategory({ category }: any) {
-  const [open, setOpen] = useState(false);
-
-  return (
-    <div>
-      <button
-        onClick={() => setOpen(!open)}
-        className="w-full flex justify-between py-3 font-semibold"
-      >
-        {category.name}
-
-        <span>{open ? "-" : "+"}</span>
-      </button>
-
-      {open && category.subcategories && (
-        <div className="pl-4">
-          {Object.values(category.subcategories).map((sub: any) => (
-            <div key={sub.id}>
-              <a
-                href={`/products-by-category?category=${category.id}&subcategory=${sub.id}`}
-                className="block py-2"
-              >
-                {sub.name}
-              </a>
-              {/* Subsubcategorías */}
-              {sub.subsubcategories && (
-                <div className="pl-6">
-                  {Object.values(sub.subsubcategories).map((subsub: any) => (
-                    <a
-                      key={subsub.id}
-                      href={`/products-by-category?category=${category.id}&subcategory=${sub.id}&subsubcategory=${subsub.id}`}
-                      className="block py-1 text-sm text-gray-500 dark:text-gray-300"
-                    >
-                      {subsub.name}
-                    </a>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
 
 export default Navbar;

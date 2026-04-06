@@ -6,7 +6,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import { loginUser, registerUser, getCurrentUser } from "../lib/firebase-auth";
 import { themeManager } from "../components/themeManager";
-import CategoriesBar from "../components/CategoriesBar";
 import { Loading3DIcon } from "../components/Loading3DIcon";
 
 type TabType = "login" | "register";
@@ -237,7 +236,6 @@ export default function LoginPage() {
       }}
       className="bg-white mt-2 dark:bg-black text-slate-900 dark:text-white min-h-screen flex flex-col"
     >
-      <CategoriesBar />
       <div className="w-full text-centew-full max-w-md mx-auto mt-0 mb-5 text-center ">
         <h2 className="text-3xl md:text-4xl font-extrabold mb-2" style={{ color: 'var(--text)' }}>¡Bienvenido a Tecno Things!</h2>
         <p className="text-base md:text-lg mb-4" style={{ color: 'var(--textSecondary)' }}>Inicia sesión o crea una cuenta para acceder a tu panel y disfrutar de la mejor tecnología.</p>

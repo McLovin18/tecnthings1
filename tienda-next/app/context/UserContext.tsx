@@ -1,28 +1,53 @@
 "use client";
-import { createContext, useContext, useState, useEffect, useRef } from "react";
+import { createContext, useContext, useState, useEffect, useRef, ReactNode } from "react";
 import { getInitialFavorites, getInitialCart, saveFavorites, saveCart, mergeGuestCartIntoUser } from "./userLocalStorage";
 import { auth } from "../lib/firebase";
 import { onIdTokenChanged, getIdToken, getIdTokenResult } from "firebase/auth";
 import { Loading3DIcon } from "../components/Loading3DIcon";
 
 
-// Contexto de usuario global
-const UserContext = createContext({
+
+// Tipado explícito para el usuario
+export interface AppUser {
+  uid: string;
+  email?: string;
+  displayName?: string;
+  photoURL?: string;
+  role?: string;
+  [key: string]: any;
+}
+
+interface UserContextType {
+  isLogged: boolean;
+  isCliente: boolean;
+  isAdmin: boolean;
+  user: AppUser | null;
+  setUser: (u: AppUser | null) => void;
+  favoritos: any[];
+  addFavorito: (p: any) => void;
+  removeFavorito: (id: string) => void;
+  carrito: any[];
+  addCarrito: (p: any) => void;
+  removeCarrito: (id: string) => void;
+}
+
+// Contexto de usuario global tipado
+const UserContext = createContext<UserContextType>({
   isLogged: false,
   isCliente: false,
   isAdmin: false,
   user: null,
   setUser: () => {},
   favoritos: [],
-  addFavorito: (p) => {},
-  removeFavorito: (id) => {},
+  addFavorito: () => {},
+  removeFavorito: () => {},
   carrito: [],
-  addCarrito: (p) => {},
-  removeCarrito: (id) => {},
+  addCarrito: () => {},
+  removeCarrito: () => {},
 });
 
-export function UserProvider({ children }) {
-  const [user, setUser] = useState(null);
+export function UserProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<AppUser | null>(null);
   const [favoritos, setFavoritos] = useState([]);
   const [carrito, setCarrito] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -166,6 +191,6 @@ export function UserProvider({ children }) {
   );
 }
 
-export function useUser() {
+export function useUser(): UserContextType {
   return useContext(UserContext);
 }

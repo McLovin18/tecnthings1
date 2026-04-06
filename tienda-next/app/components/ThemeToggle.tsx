@@ -19,7 +19,7 @@ const ThemeToggle = () => {
 
   return (
     <button
-      className="p-2 rounded-full hover:bg-slate-100  dark:hover:bg-white/10"
+      className="px-2 rounded-2 py-0  dark:hover:bg-white/10"
       onClick={handleToggleTheme}
       title="Cambiar tema"
       style={{ marginLeft: 8 }}

@@ -92,7 +92,7 @@ export default function ProductoCard({
       <div
         className="
           relative flex-shrink-0 overflow-hidden
-          bg-slate-50 dark:bg-white/[0.03]
+          bg-white dark:bg-white/[0.03]
 
           /* móvil: cuadrado fijo a la izquierda */
           w-[140px] h-[140px]
