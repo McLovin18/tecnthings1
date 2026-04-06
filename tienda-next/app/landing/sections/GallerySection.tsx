@@ -104,8 +104,8 @@ export default function GallerySection({
       {title && (
         <div className="mb-10 text-center">
           <h2
-            className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight"
-            style={{ color: "var(--text)" }}
+            className="text-3xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight"
+            style={{ color: "var(--text)", fontSize: "40px" }}
           >
             {title}
           </h2>
