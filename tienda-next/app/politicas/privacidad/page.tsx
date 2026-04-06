@@ -127,7 +127,7 @@ const PoliticaPrivacidad: React.FC = () => {
               Documento legal
             </p>
 
-            <h1 className="text-5xl md:text-7xl font-extrabold font-[Syne] mb-4">
+            <h1 className="text-3xl sm:text-5xl font-extrabold font-[Syne] mb-4">
               Política de <span className="text-violet-600">Privacidad</span>
             </h1>
 
@@ -149,26 +149,26 @@ const PoliticaPrivacidad: React.FC = () => {
           {sections.map((s) =>
             s.isContact ? (
               <div key={s.number} className="tc-section flex gap-6 mb-12">
-                <div className="w-10 h-10 flex items-center justify-center rounded-full border text-violet-500">
-                  {s.number}
-                </div>
+
 
                 <div className="flex-1 flex justify-between items-center bg-violet-50 dark:bg-[#15151a] border dark:border-[rgba(124,58,237,0.25)] rounded-xl p-6">
                   <div>
                     <p className="font-bold text-gray-900 dark:text-white">
                       Contacto
                     </p>
-                    <p className="text-sm text-gray-500 dark:text-[#cfc9e6]">
+                    <p className="text-sm text-gray-500 dark:text-[#cfc9e6] py-3">
                       Escríbenos para cualquier consulta sobre privacidad
                     </p>
-                  </div>
 
-                  <a
+                <a
                     href="mailto:tecnothings.sas@gmail.com"
                     className="bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-lg text-sm"
                   >
                     tecnothings.sas@gmail.com
                   </a>
+                  </div>
+
+
                 </div>
               </div>
             ) : (

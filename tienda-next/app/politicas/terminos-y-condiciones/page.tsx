@@ -191,11 +191,11 @@ const TerminosCondiciones: React.FC = () => {
             {/* Title */}
             <h1
               className="
-                font-[Syne,sans-serif] font-extrabold leading-[1.05] tracking-tight
+                font-[Syne,sans-serif] text-3xl sm:text-5xl font-extrabold leading-[1.05] tracking-tight
                 text-gray-900 dark:text-white
                 mb-2
               "
-              style={{ fontSize: "clamp(36px, 7vw, 72px)" }}
+              style={{ }}
             >
               Términos y<br />
               <span className="text-violet-600 dark:text-[#7c3aed]">Condiciones</span>
@@ -233,21 +233,13 @@ const TerminosCondiciones: React.FC = () => {
           {sections.map((s) =>
             s.isContact ? (
               /* Contact section */
-              <div key={s.number} className="tc-section flex gap-8 mb-12">
+              <div key={s.number} className="tc-section flex gap-3 mb-12">
                 <div className="flex-shrink-0 flex flex-col items-center">
-                  <div className="
-                    tc-num-badge w-[46px] h-[46px] rounded-full flex items-center justify-center relative z-10
-                    font-[Syne,sans-serif] text-xs font-bold
-                    text-violet-600 dark:text-[#8b5cf6]
-                    bg-white border border-violet-200
-                    dark:bg-[#0d0d0f] dark:border-[rgba(124,58,237,0.35)]
-                  ">
-                    {s.number}
-                  </div>
+
                 </div>
                 <div className="
                   tc-contact-card flex-1 flex items-center justify-between flex-wrap gap-4
-                  rounded-2xl px-7 py-6
+                  rounded-2xl px-3 py-6
                   bg-violet-50 border border-violet-200
                   dark:bg-[rgba(124,58,237,0.07)] dark:border-[rgba(124,58,237,0.25)]
                 ">
