@@ -68,7 +68,7 @@ export default function GoogleCommentsSection({
     >
       <div className="max-w-4xl mx-auto" style={{ borderRadius }}>
         {title && (
-          <h2 className="text-2xl font-bold mb-6 text-center" style={fieldStyles?.title}>{title}</h2>
+          <h2 className="text-3xl font-bold mb-6 text-center" style={ {fontSize: "40px"}} >{title}</h2>
         )}
         <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
           {Array.isArray(comments) && comments.length > 0 ? (

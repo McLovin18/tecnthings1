@@ -1,6 +1,5 @@
 "use client";
 
-import ThemeToggle from "@/app/components/ThemeToggle";
 import React, { useEffect, useState, useCallback } from "react";
 import type {
   LandingSectionStyles,
@@ -17,11 +16,9 @@ export type GallerySectionProps = {
 
 // Cuántas columnas mostrar según breakpoint
 function getColumns(width: number, total: number): number {
-  if (width < 480) return 2;
-  if (width < 768) return 3;
+  if (width < 640) return 2;
   if (width < 1024) return 3;
-  if (width < 1280) return 4;
-  return Math.min(5, total); // máximo 5 en desktop, nunca más que el total
+  return Math.min(4, total); // máximo 4 en desktop
 }
 
 export default function GallerySection({
@@ -172,7 +169,7 @@ export default function GallerySection({
 
         {/* ── Grid de cards ── */}
         <div
-          className="grid gap-3 sm:gap-4 lg:gap-5 w-full"
+          className="grid gap-4 sm:gap-5 lg:gap-6 w-full"
           style={{
             gridTemplateColumns: `repeat(${effectiveCols}, minmax(0, 1fr))`,
             // Animación de entrada según dirección
@@ -259,9 +256,10 @@ function GalleryCard({
     >
       {/* Imagen */}
       <div
-        className="w-full relative overflow-hidden rounded-2xl border transition-all duration-300 dark:bg-slate-900"
+        className="w-full relative overflow-hidden rounded-2xl border transition-all duration-300"
         style={{
           aspectRatio: "1 / 1",
+          background: "var(--galleryImgBg, #f8fafc)",
           borderColor: hovered ? "var(--accent, #7c3aed)" : "var(--border, #e2e8f0)",
           boxShadow: hovered
             ? "0 8px 32px 0 rgba(124,58,237,0.13)"
@@ -273,7 +271,7 @@ function GalleryCard({
           <img
             src={item.image}
             alt={item.title || "Imagen"}
-            className="absolute inset-0 w-full h-full object-contain p-3 sm:p-4 transition-transform duration-500"
+            className="absolute inset-0 w-full h-full object-contain p-4 sm:p-5 lg:p-6 transition-transform duration-500"
             style={{
               transform: hovered ? "scale(1.07)" : "scale(1)",
             }}
