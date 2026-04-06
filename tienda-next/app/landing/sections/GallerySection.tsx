@@ -43,7 +43,7 @@ export default function GallerySection({
       const width = window.innerWidth;
       if (width < 640) setItemsPerView(1);
       else if (width < 1024) setItemsPerView(3);
-      else setItemsPerView(4);
+      else setItemsPerView(5);
     };
     updateItemsPerView();
     window.addEventListener("resize", updateItemsPerView);
@@ -96,7 +96,7 @@ export default function GallerySection({
   return (
     <section
       style={{ paddingTop, paddingBottom }}
-      className="px-4 lg:px-8 flex flex-col items-center"
+      className="px-2 lg:px-2 flex flex-col items-center"
     >
       {/* Título */}
       {title && (
@@ -107,7 +107,7 @@ export default function GallerySection({
 
       {/* Contenedor del carrusel */}
       <div
-        className="w-full max-w-6xl mx-auto relative"
+        className="w-full max-w-7xl mx-auto relative"
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
       >
@@ -140,13 +140,13 @@ export default function GallerySection({
           className={
             isSingleVisible
               ? "flex justify-center w-full max-w-sm mx-auto"
-              : `grid gap-5 place-items-center w-full ${
-                  effectiveItemsPerView === 2
-                    ? "grid-cols-2"
-                    : effectiveItemsPerView === 3
-                    ? "grid-cols-3"
-                    : "grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
-                }`
+          : `grid gap-5 place-items-center w-full ${
+              effectiveItemsPerView === 2
+                ? "grid-cols-2"
+                : effectiveItemsPerView === 3
+                ? "grid-cols-3"
+                : "grid-cols-2 md:grid-cols-3 lg:grid-cols-5"
+            }`
           }
         >
           {visibleItems.map((item, idx) => (

@@ -40,7 +40,7 @@ export default function FeaturedProductsSection({
       const width = window.innerWidth;
       if (width < 640) setItemsPerView(1);
       else if (width < 1024) setItemsPerView(3);
-      else setItemsPerView(4);
+      else setItemsPerView(5);
     };
     updateItemsPerView();
     window.addEventListener("resize", updateItemsPerView);
@@ -84,17 +84,17 @@ export default function FeaturedProductsSection({
     setCurrentIndex((prev) => (prev + 1) % products.length);
   };
 
-  const gridCols =
-    effectiveItemsPerView === 2
-      ? "grid-cols-2"
-      : effectiveItemsPerView === 3
-      ? "grid-cols-3"
-      : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4";
+const gridCols =
+  effectiveItemsPerView === 2
+    ? "grid-cols-2"
+    : effectiveItemsPerView === 3
+    ? "grid-cols-3"
+    : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-5";
 
   return (
     <section
       style={{ paddingTop, paddingBottom }}
-      className="px-4 lg:px-8 flex flex-col items-center"
+      className="px-4 lg:px-4 flex flex-col items-center"
     >
       {/* Título */}
       {title && (
@@ -108,7 +108,7 @@ export default function FeaturedProductsSection({
 
       {/* Contenedor carrusel */}
       <div
-        className="w-full max-w-6xl mx-auto relative"
+        className="w-full max-w-7xl mx-auto relative"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >

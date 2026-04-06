@@ -1,11 +1,11 @@
 "use client";
 
+import { obtenerProductoPorId, obtenerProductosPorCategoria, obtenerProductosPorSubcategoria, obtenerProductosPorSubsubcategoria } from "../lib/productos-db";
 import { Loading3DIcon } from "../components/Loading3DIcon";
 import ProductoCard from "../components/ProductoCard";
 import React, { useState, useEffect } from "react";
 import { ProductReview } from "../lib/reviews-types";
 import { useUser } from "../context/UserContext";
-import { obtenerProductoPorId } from "../lib/productos-db";
 import CategoriesBar from "../components/CategoriesBar";
 import { useSearchParams } from "next/navigation";
 
@@ -46,15 +46,15 @@ export default function ProductDetailPage({ params }) {
         let rel = [];
         console.log("[RELACIONADOS] subsubcategoria:", prod.subsubcategoria, "subcategoria:", prod.subcategoria, "categoria:", prod.categoria);
         if (prod.subsubcategoria) {
-          rel = await obtenerProductosPorSubsubcategoria(prod.subsubcategoria, prod.id, 4);
+          rel = await obtenerProductosPorSubsubcategoria(prod.subsubcategoria, prod.id, 5);
           console.log("[RELACIONADOS] encontrados por subsubcategoria:", rel);
         }
         if ((!rel || rel.length === 0) && prod.subcategoria) {
-          rel = await obtenerProductosPorSubcategoria(prod.subcategoria, prod.id, 4);
+          rel = await obtenerProductosPorSubcategoria(prod.subcategoria, prod.id, 5);
           console.log("[RELACIONADOS] encontrados por subcategoria:", rel);
         }
         if ((!rel || rel.length === 0) && prod.categoria) {
-          rel = await obtenerProductosPorCategoria(prod.categoria, prod.id, 4);
+          rel = await obtenerProductosPorCategoria(prod.categoria, prod.id, 5);
           console.log("[RELACIONADOS] encontrados por categoria:", rel);
         }
         setRelacionados(rel);
@@ -448,10 +448,10 @@ const fakeOldPrice = hasDiscount ? Math.round(basePrice / (1 - discount / 100)) 
         </div>
       </div>
       {/* Productos relacionados */}
-      <div className="max-w-5xl mx-auto w-full px-3 sm:px-6 pb-10">
+      <div className="max-w-7xl mx-auto w-full px-1 sm:px-3 pb-10">
         <h2 className="text-xl font-bold mb-4 mt-10 text-slate-800 dark:text-white">Productos relacionados</h2>
         {relacionados && relacionados.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
             {relacionados.map((prod) => (
               <ProductoCard key={prod.id} producto={prod} />
             ))}
