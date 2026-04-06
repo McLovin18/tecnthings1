@@ -252,7 +252,7 @@ export const Navbar = () => {
           style={{ color: "var(--text)" }}
         >
           {/* ── LEFT: hamburger + logo + búsqueda ── */}
-          <div className="flex items-center gap-3 flex-shrink-0">
+          <div className="flex items-center gap-3 shrink-0">
             {/* Hamburger móvil */}
             <button
               className="lg:hidden p-2 rounded-xl transition-colors"
@@ -339,12 +339,12 @@ export const Navbar = () => {
                               <img
                                 src={prod.imagen}
                                 alt={prod.nombre}
-                                className="w-8 h-8 object-cover rounded-lg flex-shrink-0"
+                                className="w-8 h-8 object-cover rounded-lg shrink-0"
                               />
                             )}
                             <span className="truncate flex-1">{prod.nombre}</span>
                             {prod.marca && (
-                              <span className="text-xs flex-shrink-0" style={{ color: "var(--textMuted)" }}>
+                              <span className="text-xs shrink-0" style={{ color: "var(--textMuted)" }}>
                                 {prod.marca}
                               </span>
                             )}
@@ -560,7 +560,7 @@ export const Navbar = () => {
 
           {/* Categorías dinámicas */}
           {categorias.map((cat) => (
-            <div key={cat.id} className="relative group  flex-shrink-0">
+            <div key={cat.id} className="relative group  shrink-0">
               {cat.subcategorias?.length > 0 ? (
                 <button
                   className="flex items-center gap-1 px-3 py-2.5 text-sm font-medium whitespace-nowrap transition-colors rounded-xl hover:opacity-80 text-black dark:text-white"
