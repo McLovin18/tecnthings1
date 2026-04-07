@@ -297,7 +297,7 @@ export default function HeroSection({
         )}
 
         {/* Contenido textual */}
-        <div className="absolute left-0 right-0 bottom-0 z-20 flex flex-col justify-end items-center text-center gap-1 pb-4 px-2 sm:gap-1.5 sm:pb-5 sm:px-8 w-full max-w-full">
+        <div className="absolute left-0 right-0 bottom-0 z-20 flex flex-col items-start text-left gap-0 sm:gap-0 pb-1 px-2 sm:pb-4 sm:px-8 w-full max-w-full">
           {current.badge && (
             <span
               className="inline-block px-2 py-0.5 text-[9px] sm:px-3 sm:py-1 sm:text-xs font-bold tracking-widest uppercase bg-white/90 text-black dark:bg-slate-900/90 dark:text-white rounded-full shadow"
@@ -308,7 +308,7 @@ export default function HeroSection({
           )}
           {current.title && (
             <h2
-              className="text-base sm:text-3xl lg:text-4xl font-extrabold text-white leading-tight max-w-[90vw] sm:max-w-2xl drop-shadow-lg"
+              className="text-2xl sm:text-5xl lg:text-5xl font-extrabold text-white leading-tight max-w-[90vw] sm:max-w-2xl drop-shadow-lg"
               style={titleStyle}
             >
               {current.title}
@@ -323,14 +323,16 @@ export default function HeroSection({
             </p>
           )}
           {current.buttonText && (
-            <a
-              href={current.buttonLink || "/products-by-category"}
-              className="inline-flex items-center gap-1 sm:gap-2 bg-white/95 hover:bg-white text-black font-bold text-[11px] sm:text-sm px-3 py-1.5 sm:px-6 sm:py-2.5 rounded-2xl shadow-lg transition-all hover:scale-105 active:scale-95"
-              style={buttonTextStyle}
-            >
-              <span>{current.buttonText}</span>
-              <span className="material-icons-round text-xs sm:text-sm">arrow_forward</span>
-            </a>
+            <div className="w-full flex justify-center">
+              <a
+                href={current.buttonLink || "/products-by-category"}
+                className="inline-flex items-center gap-1 sm:gap-2 bg-white/95 hover:bg-white text-black font-bold text-[11px] sm:text-sm px-3 py-1.5 sm:px-6 sm:py-1.5 rounded-2xl shadow-lg transition-all hover:scale-105 active:scale-95"
+                style={buttonTextStyle}
+              >
+                <span>{current.buttonText}</span>
+                <span className="material-icons-round text-xs sm:text-sm">arrow_forward</span>
+              </a>
+            </div>
           )}
         </div>
 
