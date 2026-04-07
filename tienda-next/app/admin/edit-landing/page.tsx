@@ -1046,16 +1046,7 @@ export default function LandingEditor() {
                                 {section.type
                                   ? String(section.type).toUpperCase()
                                   : "(Sin tipo)"}
-                                {section.type === "hero" && (
-                                  <span className="ml-2 text-xs font-normal text-purple-600 bg-purple-50 rounded px-2 py-0.5 border border-purple-200">
-                                    Imagen recomendada: 1400x600px (mín. 1200x500px, relación ~7:3)
-                                  </span>
-                                )}
-                                {section.type === "banner" && (
-                                  <span className="ml-2 text-xs font-normal text-blue-600 bg-blue-50 rounded px-2 py-0.5 border border-blue-200">
-                                    Imagen recomendada: 1400x600px (mín. 1200x500px, relación ~7:3)
-                                  </span>
-                                )}
+                                {/* Eliminado texto de medida recomendada arriba */}
                               </h3>
                               {section.hidden && (
                                 <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
@@ -1480,7 +1471,7 @@ export default function LandingEditor() {
                                                   </div>
                                                   {googleCommentsLoading ? (
                                                     <div className="flex flex-col items-center justify-center py-8">
-                                                      <Loading3DIcon type="user" />
+                                                      <Loading3DIcon />
                                                       <span className="mt-4 text-slate-400 dark:text-white/30 text-sm">Cargando comentarios...</span>
                                                     </div>
                                                   ) : (
@@ -1718,6 +1709,21 @@ export default function LandingEditor() {
                                       }
 
                                       if (field.type === "image") {
+                                        // Ayuda contextual para dimensiones recomendadas
+                                        let dimensionHelp = null;
+                                        if (section.type === "hero") {
+                                          dimensionHelp = (
+                                            <div className="text-[11px] text-purple-700 bg-purple-50 rounded px-2 py-1 mt-1 border border-purple-100">
+                                              Mínimo: <b>1200x500px</b>
+                                            </div>
+                                          );
+                                        } else if (section.type === "banner") {
+                                          dimensionHelp = (
+                                            <div className="text-[11px] text-blue-700 bg-blue-50 rounded px-2 py-1 mt-1 border border-blue-100">
+                                              Mínimo: <b>1200x500px</b>
+                                            </div>
+                                          );
+                                        }
                                         return (
                                           <div key={field.name} className="space-y-1">
                                             <label className="block text-xs text-slate-500">
@@ -1733,6 +1739,7 @@ export default function LandingEditor() {
                                                 )
                                               }
                                             />
+                                            {dimensionHelp}
                                           </div>
                                         );
                                       }

@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import type { Producto } from "../../lib/productos-db";
 import CategoriasAdminPanel from "./CategoriasAdminPanel";
 import MarcasAdminPanel from "./MarcasAdminPanel";
 import ProductoFormModal from "./ProductoFormModal";
@@ -14,8 +15,8 @@ import {
 export default function AdminInventario() {
 
   const [showForm, setShowForm] = useState(false);
-  const [editData, setEditData] = useState(null);
-  const [productos, setProductos] = useState([]);
+  const [editData, setEditData] = useState<Producto | null>(null);
+  const [productos, setProductos] = useState<Producto[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [orden, setOrden] = useState("newest");
@@ -41,7 +42,7 @@ export default function AdminInventario() {
   useEffect(() => {
     async function fetchProductos() {
       setLoading(true);
-      const prods = await obtenerProductos();
+      const prods = await obtenerProductos({ incluirSinStock: true });
       setProductos(prods);
       setLoading(false);
     }
@@ -126,7 +127,7 @@ export default function AdminInventario() {
                 className="flex-1 border border-slate-400 text-slate-700 font-semibold py-2 rounded-lg hover:bg-slate-100 transition"
                 onClick={async () => {
                   setLoading(true);
-                  const prods = await obtenerProductos();
+                  const prods = await obtenerProductos({ incluirSinStock: true });
                   setProductos(prods);
                   setLoading(false);
                 }}
@@ -170,7 +171,7 @@ export default function AdminInventario() {
                 } else {
                   await crearProducto({ ...data, destacado: false });
                 }
-                const prods = await obtenerProductos();
+                const prods = await obtenerProductos({ incluirSinStock: true });
                 setProductos(prods);
                 setShowForm(false);
                 setEditData(null);
@@ -217,7 +218,7 @@ export default function AdminInventario() {
                               onChange={async (e) => {
                                 setLoading(true);
                                 await actualizarProducto(p.id, { destacado: e.target.checked });
-                                const prods = await obtenerProductos();
+                                const prods = await obtenerProductos({ incluirSinStock: true });
                                 setProductos(prods);
                                 setLoading(false);
                               }}
@@ -240,7 +241,7 @@ export default function AdminInventario() {
                               onClick={async () => {
                                 if (window.confirm("¿Eliminar producto?")) {
                                   await eliminarProducto(p.id);
-                                  const prods = await obtenerProductos();
+                                  const prods = await obtenerProductos({ incluirSinStock: true });
                                   setProductos(prods);
                                 }
                               }}

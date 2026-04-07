@@ -44,7 +44,7 @@ export function SectionRenderer({ section }: { section: LandingSection }) {
   if (!Component) {
     // Fallback muy simple para tipos desconocidos
     return (
-      <section className="px-4 py-8 lg:px-6">
+      <section className="px-4 py-6 lg:px-6">
         <pre className="text-xs bg-slate-100 dark:bg-slate-800 p-4 rounded-xl overflow-auto">
           Sección desconocida: {section.type}
         </pre>

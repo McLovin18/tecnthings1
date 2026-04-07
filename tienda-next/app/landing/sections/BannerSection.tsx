@@ -50,12 +50,19 @@ export default function BannerSection({
         style={{ borderRadius }}
       >
         {finalBackgroundImage && (
-          <img
-            src={finalBackgroundImage}
-            alt={title || "Banner"}
-            className="w-full h-[220px] sm:h-[320px] md:h-[400px] lg:h-[600px] xl:h-[600px] 2xl:h-[600px] object-cover"
-            style={{ aspectRatio: '7/3', opacity: 1, filter: 'none', display: 'block' }}
-          />
+          <div className="w-full aspect-[7/3] min-h-[220px] relative">
+            <img
+              src={finalBackgroundImage}
+              alt={title || "Banner"}
+              width={1400}
+              height={600}
+              className="absolute inset-0 w-full h-full object-cover transition-none"
+              draggable={false}
+              decoding="async"
+              loading="eager"
+              style={{ display: 'block', borderRadius }}
+            />
+          </div>
         )}
         <div className="absolute left-0 right-0 top-0 bottom-0 flex flex-col justify-center items-center px-6 py-6 md:px-10 md:py-8 max-w-3xl w-full h-full pointer-events-none">
           {title && (

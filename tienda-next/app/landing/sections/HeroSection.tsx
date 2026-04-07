@@ -6,7 +6,7 @@ import type {
   LandingFieldStyle,
 } from "../../lib/landing-types";
 
-// ── Hook DESPUÉS del import ──────────────────────────────────────────────────
+// ── Hook ────────────────────────────────────────────────────────────────────
 function useGoogleMapsPlaceDetails(placeId?: string, enabled?: boolean) {
   const [data, setData] = React.useState<{
     rating?: number;
@@ -128,8 +128,9 @@ export default function HeroSection({
     googleMaps || (items && items.some((i) => i.googleMaps));
   const { data: googleMapsData } = useGoogleMapsPlaceDetails(placeId, hasGoogleMaps);
 
-  // ── Todos los hooks ANTES del return condicional ──
+  // ── TODOS los hooks antes de cualquier return condicional ────────────────
   const [currentIndex, setCurrentIndex] = React.useState(0);
+  const [imageLoaded, setImageLoaded] = React.useState(false);
 
   const heroItems: HeroItem[] = (
     items && items.length
@@ -168,24 +169,20 @@ export default function HeroSection({
     );
   }, [heroItems.length]);
 
+  // Autoplay
   React.useEffect(() => {
     if (heroItems.length <= 1) return;
     const id = setInterval(goToNext, 5000);
     return () => clearInterval(id);
   }, [heroItems.length, goToNext]);
 
-  // ── Return condicional DESPUÉS de hooks ──
-  if (!heroItems.length) return null;
+  // Reset imageLoaded al cambiar de slide para aplicar fade-in en cada imagen
+  React.useEffect(() => {
+    setImageLoaded(false);
+  }, [currentIndex]);
 
-  // Show 3D loading icon if loading (for Google Maps or other async data)
-  if (typeof window !== "undefined" && (typeof googleMaps !== "undefined" && googleMaps) && !googleMapsData) {
-    const Loading3DIcon = require("../../components/Loading3DIcon").Loading3DIcon;
-    return (
-      <section className="flex justify-center items-center min-h-[300px]">
-        <Loading3DIcon type="box" />
-      </section>
-    );
-  }
+  // ── Return condicional DESPUÉS de todos los hooks ────────────────────────
+  if (!heroItems.length) return null;
 
   const current = heroItems[Math.min(currentIndex, heroItems.length - 1)];
   const currentFieldStyles = current.fieldStyles || {};
@@ -212,35 +209,43 @@ export default function HeroSection({
       style={{
         ...(bg ? { backgroundColor: bg } : {}),
         ...(color ? { color } : {}),
-        paddingTop: "0",
-        paddingBottom: "0",
+        paddingTop: 0,
+        paddingBottom: 0,
         textAlign,
       }}
-      className="px-2 sm:px-4 lg:px-0 py-0"
+      className="px-0 sm:px-0 lg:px-0 py-0"
     >
-      {/* Sobreescritura responsive del aspect ratio */}
-<style>{`
-  .hero-wrapper { aspect-ratio: 16/12; }
-  @media (min-width: 640px)  { .hero-wrapper { aspect-ratio: 16/9; } }
-  @media (min-width: 1024px) { .hero-wrapper { aspect-ratio: 16/7; } }
-`}</style>
-
       <div
-        className="hero-wrapper relative overflow-hidden w-full max-w-full"
+        className="relative overflow-hidden w-full max-w-full aspect-[16/9] sm:aspect-[16/7] min-h-[220px] sm:min-h-[300px]"
         style={{ borderRadius }}
       >
+        {/* Placeholder/skeleton mientras la imagen carga */}
+        {current.image && !imageLoaded && (
+          <div
+            className="absolute inset-0 bg-slate-200 dark:bg-slate-800 animate-pulse"
+            style={{ borderRadius }}
+          />
+        )}
 
-        {/* Imagen de fondo */}
+        {/* Imagen de fondo con fade-in suave */}
         {current.image && (
           <img
             src={current.image}
             alt={current.title || "Hero"}
-            className="absolute inset-0 w-full h-full object-cover"
+            width={1920}
+            height={840}
+            className="absolute inset-0 w-full h-full object-contain sm:object-cover"
+            style={{
+              borderRadius,
+              opacity: imageLoaded ? 1 : 0,
+              transition: "opacity 0.35s ease",
+            }}
+            draggable={false}
+            decoding="async"
+            loading="eager"
+            onLoad={() => setImageLoaded(true)}
           />
         )}
-
-        {/* Overlay degradado para legibilidad del texto */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent z-10" />
 
         {/* Badge de Google Maps */}
         {current.googleMaps && (current.rating || current.ratingCount) && (
@@ -292,10 +297,10 @@ export default function HeroSection({
         )}
 
         {/* Contenido textual */}
-        <div className="absolute inset-x-0 bottom-0 z-20 flex flex-col items-center text-center gap-1 pb-4 px-4 sm:gap-1.5 sm:pb-5 sm:px-8">
+        <div className="absolute left-0 right-0 bottom-0 z-20 flex flex-col justify-end items-center text-center gap-1 pb-4 px-2 sm:gap-1.5 sm:pb-5 sm:px-8 w-full max-w-full">
           {current.badge && (
             <span
-              className="inline-block px-3 py-1 text-[10px] sm:text-xs font-bold tracking-widest uppercase bg-white/90 text-black dark:bg-slate-900/90 dark:text-white rounded-full shadow"
+              className="inline-block px-2 py-0.5 text-[9px] sm:px-3 sm:py-1 sm:text-xs font-bold tracking-widest uppercase bg-white/90 text-black dark:bg-slate-900/90 dark:text-white rounded-full shadow"
               style={badgeStyle}
             >
               {current.badge}
@@ -303,7 +308,7 @@ export default function HeroSection({
           )}
           {current.title && (
             <h2
-              className="text-xl sm:text-3xl lg:text-4xl font-extrabold text-white leading-tight max-w-xs sm:max-w-2xl drop-shadow-lg"
+              className="text-base sm:text-3xl lg:text-4xl font-extrabold text-white leading-tight max-w-[90vw] sm:max-w-2xl drop-shadow-lg"
               style={titleStyle}
             >
               {current.title}
@@ -311,7 +316,7 @@ export default function HeroSection({
           )}
           {current.subtitle && (
             <p
-              className="text-white/80 text-xs sm:text-sm max-w-xs sm:max-w-xl drop-shadow"
+              className="text-white/80 text-[11px] sm:text-sm max-w-[90vw] sm:max-w-xl drop-shadow"
               style={subtitleStyle}
             >
               {current.subtitle}
@@ -320,11 +325,11 @@ export default function HeroSection({
           {current.buttonText && (
             <a
               href={current.buttonLink || "/products-by-category"}
-              className="inline-flex items-center gap-2 bg-white/95 hover:bg-white text-black font-bold text-xs sm:text-sm px-5 py-2 sm:px-6 sm:py-2.5 rounded-2xl shadow-lg transition-all hover:scale-105 active:scale-95"
+              className="inline-flex items-center gap-1 sm:gap-2 bg-white/95 hover:bg-white text-black font-bold text-[11px] sm:text-sm px-3 py-1.5 sm:px-6 sm:py-2.5 rounded-2xl shadow-lg transition-all hover:scale-105 active:scale-95"
               style={buttonTextStyle}
             >
               <span>{current.buttonText}</span>
-              <span className="material-icons-round text-sm">arrow_forward</span>
+              <span className="material-icons-round text-xs sm:text-sm">arrow_forward</span>
             </a>
           )}
         </div>
