@@ -34,9 +34,9 @@ export default function BottomBar({ role = "client" }) {
             <a href={item.path} className="flex flex-col items-center py-3 px-2 text-[#3a1859] dark:text-white hover:bg-slate-100 dark:hover:bg-white/10 relative">
               <span className="material-icons-round text-xl">{item.icon}</span>
               {/* Badge solo para carrito */}
-              {item.icon === "assignment" || item.icon === "shopping_bag" || item.icon === "shopping_cart" ? (
+              {(item.icon === "shopping_bag" || item.icon === "shopping_cart") ? (
                 carrito && carrito.length > 0 && (
-                  <span className="absolute -top-1.5 left-1/2 -translate-x-1/2 bg-red-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center border-2 border-white dark:border-black z-10">
+                  <span className="absolute top-0 right-3 bg-red-600 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center border-2 border-white dark:border-black z-[20]">
                     {carrito.length}
                   </span>
                 )

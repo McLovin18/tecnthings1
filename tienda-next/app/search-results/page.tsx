@@ -157,7 +157,7 @@ export default function SearchResultsPage() {
   ), [search, precioMin, precioMax, marca, orden, hasFilters, clearFilters]);
 
   return (
-    <div className="min-h-screen flex flex-col mt-2 dark:bg-black">
+    <div className=" min-h-screen flex flex-col mt-2 bg-white dark:bg-black">
       <BottomBarPublic/>
 
       <main className="max-w-7xl mx-auto w-full px-4 py-6 sm:py-15 flex-1">

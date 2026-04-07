@@ -1,3 +1,4 @@
+
 "use client";
 import React from "react";
 import { useUser } from "../context/UserContext";
@@ -11,26 +12,72 @@ const publicItems = [
 
 export default function BottomBarPublic() {
   const { carrito } = useUser();
+  const cartCount = carrito?.length ?? 0;
+
   return (
-    <nav className="lg:hidden fixed bottom-0 left-0 w-full bg-white dark:bg-black border-t border-slate-200 dark:border-slate-700 flex overflow-x-auto z-50">
-      <ul className="flex w-full justify-between items-center">
-        {publicItems.map((item) => (
-          <li key={item.path} className="flex-1">
-            <a href={item.path} className="flex flex-col items-center py-3 px-2 text-[#3a1859] dark:text-white hover:bg-slate-100 dark:hover:bg-white/10 relative">
-              <span className="material-icons-round text-xl">{item.icon}</span>
-              {/* Badge solo para carrito */}
-              {item.icon === "shopping_bag" || item.icon === "shopping_cart" ? (
-                carrito && carrito.length > 0 && (
-                  <span className="absolute -top-1.5 left-1/2 -translate-x-1/2 bg-red-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center border-2 border-white dark:border-black z-10">
-                    {carrito.length}
-                  </span>
-                )
-              ) : null}
-              <span className="text-xs font-medium">{item.name}</span>
-            </a>
-          </li>
-        ))}
+    <nav
+      className="lg:hidden  fixed bottom-0 left-0 w-full border-t flex z-50"
+      style={{ background: "var(--navBg)", borderColor: "var(--border)" }}
+    >
+      <ul className="flex w-full justify-between items-center text-black dark:text-white">
+        {publicItems.map((item) => {
+          const isCart = item.icon === "shopping_bag" || item.icon === "shopping_cart";
+          const showBadge = isCart && cartCount > 0;
+
+          return (
+            <li key={item.path} className="flex-1">
+              <a
+                href={item.path}
+                className="flex flex-col items-center py-3 px-2 transition-colors relative"
+                style={{ color: "var(--textMuted)" }}
+              >
+                {/* Ícono + badge */}
+                <span className="relative inline-flex items-center justify-center">
+                  <span className="material-icons-round text-xl">{item.icon}</span>
+
+                  {showBadge && (
+                    <span
+                      className="absolute flex items-center justify-center font-bold"
+                      style={{
+                        // Posición: esquina superior derecha del ícono
+                        top: "-6px",
+                        right: "-8px",
+                        // Tamaño mínimo para 1–2 dígitos, crece para 3+
+                        minWidth: cartCount > 9 ? 18 : 16,
+                        height: cartCount > 9 ? 18 : 16,
+                        paddingLeft: cartCount > 9 ? 4 : 0,
+                        paddingRight: cartCount > 9 ? 4 : 0,
+                        fontSize: cartCount > 99 ? 8 : 10,
+                        lineHeight: 1,
+                        borderRadius: 999,
+                        background: "red",
+                        color: "#fff",
+                        // Borde que separa del ícono
+                        outline: "2px solid var(--navBg)",
+                        // Pulso sutil cuando hay items
+                        animation: "badgePop 0.35s cubic-bezier(0.34,1.56,0.64,1) both",
+                        zIndex: 10,
+                      }}
+                    >
+                      {cartCount > 99 ? "99+" : cartCount}
+                    </span>
+                  )}
+                </span>
+
+                <span className="text-xs font-medium mt-0.5">{item.name}</span>
+              </a>
+            </li>
+          );
+        })}
       </ul>
+
+      <style>{`
+        @keyframes badgePop {
+          0%   { transform: scale(0) rotate(-12deg); opacity: 0; }
+          70%  { transform: scale(1.2) rotate(4deg); opacity: 1; }
+          100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+      `}</style>
     </nav>
   );
 }

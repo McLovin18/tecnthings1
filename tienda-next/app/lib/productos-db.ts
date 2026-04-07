@@ -45,9 +45,16 @@ function cleanUndefinedDeep(obj) {
 }
 
 // Crear producto
+import { serverTimestamp } from "firebase/firestore";
+
 export async function crearProducto(producto) {
   const cleanProducto = cleanUndefinedDeep(producto);
-  const docRef = await addDoc(collection(db, COLLECTION), cleanProducto);
+  // Agregar campo de fecha de creación
+  const productoConFecha = {
+    ...cleanProducto,
+    fechaCreacion: serverTimestamp(),
+  };
+  const docRef = await addDoc(collection(db, COLLECTION), productoConFecha);
   return { ...cleanProducto, id: docRef.id };
 }
 

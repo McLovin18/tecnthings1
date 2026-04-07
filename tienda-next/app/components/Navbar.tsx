@@ -142,8 +142,9 @@ export const Navbar = () => {
   const [theme, setTheme] = useState("light");
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenu, setUserMenu] = useState(false);
-  const { user, isLogged } = useUser();
+  const { user, isLogged, carrito } = useUser();
   const [windowWidth, setWindowWidth] = useState<number | null>(null);
+  
 
   // Barra de búsqueda
   const [searchValue, setSearchValue] = useState("");
@@ -443,18 +444,27 @@ export const Navbar = () => {
           </div>
 
           {/* ── RIGHT: ThemeToggle + Carrito + Usuario ── */}
-          <div className="hidden lg:flex items-center  gap-2 ">
-            <ThemeToggle />
+          <div className="hidden lg:flex items-center gap-4 ">
+            {/* Mostrar ThemeToggle solo si NO está autenticado */}
+            {!user && <ThemeToggle />}
 
             {/* Carrito */}
-            <a
-              href={user ? (isClient ? "/home/cart" : "/admin/cart") : "/cart"}
-              className="flex  items-center dark:color-white justify-center px-2 rounded-xl transition-colors"
-              style={{ background: "bg"}}
-              aria-label="Carrito"
-            >
-              <span className="material-icons-round dark:color-white text-xl">shopping_bag</span>
-            </a>
+            <div className="relative flex flex-col items-center">
+              <a
+                href={user ? (isClient ? "/home/cart" : "/admin/cart") : "/cart"}
+                className="flex items-center dark:color-white justify-center px-1 rounded-xl transition-colors"
+                style={{ background: "bg"}}
+                aria-label="Carrito"
+              >
+                <span className="material-icons-round dark:color-white text-xl">shopping_bag</span>
+                {/* Badge solo cantidad, pequeño */}
+                {carrito && carrito.length > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-600 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center border-2 border-white dark:border-black z-10">
+                    {carrito.length}
+                  </span>
+                )}
+              </a>
+            </div>
 
             {/* Usuario: si está logueado → avatar + menú; si no → botón "Ingresa" */}
             {user ? (

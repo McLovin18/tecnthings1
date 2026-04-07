@@ -73,7 +73,7 @@ export default function ProductoCard({
       className="
         group cursor-pointer
         bg-white dark:bg-white/[0.04]
-        border border-slate-200 dark:border-white/10
+         dark:border-white/10
         rounded-2xl overflow-hidden
         shadow-sm
         hover:shadow-xl dark:hover:shadow-purple-950/60
@@ -179,7 +179,7 @@ export default function ProductoCard({
           sm:text-sm
 
           /* recortar si es muy largo */
-          line-clamp-2 sm:line-clamp-2
+          line-clamp-3 sm:line-clamp-3
         ">
           {producto.nombre}
         </p>

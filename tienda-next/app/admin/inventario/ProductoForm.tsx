@@ -28,6 +28,8 @@ type ProductoFormProps = {
 };
 
 export default function ProductoForm({ initialData = null, onSave, onCancel }: ProductoFormProps) {
+    // Estado de carga para el submit
+    const [loading, setLoading] = useState(false);
   // Si initialData existe, es edición, si no, es creación
   const isEdit = !!initialData;
   const [nombre, setNombre] = useState<string>(initialData?.nombre || "");
@@ -202,57 +204,80 @@ export default function ProductoForm({ initialData = null, onSave, onCancel }: P
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    // Procesar imágenes: subir archivos a Storage y dejar URLs directas
-    const imagenesProcesadas = await Promise.all(imagenes.map(async (img: string | File, idx: number) => {
-      if (typeof img === "string") {
-        // Si es URL (http/https), dejarla igual
-        if (img.startsWith("http")) return img;
-        // Si es blob, ignorar (no debería ocurrir)
-        return null;
-      } else if (img instanceof File) {
-        // Subir archivo a Storage
-        const ext = img.name.split('.').pop();
-        const nombreArchivo = `${nombre.replace(/\s+/g, "_")}_${Date.now()}_${idx}.${ext}`;
-        const path = `productos/${nombreArchivo}`;
-        try {
-          const url = await uploadImageAndGetUrl(img, path);
-          return url;
-        } catch (err: any) {
-          alert("Error subiendo imagen: " + (err?.message || err));
+    if (loading) return; // Previene doble submit
+    setLoading(true);
+    try {
+      // Procesar imágenes: subir archivos a Storage y dejar URLs directas
+      const imagenesProcesadas = await Promise.all(imagenes.map(async (img: string | File, idx: number) => {
+        if (typeof img === "string") {
+          // Si es URL (http/https), dejarla igual
+          if (img.startsWith("http")) return img;
+          // Si es blob, ignorar (no debería ocurrir)
           return null;
+        } else if (img instanceof File) {
+          // Subir archivo a Storage
+          const ext = img.name.split('.').pop();
+          const nombreArchivo = `${nombre.replace(/\s+/g, "_")}_${Date.now()}_${idx}.${ext}`;
+          const path = `productos/${nombreArchivo}`;
+          try {
+            const url = await uploadImageAndGetUrl(img, path);
+            return url;
+          } catch (err: any) {
+            alert("Error subiendo imagen: " + (err?.message || err));
+            return null;
+          }
+        }
+        return null;
+      }));
+      // Filtrar nulos/blobs
+      const imagenesFinal = imagenesProcesadas.filter((x): x is string => Boolean(x));
+      // Generar SKU automático para nuevas creaciones (no sobrescribir en edición)
+      let finalSku = sku?.trim();
+      if (!isEdit && !finalSku) {
+        const generado = await generateAutomaticSku();
+        if (generado) {
+          finalSku = generado;
         }
       }
-      return null;
-    }));
-    // Filtrar nulos/blobs
-    const imagenesFinal = imagenesProcesadas.filter((x): x is string => Boolean(x));
-    // Generar SKU automático para nuevas creaciones (no sobrescribir en edición)
-    let finalSku = sku?.trim();
-    if (!isEdit && !finalSku) {
-      const generado = await generateAutomaticSku();
-      if (generado) {
-        finalSku = generado;
+
+      if (finalSku) {
+        setSku(finalSku);
       }
-    }
 
-    if (finalSku) {
-      setSku(finalSku);
-    }
+      onSave && onSave({
+        nombre,
+        sku: finalSku,
+        stock,
+        precio,
+        descuento: descuento !== "" ? Number(descuento) : undefined,
+        categoria,
+        subcategoria: subcategoriaRequired ? subcategoria : "",
+        subsubcategoria: subsubcategoriaRequired ? subsubcategoria : "",
+        marca,
+        imagenes: imagenesFinal,
+        descripcion,
+        caracteristicas
+      });
 
-    onSave && onSave({
-      nombre,
-      sku: finalSku,
-      stock,
-      precio,
-      descuento: descuento !== "" ? Number(descuento) : undefined,
-      categoria,
-      subcategoria: subcategoriaRequired ? subcategoria : "",
-      subsubcategoria: subsubcategoriaRequired ? subsubcategoria : "",
-      marca,
-      imagenes: imagenesFinal,
-      descripcion,
-      caracteristicas
-    });
+      // Resetear campos solo si es creación (no edición)
+      if (!isEdit) {
+        setNombre("");
+        setSku("");
+        setStock(0);
+        setPrecio("");
+        setDescuento("");
+        setCategoria("");
+        setSubcategoria("");
+        setSubsubcategoria("");
+        setMarca("");
+        setImagenes([]);
+        setDescripcion("");
+        setCaracteristicas([""]);
+        setCategoryPathChanged(false);
+      }
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -402,7 +427,21 @@ export default function ProductoForm({ initialData = null, onSave, onCancel }: P
         ))}
         <button type="button" className="text-green-700 underline font-semibold hover:text-green-900 transition" onClick={handleAddCaracteristica}>Agregar característica</button>
         <div className="flex gap-4 mt-8">
-          <button type="submit" className="bg-linear-to-r from-purple-700 via-purple-500 to-purple-700 hover:from-purple-800 hover:to-purple-900 text-white font-bold py-3 px-8 rounded-xl shadow-lg text-lg transition-all duration-200">{isEdit ? "Actualizar" : "Crear"}</button>
+          <button
+            type="submit"
+            className={
+              `bg-linear-to-r from-purple-700 via-purple-500 to-purple-700 hover:from-purple-800 hover:to-purple-900 text-white font-bold py-3 px-8 rounded-xl shadow-lg text-lg transition-all duration-200 flex items-center justify-center gap-2 ${loading ? 'opacity-60 cursor-not-allowed' : ''}`
+            }
+            disabled={loading}
+          >
+            {loading && (
+              <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+              </svg>
+            )}
+            {isEdit ? "Actualizar" : loading ? "Creando..." : "Crear"}
+          </button>
           <button type="button" className="bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-3 px-8 rounded-xl shadow-lg text-lg transition-all duration-200" onClick={onCancel}>Cancelar</button>
         </div>
       </div>

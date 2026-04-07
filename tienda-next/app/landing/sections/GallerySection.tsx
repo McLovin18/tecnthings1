@@ -256,10 +256,9 @@ function GalleryCard({
     >
       {/* Imagen */}
       <div
-        className="w-full relative overflow-hidden rounded-2xl border transition-all duration-300"
+        className="w-full relative bg-white overflow-hidden rounded-2xl border transition-all duration-300"
         style={{
           aspectRatio: "1 / 1",
-          background: "var(--galleryImgBg, #f8fafc)",
           borderColor: hovered ? "var(--accent, #7c3aed)" : "var(--border, #e2e8f0)",
           boxShadow: hovered
             ? "0 8px 32px 0 rgba(124,58,237,0.13)"

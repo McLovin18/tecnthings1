@@ -215,7 +215,7 @@ const fakeOldPrice = hasDiscount ? Math.round(basePrice / (1 - discount / 100)) 
           <div className="w-full md:w-[44%] flex flex-col gap-3">
 
             {/* Imagen principal */}
-            <div className="relative aspect-square rounded-2xl overflow-hidden bg-slate-50 dark:bg-white/[0.03] border border-slate-100 dark:border-white/[0.06]">
+            <div className="relative aspect-square rounded-2xl overflow-hidden dark:bg-white/[0.03] border border-slate-100 dark:border-white/[0.06]">
               {hasDiscount && (
                 <span className="absolute top-3 left-3 z-10 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
                   -{discount}%
@@ -263,10 +263,28 @@ const fakeOldPrice = hasDiscount ? Math.round(basePrice / (1 - discount / 100)) 
               </div>
             )}
 
-            {/* Reseñas — desktop */}
-            <div className="hidden md:block mt-6">
-              <ReviewsSection {...reviewsProps} />
+
+            {/* Características */}
+            <div className="hidden md:block">
+              {producto.caracteristicas?.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-black dark:text-white uppercase tracking-wider mb-3">
+                    Características
+                  </p>
+                  <ul className="space-y-2">
+                    {producto.caracteristicas.map((c, idx) => (
+                      <li key={idx} className="flex items-start gap-2.5 text-sm text-black/80 dark:text-white/80">
+                        <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-white/20 mt-2 flex-shrink-0" />
+                        {c}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
+
+
+
           </div>
 
           {/* ══ INFO ════════════════════════════════════════════════ */}
@@ -274,7 +292,14 @@ const fakeOldPrice = hasDiscount ? Math.round(basePrice / (1 - discount / 100)) 
 
             {/* Nombre + SKU */}
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold leading-tight text-slate-800 dark:text-white">
+              <h1
+                className="text-2xl sm:text-3xl font-bold leading-tight text-slate-800 dark:text-white break-words max-w-full whitespace-pre-line"
+                style={{
+                  wordBreak: "break-word",
+                  maxWidth: "100%",
+                }}
+                title={producto.nombre}
+              >
                 {producto.nombre}
               </h1>
               <p className="text-xs text-slate-400 dark:text-white/20 mt-1.5">
@@ -386,9 +411,9 @@ const fakeOldPrice = hasDiscount ? Math.round(basePrice / (1 - discount / 100)) 
             {descItems.length > 0 && (
               
               <ul className="space-y-2">
-                <h1>Descripción:</h1>
+                <h1 className="text-black bg-text-white">Descripción:</h1>
                 {descItems.map((item, idx) => (
-                  <li key={idx} className="flex gap-2 text-sm text-slate-600 dark:text-white/55 leading-relaxed">
+                  <li key={idx} className="flex gap-2 text-sm text-black/80 dark:text-white/80 leading-relaxed">
                     <span className="text-slate-300 dark:text-white/20 flex-shrink-0 mt-0.5">›</span>
                     <span>
                       {item.text}
@@ -422,29 +447,46 @@ const fakeOldPrice = hasDiscount ? Math.round(basePrice / (1 - discount / 100)) 
               </div>
             )}
 
-            {/* Características */}
-            {producto.caracteristicas?.length > 0 && (
-              <div>
-                <p className="text-xs font-semibold text-slate-400 dark:text-white/25 uppercase tracking-wider mb-3">
-                  Características
-                </p>
-                <ul className="space-y-2">
-                  {producto.caracteristicas.map((c, idx) => (
-                    <li key={idx} className="flex items-start gap-2.5 text-sm text-slate-600 dark:text-white/50">
-                      <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-white/20 mt-2 flex-shrink-0" />
-                      {c}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
           </div>
+
+
+
         </div>
+                    {/* Reseñas — desktop */}
+            <div className="hidden md:block mt-6">
+              <ReviewsSection {...reviewsProps} />
+            </div>
+
+
+
+
+            {/* Características — SOLO MOBILE (debajo de reseñas) */}
+            <div className="md:hidden mt-6">
+              {producto.caracteristicas?.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-black/80 dark:text-white/80 uppercase tracking-wider mb-3">
+                    Características
+                  </p>
+                  <ul className="space-y-2">
+                    {producto.caracteristicas.map((c, idx) => (
+                      <li key={idx} className="flex items-start gap-2.5 text-sm text-black/80 dark:text-white/80">
+                        <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-white/20 mt-2 flex-shrink-0" />
+                        {c}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+
+
 
         {/* Reseñas — solo móvil */}
         <div className="md:hidden mt-10 pt-8 border-t border-slate-100 dark:border-white/[0.06]">
           <ReviewsSection {...reviewsProps} />
         </div>
+
+
       </div>
       {/* Productos relacionados */}
       <div className="max-w-7xl mx-auto w-full px-1 sm:px-3 pb-10">
@@ -475,7 +517,7 @@ function ReviewsSection({
 }: any) {
   return (
     <div className="space-y-6">
-      <p className="text-xs font-semibold text-slate-400 dark:text-white/25 uppercase tracking-wider">
+      <p className="text-xs font-semibold text-black dark:text-white/100 uppercase tracking-wider">
         Reseñas de clientes
       </p>
 
@@ -497,7 +539,7 @@ function ReviewsSection({
           </div>
         </div>
       ) : (
-        <p className="text-sm text-slate-400 dark:text-white/25">Sé el primero en dejar una reseña.</p>
+        <p className="text-sm text-black/80 dark:text-white/80">Sé el primero en dejar una reseña.</p>
       )}
 
       {/* Lista de reseñas */}
@@ -524,23 +566,23 @@ function ReviewsSection({
 
       {/* Formulario */}
       <form onSubmit={handleSubmitReview} className="pt-2 space-y-4">
-        <p className="text-sm font-medium text-slate-600 dark:text-white/50">Escribe una reseña</p>
+        <p className="text-sm font-medium text-black/80 dark:text-white/80">Escribe una reseña</p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs text-slate-400 dark:text-white/25">Nombre</label>
+            <label className="text-xs text-black/75 dark:text-white/80">Nombre</label>
             <input className={inputCls} placeholder="Tu nombre" value={reviewName}
               onChange={(e) => setReviewName(e.target.value)} required={!isLogged} />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs text-slate-400 dark:text-white/25">Correo</label>
+            <label className="text-xs text-black/75 dark:text-white/80">Correo</label>
             <input className={inputCls} placeholder="tu@correo.com" type="email" value={reviewEmail}
               onChange={(e) => setReviewEmail(e.target.value)} required={!isLogged} />
           </div>
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs text-slate-400 dark:text-white/25">Calificación</label>
+          <label className="text-xs text-black/80 dark:text-white/80">Calificación</label>
           <div className="flex gap-1">
             {Array.from({ length: 5 }).map((_, i) => (
               <span key={i} onClick={() => setReviewRating(i + 1)} role="button"
@@ -553,7 +595,7 @@ function ReviewsSection({
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs text-slate-400 dark:text-white/25">Comentario</label>
+          <label className="text-xs text-black/80 dark:text-white/80">Comentario</label>
           <textarea className={`${inputCls} resize-none`} rows={3}
             placeholder="Cuéntanos tu experiencia..." value={reviewText}
             onChange={(e) => setReviewText(e.target.value)} required />
