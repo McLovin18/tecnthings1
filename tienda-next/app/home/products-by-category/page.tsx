@@ -2,15 +2,16 @@
 import { useSearchParams } from "next/navigation";
 import ProductoCard from "../../components/ProductoCard";
 import { useEffect, useState, useMemo, useCallback } from "react";
-import { obtenerProductos } from "../../lib/productos-db";
+import type { Producto } from "../../lib/productos-db";
+import { obtenerProductos, obtenerProductosPorCategoria, obtenerProductosPorSubcategoria, obtenerProductosPorSubsubcategoria } from "../../lib/productos-db";
 
 export default function ProductsByCategoryPage() {
   const searchParams = useSearchParams();
-  const categoria = searchParams.get("cat") || searchParams.get("category") || "";
-  const subcategoria = searchParams.get("subcat") || searchParams.get("subcategory") || "";
-  const subsubcategoria = searchParams.get("subsubcat") || searchParams.get("subsubcategory") || "";
+  const categoria = searchParams?.get("cat") || searchParams?.get("category") || "";
+  const subcategoria = searchParams?.get("subcat") || searchParams?.get("subcategory") || "";
+  const subsubcategoria = searchParams?.get("subsubcat") || searchParams?.get("subsubcategory") || "";
 
-  const [productos, setProductos] = useState([]);
+  const [productos, setProductos] = useState<Producto[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [precioMin, setPrecioMin] = useState("");
@@ -23,7 +24,16 @@ export default function ProductsByCategoryPage() {
   useEffect(() => {
     async function fetchProductos() {
       setLoading(true);
-      const prods = await obtenerProductos();
+      let prods = [];
+      if (subsubcategoria && subcategoria && categoria) {
+        prods = await obtenerProductosPorSubsubcategoria(subsubcategoria, subcategoria, categoria);
+      } else if (subcategoria && categoria) {
+        prods = await obtenerProductosPorSubcategoria(subcategoria, categoria);
+      } else if (categoria) {
+        prods = await obtenerProductosPorCategoria(categoria);
+      } else {
+        prods = await obtenerProductos();
+      }
       setProductos(prods);
       setLoading(false);
     }
@@ -41,10 +51,27 @@ export default function ProductsByCategoryPage() {
   const productosFiltrados = useMemo(() => {
     return productos
       .filter((p: any) => {
-        let matchCategoria = true;
-        if (categoria) matchCategoria = p.categoria === categoria;
-        if (subcategoria) matchCategoria = matchCategoria && p.subcategoria === subcategoria;
-        if (subsubcategoria) matchCategoria = matchCategoria && p.subsubcategoria === subsubcategoria;
+        // Validación estricta de jerarquía
+        if (subsubcategoria && subcategoria && categoria) {
+          if (
+            p.categoria !== categoria ||
+            p.subcategoria !== subcategoria ||
+            p.subsubcategoria !== subsubcategoria
+          ) {
+            return false;
+          }
+        } else if (subcategoria && categoria) {
+          if (
+            p.categoria !== categoria ||
+            p.subcategoria !== subcategoria
+          ) {
+            return false;
+          }
+        } else if (categoria) {
+          if (p.categoria !== categoria) {
+            return false;
+          }
+        }
 
         const texto = search.toLowerCase().trim();
         const matchTexto =
@@ -60,7 +87,7 @@ export default function ProductsByCategoryPage() {
         const matchMin = min === null || finalPrice >= min;
         const matchMax = max === null || finalPrice <= max;
 
-        return matchCategoria && matchTexto && matchMin && matchMax;
+        return matchTexto && matchMin && matchMax;
       })
       .sort((a: any, b: any) => {
         const fp = (p: any) => {
@@ -248,13 +275,16 @@ export default function ProductsByCategoryPage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
             {productosFiltrados.map((p: any) => (
-              <ProductoCard
-                key={p.id}
-                producto={p}
-                showCart
-                showEye
-                showFav={isAuthenticated} // ← ahora sí coincide con el prop
-              />
+                <ProductoCard
+                  key={p.id}
+                  producto={p}
+                  showCart
+                  showEye
+                  showFav={isAuthenticated}
+                  onClick={() => {}}
+                  onAddCart={() => {}}
+                  onEye={() => {}}
+                />
             ))}
           </div>
         )}

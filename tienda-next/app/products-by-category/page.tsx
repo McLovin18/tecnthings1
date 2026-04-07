@@ -4,18 +4,23 @@ import { useSearchParams } from "next/navigation";
 import ProductoCard from "../components/ProductoCard";
 import { Loading3DIcon } from "../components/Loading3DIcon";
 import { useEffect, useState, useMemo, useCallback } from "react";
-import { obtenerProductos } from "../lib/productos-db";
-import { useUser } from "../context/UserContext";
+import { 
+  obtenerProductos,
+  obtenerProductosPorCategoria,
+  obtenerProductosPorSubcategoria,
+  obtenerProductosPorSubsubcategoria
+} from "../lib/productos-db";import { useUser } from "../context/UserContext";
 
 export default function ProductsByCategoryPage() {
   const isLogged = useUser();
   const searchParams = useSearchParams();
-  const categoria = searchParams.get("cat") || searchParams.get("category") || "";
-  const subcategoria = searchParams.get("subcat") || searchParams.get("subcategory") || "";
-  const subsubcategoria = searchParams.get("subsubcat") || searchParams.get("subsubcategory") || "";
+const categoriaId = (searchParams?.get("cat") || searchParams?.get("category") || "").trim();
+const subcategoriaId = (searchParams?.get("subcat") || searchParams?.get("subcategory") || searchParams?.get("sub") || "").trim();
+const subsubcategoriaId = (searchParams?.get("subsubcat") || searchParams?.get("subsubcategory") || searchParams?.get("subsub") || "").trim();
+
 
   // --- Estados de datos ---
-  const [productos, setProductos] = useState([]);
+  const [productos, setProductos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isMounted, setIsMounted] = useState(false); // <--- NUEVO: Para evitar parpadeo de hidratación
 
@@ -35,29 +40,66 @@ export default function ProductsByCategoryPage() {
   }, []);
 
   // 2. Fetch productos
-  useEffect(() => {
-    async function fetchProductos() {
-      setLoading(true);
-      try {
-        const prods = await obtenerProductos();
-        setProductos(prods || []);
-      } catch (error) {
-        console.error("Error fetching products:", error);
-      } finally {
-        setLoading(false);
+useEffect(() => {
+  async function fetchProductos() {
+    setLoading(true);
+    try {
+      let prods = [];
+      if (subsubcategoriaId) {
+        // Nivel más específico
+        console.log('Query subsubcategoria:', { subsubcategoriaId, subcategoriaId, categoriaId });
+        prods = await obtenerProductosPorSubsubcategoria(subsubcategoriaId, subcategoriaId, categoriaId);
+      } else if (subcategoriaId) {
+        console.log('Query subcategoria:', { subcategoriaId, categoriaId });
+        prods = await obtenerProductosPorSubcategoria(subcategoriaId, categoriaId);
+      } else if (categoriaId) {
+        console.log('Query categoria:', { categoriaId });
+        prods = await obtenerProductosPorCategoria(categoriaId);
+      } else {
+        prods = await obtenerProductos();
       }
+      console.log('Productos obtenidos:', prods);
+      setProductos(prods || []);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+    } finally {
+      setLoading(false);
     }
-    fetchProductos();
-  }, [categoria, subcategoria, subsubcategoria]);
+  }
+  fetchProductos();
+}, [categoriaId, subcategoriaId, subsubcategoriaId]);
+
 
   // 3. Filtrado y orden (Memoizado)
   const productosFiltrados = useMemo(() => {
     return productos
       .filter((p: any) => {
-        let matchCategoria = true;
-        if (categoria) matchCategoria = p.categoria === categoria;
-        if (subcategoria) matchCategoria = matchCategoria && p.subcategoria === subcategoria;
-        if (subsubcategoria) matchCategoria = matchCategoria && p.subsubcategoria === subsubcategoria;
+        // Filtrado estricto por ID
+        if (subsubcategoriaId && subcategoriaId && categoriaId) {
+          if (
+            p.categoria !== categoriaId ||
+            p.subcategoria !== subcategoriaId ||
+            p.subsubcategoria !== subsubcategoriaId
+          ) {
+            return false;
+          }
+        } else if (subcategoriaId && categoriaId) {
+          if (
+            p.categoria !== categoriaId ||
+            p.subcategoria !== subcategoriaId
+          ) {
+            return false;
+          }
+        } else if (categoriaId) {
+          // Solo productos directos de la categoría (sin subcategoría ni subsubcategoría)
+          if (
+            p.categoria !== categoriaId ||
+            p.subcategoria ||
+            p.subsubcategoria
+          ) {
+            return false;
+          }
+        }
 
         const texto = search.toLowerCase().trim();
         const matchTexto =
@@ -73,7 +115,7 @@ export default function ProductsByCategoryPage() {
         const matchMin = min === null || finalPrice >= min;
         const matchMax = max === null || finalPrice <= max;
 
-        return matchCategoria && matchTexto && matchMin && matchMax;
+        return matchTexto && matchMin && matchMax;
       })
       .sort((a: any, b: any) => {
         const fp = (p: any) => {
@@ -85,7 +127,7 @@ export default function ProductsByCategoryPage() {
         if (orden === "price-high") return fp(b) - fp(a);
         return (new Date(b.createdAt).getTime() || 0) - (new Date(a.createdAt).getTime() || 0);
       });
-  }, [productos, categoria, subcategoria, subsubcategoria, search, precioMin, precioMax, orden]);
+  }, [productos, categoriaId, subcategoriaId, subsubcategoriaId, search, precioMin, precioMax, orden]);
 
   const hasFilters = !!(search || precioMin || precioMax || orden !== "newest");
 
@@ -114,21 +156,21 @@ export default function ProductsByCategoryPage() {
 
       <main className="max-w-7xl mx-auto w-full px-3 sm:px-5 py-8 flex-1">
         {/* Cabecera */}
-        {(categoria || subcategoria) && (
+        {(categoriaId || subcategoriaId) && (
           <div className="mb-4">
             <h1 className="text-xl sm:text-2xl font-bold leading-tight"></h1>
-            {subcategoria && categoria && (
+            {subcategoriaId && categoriaId && (
               <p className="text-xs text-slate-400 dark:text-white/30 mt-0.5 uppercase tracking-wider">
-                {categoria} {subsubcategoria ? ` › ${subsubcategoria}` : ""}
+                {categoriaId} {subsubcategoriaId ? ` › ${subsubcategoriaId}` : ""}
               </p>
             )}
           </div>
         )}
 
         {/* Filtros horizontales */}
-        <div className="bg-white dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl px-4 py-3.5 mb-5 space-y-3 shadow-sm">
+        <div className="bg-white dark:bg-white/3 border border-slate-200 dark:border-white/10 rounded-2xl px-4 py-3.5 mb-5 space-y-3 shadow-sm">
           <div className="flex flex-wrap gap-2 items-center">
-            <div className="relative flex-1 min-w-[160px] max-w-sm">
+            <div className="relative flex-1 min-w-40 max-w-sm">
               <span className="material-icons-round absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-white/30 text-[17px] pointer-events-none">
                 search
               </span>
@@ -195,13 +237,22 @@ export default function ProductsByCategoryPage() {
             </div>
             <div>
               <p className="font-semibold text-slate-700 dark:text-white/80">Sin resultados</p>
-              <p className="text-sm text-slate-400 dark:text-white/30 mt-1 max-w-[240px]">Prueba otros términos o ajusta los filtros</p>
+              <p className="text-sm text-slate-400 dark:text-white/30 mt-1 max-w-60">Prueba otros términos o ajusta los filtros</p>
             </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 animate-in fade-in duration-700">
             {productosFiltrados.map((p: any) => (
-              <ProductoCard key={p.id} producto={p} showCart showEye showFavorite={isAuthenticated} />
+              <ProductoCard
+                key={p.id}
+                producto={p}
+                showCart
+                showEye
+                showFav={isAuthenticated}
+                onClick={() => {}}
+                onAddCart={() => {}}
+                onEye={() => {}}
+              />
             ))}
           </div>
         )}

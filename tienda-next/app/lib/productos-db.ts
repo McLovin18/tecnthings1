@@ -16,29 +16,40 @@ export interface Producto {
   [key: string]: any;
 }
 
-// Obtener productos por subcategoría
+// Obtener productos por subcategoría (usando los campos reales de Firestore)
 // Si opts.incluirSinStock es true, no filtra por stock (solo para admin/inventario)
-export async function obtenerProductosPorSubcategoria(subcategoria, excludeId = null, max = 4, opts = {}) {
-  const q = query(collection(db, COLLECTION), where("subcategoria", "==", subcategoria));
+export async function obtenerProductosPorSubcategoria(subcategoria, categoria, excludeId = null, opts = {}) {
+  // Filtra por subcategoria y categoria
+  const q = query(
+    collection(db, COLLECTION),
+    where("subcategoria", "==", subcategoria),
+    where("categoria", "==", categoria)
+  );
   const snapshot = await getDocs(q);
   let productos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
   if (!opts.incluirSinStock) {
     productos = productos.filter(p => typeof p.stock !== "number" || p.stock > 0);
   }
   if (excludeId) productos = productos.filter(p => p.id !== excludeId);
-  return productos.slice(0, max);
+  return productos;
 }
 
-// Obtener productos por subsubcategoría (último nivel)
-export async function obtenerProductosPorSubsubcategoria(subsubcategoria, excludeId = null, max = 4, opts = {}) {
-  const q = query(collection(db, COLLECTION), where("subsubcategoria", "==", subsubcategoria));
+// Obtener productos por subsubcategoría (último nivel, usando los campos reales de Firestore)
+export async function obtenerProductosPorSubsubcategoria(subsubcategoria, subcategoria, categoria, excludeId = null, opts = {}) {
+  // Filtra por subsubcategoria, subcategoria y categoria
+  const q = query(
+    collection(db, COLLECTION),
+    where("subsubcategoria", "==", subsubcategoria),
+    where("subcategoria", "==", subcategoria),
+    where("categoria", "==", categoria)
+  );
   const snapshot = await getDocs(q);
   let productos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
   if (!opts.incluirSinStock) {
     productos = productos.filter(p => typeof p.stock !== "number" || p.stock > 0);
   }
   if (excludeId) productos = productos.filter(p => p.id !== excludeId);
-  return productos.slice(0, max);
+  return productos;
 }
 import { db } from "./firebase";
 import {
@@ -94,9 +105,9 @@ export async function obtenerProductos(opts = {}) {
   return productos;
 }
 
-// Obtener productos por categoría
+// Obtener productos por categoría (usando el campo real de Firestore)
 // Si opts.incluirSinStock es true, no filtra por stock (solo para admin/inventario)
-export async function obtenerProductosPorCategoria(categoria, excludeId = null, max = 4, opts = {}) {
+export async function obtenerProductosPorCategoria(categoria, excludeId = null, opts = {}) {
   const q = query(collection(db, COLLECTION), where("categoria", "==", categoria));
   const snapshot = await getDocs(q);
   let productos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -104,7 +115,7 @@ export async function obtenerProductosPorCategoria(categoria, excludeId = null, 
     productos = productos.filter(p => typeof p.stock !== "number" || p.stock > 0);
   }
   if (excludeId) productos = productos.filter(p => p.id !== excludeId);
-  return productos.slice(0, max);
+  return productos;
 }
 
 // Obtener producto por ID
