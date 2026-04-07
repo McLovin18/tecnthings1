@@ -8,6 +8,9 @@ import { ProductReview } from "../lib/reviews-types";
 import { useUser } from "../context/UserContext";
 import { useSearchParams } from "next/navigation";
 import BottomBarPublic from "../components/BottomBarPublic";
+import dynamic from "next/dynamic";
+
+const Markdown = dynamic(() => import("../components/Markdown"), { ssr: false });
 
 export default function ProductDetailPage({ params }) {
   const [relacionados, setRelacionados] = useState([]);
@@ -275,7 +278,7 @@ const fakeOldPrice = hasDiscount ? Math.round(basePrice / (1 - discount / 100)) 
                     {producto.caracteristicas.map((c, idx) => (
                       <li key={idx} className="flex items-start gap-2.5 text-sm text-black/80 dark:text-white/80">
                         <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-white/20 mt-2 flex-shrink-0" />
-                        {c}
+                        <Markdown>{c}</Markdown>
                       </li>
                     ))}
                   </ul>
@@ -471,7 +474,7 @@ const fakeOldPrice = hasDiscount ? Math.round(basePrice / (1 - discount / 100)) 
                     {producto.caracteristicas.map((c, idx) => (
                       <li key={idx} className="flex items-start gap-2.5 text-sm text-black/80 dark:text-white/80">
                         <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-white/20 mt-2 flex-shrink-0" />
-                        {c}
+                        <Markdown>{c}</Markdown>
                       </li>
                     ))}
                   </ul>

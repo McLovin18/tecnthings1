@@ -7,7 +7,7 @@ import { obtenerProductos } from "../../lib/productos-db";
 
 export default function SearchResultsPage() {
   const [productos, setProductos] = useState([]);
-  const [orden, setOrden] = useState("newest");
+  const [orden, setOrden] = useState("price-high");
   const [marca, setMarca] = useState("");
   const [marcas, setMarcas] = useState([]);
   const searchParams = useSearchParams();

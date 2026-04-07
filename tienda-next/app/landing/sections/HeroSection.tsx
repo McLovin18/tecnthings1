@@ -212,18 +212,18 @@ export default function HeroSection({
       style={{
         ...(bg ? { backgroundColor: bg } : {}),
         ...(color ? { color } : {}),
-        paddingTop: "0.5rem",
-        paddingBottom: "0.5rem",
+        paddingTop: "0",
+        paddingBottom: "0",
         textAlign,
       }}
-      className="px-2 sm:px-4 lg:px-6"
+      className="px-2 sm:px-4 lg:px-0 py-0"
     >
       {/* Sobreescritura responsive del aspect ratio */}
-      <style>{`
-        .hero-wrapper { aspect-ratio: 4/3; }
-        @media (min-width: 640px)  { .hero-wrapper { aspect-ratio: 16/7; } }
-        @media (min-width: 1024px) { .hero-wrapper { aspect-ratio: 16/5; } }
-      `}</style>
+<style>{`
+  .hero-wrapper { aspect-ratio: 16/12; }
+  @media (min-width: 640px)  { .hero-wrapper { aspect-ratio: 16/9; } }
+  @media (min-width: 1024px) { .hero-wrapper { aspect-ratio: 16/7; } }
+`}</style>
 
       <div
         className="hero-wrapper relative overflow-hidden w-full max-w-full"

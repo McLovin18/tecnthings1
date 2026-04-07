@@ -43,24 +43,24 @@ export default function BannerSection({
         paddingTop,
         paddingBottom,
       }}
-      className="px-4 lg:px-6 overflow-hidden"
+      className="py-20 overflow-hidden"
     >
       <div
-        className="relative overflow-hidden bg-slate-900/40"
+        className="overflow-hidden bg-slate-900/40 flex flex-col justify-center items-center"
         style={{ borderRadius }}
       >
         {finalBackgroundImage && (
           <img
             src={finalBackgroundImage}
             alt={title || "Banner"}
-            className="absolute inset-0 w-full h-full object-cover"
-            style={{ opacity: 1, filter: 'none' }}
+            className="w-full h-[220px] sm:h-[320px] md:h-[400px] lg:h-[600px] xl:h-[600px] 2xl:h-[600px] object-cover"
+            style={{ aspectRatio: '7/3', opacity: 1, filter: 'none', display: 'block' }}
           />
         )}
-        <div className="relative px-6 py-6 md:px-10 md:py-8 flex flex-col gap-2 max-w-3xl">
+        <div className="absolute left-0 right-0 top-0 bottom-0 flex flex-col justify-center items-center px-6 py-6 md:px-10 md:py-8 max-w-3xl w-full h-full pointer-events-none">
           {title && (
             <h2
-              className="text-2xl md:text-3xl font-bold mb-1"
+              className="text-2xl md:text-3xl font-bold mb-1 drop-shadow-lg"
               style={fieldStyles?.title}
             >
               {title}
@@ -68,7 +68,7 @@ export default function BannerSection({
           )}
           {subtitle && (
             <p
-              className="text-sm md:text-base opacity-90"
+              className="text-sm md:text-base opacity-90 drop-shadow"
               style={fieldStyles?.subtitle}
             >
               {subtitle}
@@ -76,7 +76,7 @@ export default function BannerSection({
           )}
           {subtitle2 && (
             <p
-              className="text-sm md:text-base opacity-90"
+              className="text-sm md:text-base opacity-90 drop-shadow"
               style={fieldStyles?.subtitle2}
             >
               {subtitle2}
@@ -84,7 +84,7 @@ export default function BannerSection({
           )}
           {subtitle3 && (
             <p
-              className="text-sm md:text-base opacity-90"
+              className="text-sm md:text-base opacity-90 drop-shadow"
               style={fieldStyles?.subtitle3}
             >
               {subtitle3}

@@ -1042,10 +1042,20 @@ export default function LandingEditor() {
                         >
                           <div className="flex items-start justify-between mb-3 gap-3">
                             <div>
-                              <h3 className="font-bold text-sm mb-1">
+                              <h3 className="font-bold text-sm mb-1 flex items-center gap-2">
                                 {section.type
                                   ? String(section.type).toUpperCase()
                                   : "(Sin tipo)"}
+                                {section.type === "hero" && (
+                                  <span className="ml-2 text-xs font-normal text-purple-600 bg-purple-50 rounded px-2 py-0.5 border border-purple-200">
+                                    Imagen recomendada: 1400x600px (mín. 1200x500px, relación ~7:3)
+                                  </span>
+                                )}
+                                {section.type === "banner" && (
+                                  <span className="ml-2 text-xs font-normal text-blue-600 bg-blue-50 rounded px-2 py-0.5 border border-blue-200">
+                                    Imagen recomendada: 1400x600px (mín. 1200x500px, relación ~7:3)
+                                  </span>
+                                )}
                               </h3>
                               {section.hidden && (
                                 <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">

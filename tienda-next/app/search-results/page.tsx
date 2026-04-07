@@ -18,7 +18,7 @@ export default function SearchResultsPage() {
   const [search, setSearch] = useState(queryParam);
   const [precioMin, setPrecioMin] = useState("");
   const [precioMax, setPrecioMax] = useState("");
-  const [orden, setOrden] = useState("newest");
+  const [orden, setOrden] = useState("price-high");
   const [marca, setMarca] = useState("");
   const [marcas, setMarcas] = useState([]);
 

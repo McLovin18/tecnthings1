@@ -23,7 +23,7 @@ export default function ProductsByCategoryPage() {
   const [search, setSearch] = useState("");
   const [precioMin, setPrecioMin] = useState("");
   const [precioMax, setPrecioMax] = useState("");
-  const [orden, setOrden] = useState("newest");
+  const [orden, setOrden] = useState("price-high");
   const [showPrecio, setShowPrecio] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
