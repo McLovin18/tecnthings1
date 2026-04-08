@@ -3,20 +3,64 @@ import BottomBarPublic from "../components/BottomBarPublic";
 import { useSearchParams } from "next/navigation";
 import ProductoCard from "../components/ProductoCard";
 import { Loading3DIcon } from "../components/Loading3DIcon";
+
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { 
   obtenerProductos,
   obtenerProductosPorCategoria,
   obtenerProductosPorSubcategoria,
   obtenerProductosPorSubsubcategoria
-} from "../lib/productos-db";import { useUser } from "../context/UserContext";
+} from "../lib/productos-db";
+import { obtenerCategorias } from "../lib/categorias-db";
+import { useUser } from "../context/UserContext";
 
 export default function ProductsByCategoryPage() {
+  // Estado para el mapeo de nombres
+  const [catMap, setCatMap] = useState<any>({});
+  const [subcatMap, setSubcatMap] = useState<any>({});
+  const [subsubcatMap, setSubsubcatMap] = useState<any>({});
+
+  useEffect(() => {
+    async function fetchCategorias() {
+      const cats = await obtenerCategorias();
+      const catObj: any = {};
+      const subcatObj: any = {};
+      const subsubcatObj: any = {};
+      cats.forEach((cat: any) => {
+        catObj[cat.id] = cat.nombre || cat.id;
+        if (cat.subcategorias) {
+          cat.subcategorias.forEach((sub: any) => {
+            subcatObj[sub.id] = sub.nombre || sub.id;
+            if (sub.subcategorias) {
+              sub.subcategorias.forEach((subsub: any) => {
+                subsubcatObj[subsub.id] = subsub.nombre || subsub.id;
+              });
+            }
+          });
+        }
+      });
+      setCatMap(catObj);
+      setSubcatMap(subcatObj);
+      setSubsubcatMap(subsubcatObj);
+    }
+    fetchCategorias();
+  }, []);
+
+  function getCategoryName(id: string) {
+    return catMap[id] || id;
+  }
+  function getSubcategoryName(id: string) {
+    return subcatMap[id] || id;
+  }
+  function getSubsubcategoryName(id: string) {
+    return subsubcatMap[id] || id;
+  }
+
   const isLogged = useUser();
   const searchParams = useSearchParams();
-const categoriaId = (searchParams?.get("cat") || searchParams?.get("category") || "").trim();
-const subcategoriaId = (searchParams?.get("subcat") || searchParams?.get("subcategory") || searchParams?.get("sub") || "").trim();
-const subsubcategoriaId = (searchParams?.get("subsubcat") || searchParams?.get("subsubcategory") || searchParams?.get("subsub") || "").trim();
+  const categoriaId = (searchParams?.get("cat") || searchParams?.get("category") || "").trim();
+  const subcategoriaId = (searchParams?.get("subcat") || searchParams?.get("subcategory") || searchParams?.get("sub") || "").trim();
+  const subsubcategoriaId = (searchParams?.get("subsubcat") || searchParams?.get("subsubcategory") || searchParams?.get("subsub") || "").trim();
 
 
   // --- Estados de datos ---
@@ -91,12 +135,8 @@ useEffect(() => {
             return false;
           }
         } else if (categoriaId) {
-          // Solo productos directos de la categoría (sin subcategoría ni subsubcategoría)
-          if (
-            p.categoria !== categoriaId ||
-            p.subcategoria ||
-            p.subsubcategoria
-          ) {
+          // Mostrar todos los productos de la categoría, sin importar subcategoría o subsubcategoría
+          if (p.categoria !== categoriaId) {
             return false;
           }
         }
@@ -156,14 +196,36 @@ useEffect(() => {
 
       <main className="max-w-7xl mx-auto w-full px-3 sm:px-5 py-8 flex-1">
         {/* Cabecera */}
-        {(categoriaId || subcategoriaId) && (
+        {(categoriaId || subcategoriaId || subsubcategoriaId) && (
           <div className="mb-4">
-            <h1 className="text-xl sm:text-2xl font-bold leading-tight"></h1>
-            {subcategoriaId && categoriaId && (
-              <p className="text-xs text-slate-400 dark:text-white/30 mt-0.5 uppercase tracking-wider">
-                {categoriaId} {subsubcategoriaId ? ` › ${subsubcategoriaId}` : ""}
-              </p>
-            )}
+            <nav className="flex items-center gap-1 text-xs text-slate-400 dark:text-white/30 mb-1 select-none">
+              <span className="hover:underline cursor-pointer" onClick={() => window.location.href = '/products-by-category'}>Categorías</span>
+              {categoriaId && (
+                <>
+                  <span className="mx-1">›</span>
+                  <span className="hover:underline cursor-pointer" onClick={() => window.location.href = `/products-by-category?cat=${encodeURIComponent(categoriaId)}`}>{getCategoryName(categoriaId)}</span>
+                </>
+              )}
+              {subcategoriaId && (
+                <>
+                  <span className="mx-1">›</span>
+                  <span className="hover:underline cursor-pointer" onClick={() => window.location.href = `/products-by-category?cat=${encodeURIComponent(categoriaId)}&subcat=${encodeURIComponent(subcategoriaId)}`}>{getSubcategoryName(subcategoriaId)}</span>
+                </>
+              )}
+              {subsubcategoriaId && (
+                <>
+                  <span className="mx-1">›</span>
+                  <span className="font-semibold text-slate-600 dark:text-white/80">{getSubsubcategoryName(subsubcategoriaId)}</span>
+                </>
+              )}
+            </nav>
+            <h1 className="text-xl sm:text-2xl font-bold leading-tight">
+              {subsubcategoriaId
+                ? getSubsubcategoryName(subsubcategoriaId)
+                : subcategoriaId
+                  ? getSubcategoryName(subcategoriaId)
+                  : getCategoryName(categoriaId)}
+            </h1>
           </div>
         )}
 

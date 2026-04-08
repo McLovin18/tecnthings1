@@ -1,125 +1,361 @@
-
 "use client";
 import { useSearchParams } from "next/navigation";
-import ProductoCard from "../../components/ProductoCard"
-import { useEffect, useState } from "react";
-import { obtenerProductos } from "../../lib/productos-db";
-
+import ProductoCard from "../../components/ProductoCard";
+import { useEffect, useState, useMemo, useCallback } from "react";
+import type { Producto } from "../../lib/productos-db";
+import { obtenerProductos, obtenerProductosPorCategoria, obtenerProductosPorSubcategoria, obtenerProductosPorSubsubcategoria } from "../../lib/productos-db";
+import { obtenerCategorias } from "../../lib/categorias-db";
 
 export default function ProductsByCategoryPage() {
-  // Obtener los parámetros desde la URL usando el hook de Next.js
   const searchParams = useSearchParams();
-  const categoria = searchParams.get("cat") || searchParams.get("category") || "";
-  const subcategoria = searchParams.get("subcat") || searchParams.get("subcategory") || "";
-  const subsubcategoria = searchParams.get("subsubcat") || searchParams.get("subsubcategory") || "";
-  const [productos, setProductos] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const categoria = (searchParams?.get("cat") || searchParams?.get("category") || "").trim();
+  const subcategoria = (searchParams?.get("subcat") || searchParams?.get("subcategory") || searchParams?.get("sub") || "").trim();
+  const subsubcategoria = (searchParams?.get("subsubcat") || searchParams?.get("subsubcategory") || searchParams?.get("subsub") || "").trim();
 
-  // Estados para filtros y búsqueda
+  const [productos, setProductos] = useState<Producto[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [precioMin, setPrecioMin] = useState("");
   const [precioMax, setPrecioMax] = useState("");
-  const [orden, setOrden] = useState("newest");
+  const [orden, setOrden] = useState("price-high");
+  const [showPrecio, setShowPrecio] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
+  // ── Fetch productos ───────────────────────────────
   useEffect(() => {
     async function fetchProductos() {
       setLoading(true);
-      // Trae todos los productos y filtra en el cliente por los parámetros
-      const prods = await obtenerProductos();
+      let prods = [];
+      if (subsubcategoria && subcategoria && categoria) {
+        prods = await obtenerProductosPorSubsubcategoria(subsubcategoria, subcategoria, categoria);
+      } else if (subcategoria && categoria) {
+        prods = await obtenerProductosPorSubcategoria(subcategoria, categoria);
+      } else if (categoria) {
+        prods = await obtenerProductosPorCategoria(categoria);
+      } else {
+        prods = await obtenerProductos();
+      }
       setProductos(prods);
       setLoading(false);
     }
     fetchProductos();
   }, [categoria, subcategoria, subsubcategoria]);
 
-  // Filtrado y ordenamiento de productos
-  const productosFiltrados = productos
-    .filter((p) => {
-      // Filtro por categoría, subcategoría o subsubcategoría
-      let matchCategoria = true;
-      if (categoria) matchCategoria = p.categoria === categoria;
-      if (subcategoria) matchCategoria = matchCategoria && p.subcategoria === subcategoria;
-      if (subsubcategoria) matchCategoria = matchCategoria && p.subsubcategoria === subsubcategoria;
+  // ── Chequear autenticación ───────────────────────
+  useEffect(() => {
+    // Reemplaza con tu lógica real de autenticación
+    const loggedIn = Boolean(localStorage.getItem("token"));
+    setIsAuthenticated(loggedIn);
+  }, []);
 
-      // Búsqueda por nombre o descripción
-      const texto = search.trim().toLowerCase();
-      const nombre = p.nombre?.toLowerCase() || "";
-      const desc = p.descripcion?.toLowerCase() || "";
-      const matchTexto = !texto || nombre.includes(texto) || desc.includes(texto);
-      // Filtro por rango de precio
-      const min = precioMin ? parseFloat(precioMin) : null;
-      const max = precioMax ? parseFloat(precioMax) : null;
-      const matchMin = min === null || p.precio >= min;
-      const matchMax = max === null || p.precio <= max;
-      return matchCategoria && matchTexto && matchMin && matchMax;
-    })
-    .sort((a, b) => {
-      if (orden === "price-low") return a.precio - b.precio;
-      if (orden === "price-high") return b.precio - a.precio;
-      // Por defecto, más nuevos (por id, si hay timestamp usar ese)
-      if (a.createdAt && b.createdAt) return b.createdAt - a.createdAt;
-      return 0;
-    });
+  // ── Filtrado y orden ─────────────────────────────
+  const productosFiltrados = useMemo(() => {
+    return productos
+      .filter((p: any) => {
+        // Validación estricta de jerarquía
+        if (subsubcategoria && subcategoria && categoria) {
+          if (
+            p.categoria !== categoria ||
+            p.subcategoria !== subcategoria ||
+            p.subsubcategoria !== subsubcategoria
+          ) {
+            return false;
+          }
+        } else if (subcategoria && categoria) {
+          if (
+            p.categoria !== categoria ||
+            p.subcategoria !== subcategoria
+          ) {
+            return false;
+          }
+        } else if (categoria) {
+          // Mostrar todos los productos de la categoría, sin importar subcategoría o subsubcategoría
+          if (p.categoria !== categoria) {
+            return false;
+          }
+        }
+
+        const texto = search.toLowerCase().trim();
+        const matchTexto =
+          !texto ||
+          (p.nombre?.toLowerCase() || "").includes(texto) ||
+          (p.descripcion?.toLowerCase() || "").includes(texto);
+
+        const base = Number(p.precio || 0);
+        const disc = Number(p.descuento || 0);
+        const finalPrice = disc > 0 && disc < 100 ? base * (1 - disc / 100) : base;
+        const min = precioMin ? parseFloat(precioMin) : null;
+        const max = precioMax ? parseFloat(precioMax) : null;
+        const matchMin = min === null || finalPrice >= min;
+        const matchMax = max === null || finalPrice <= max;
+
+        return matchTexto && matchMin && matchMax;
+      })
+      .sort((a: any, b: any) => {
+        const fp = (p: any) => {
+          const base = Number(p.precio || 0);
+          const d = Number(p.descuento || 0);
+          return d > 0 && d < 100 ? base * (1 - d / 100) : base;
+        };
+        if (orden === "price-low") return fp(a) - fp(b);
+        if (orden === "price-high") return fp(b) - fp(a);
+        if (a.createdAt && b.createdAt) return b.createdAt - a.createdAt;
+        return 0;
+      });
+  }, [productos, categoria, subcategoria, subsubcategoria, search, precioMin, precioMax, orden]);
+
+  const hasFilters = !!(search || precioMin || precioMax || orden !== "newest");
+
+  const clearFilters = useCallback(() => {
+    setSearch("");
+    setPrecioMin("");
+    setPrecioMax("");
+    setOrden("newest");
+  }, []);
+
+  const ordenOpciones = [
+    { value: "newest",     label: "Más nuevos"    },
+    { value: "price-low",  label: "Menor precio"  },
+    { value: "price-high", label: "Mayor precio"  },
+  ];
+
+  const chip = (active: boolean) =>
+    `flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition-all cursor-pointer select-none whitespace-nowrap ${
+      active
+        ? "bg-purple-600 border-purple-600 text-white shadow-sm"
+        : "bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-600 dark:text-white/60 hover:border-purple-400 dark:hover:border-purple-500 hover:text-purple-600 dark:hover:text-purple-300"
+    }`;
+
+  const inputCls =
+    "px-3 py-2 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-purple-400 transition-all";
+
+  // Estado para el mapeo de nombres
+  const [catMap, setCatMap] = useState<any>({});
+  const [subcatMap, setSubcatMap] = useState<any>({});
+  const [subsubcatMap, setSubsubcatMap] = useState<any>({});
+
+  useEffect(() => {
+    async function fetchCategorias() {
+      const cats = await obtenerCategorias();
+      const catObj: any = {};
+      const subcatObj: any = {};
+      const subsubcatObj: any = {};
+      cats.forEach((cat: any) => {
+        catObj[cat.id] = cat.nombre || cat.id;
+        if (cat.subcategorias) {
+          cat.subcategorias.forEach((sub: any) => {
+            subcatObj[sub.id] = sub.nombre || sub.id;
+            if (sub.subcategorias) {
+              sub.subcategorias.forEach((subsub: any) => {
+                subsubcatObj[subsub.id] = subsub.nombre || subsub.id;
+              });
+            }
+          });
+        }
+      });
+      setCatMap(catObj);
+      setSubcatMap(subcatObj);
+      setSubsubcatMap(subsubcatObj);
+    }
+    fetchCategorias();
+  }, []);
+
+  function getCategoryName(id: string) {
+    return catMap[id] || id;
+  }
+  function getSubcategoryName(id: string) {
+    return subcatMap[id] || id;
+  }
+  function getSubsubcategoryName(id: string) {
+    return subsubcatMap[id] || id;
+  }
 
   return (
-    <div
-      style={{ background: 'var(--bg)', color: 'var(--text)' }}
-      className="min-h-screen flex flex-col"
-    >
-      <main className="max-w-7xl mx-auto px-4 py-6 sm:py-12 lg:px-6 pb-24 lg:pb-8 flex-1">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* SIDEBAR FILTROS */}
-          <aside className="lg:col-span-1">
-            <div className="rounded-lg p-6 space-y-6 sticky top-20 bg-white text-slate-900 dark:bg-[#3a1859] dark:text-white">
+    <div className="min-h-screen flex flex-col mt-2 bg-white dark:bg-black text-slate-900 dark:text-white transition-colors">
+
+      <main className="max-w-7xl mx-auto w-full px-3 sm:px-5 py-10 flex-1">
+
+        {/* ── Cabecera ─────────────────────────────────────────── */}
+        {(categoria || subcategoria || subsubcategoria) && (
+          <div className="mb-4">
+            <nav className="flex items-center gap-1 text-xs text-slate-400 dark:text-white/30 mb-1 select-none">
+              <span className="hover:underline cursor-pointer" onClick={() => window.location.href = '/home/products-by-category'}>Categorías</span>
+              {categoria && (
+                <>
+                  <span className="mx-1">›</span>
+                  <span className="hover:underline cursor-pointer" onClick={() => window.location.href = `/home/products-by-category?cat=${encodeURIComponent(categoria)}`}>{getCategoryName(categoria)}</span>
+                </>
+              )}
+              {subcategoria && (
+                <>
+                  <span className="mx-1">›</span>
+                  <span className="hover:underline cursor-pointer" onClick={() => window.location.href = `/home/products-by-category?cat=${encodeURIComponent(categoria)}&subcat=${encodeURIComponent(subcategoria)}`}>{getSubcategoryName(subcategoria)}</span>
+                </>
+              )}
+              {subsubcategoria && (
+                <>
+                  <span className="mx-1">›</span>
+                  <span className="font-semibold text-slate-600 dark:text-white/80">{getSubsubcategoryName(subsubcategoria)}</span>
+                </>
+              )}
+            </nav>
+            <h1 className="text-xl sm:text-2xl font-bold leading-tight">
+              {subsubcategoria
+                ? getSubsubcategoryName(subsubcategoria)
+                : subcategoria
+                  ? getSubcategoryName(subcategoria)
+                  : getCategoryName(categoria)}
+            </h1>
+          </div>
+        )}
+
+        {/* ── Filtros horizontales ─────────────────────────────── */}
+        <div className="bg-white dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl px-4 py-6 sm:py-15 mb-5 space-y-3">
+
+          {/* Fila 1: buscador + precio + limpiar */}
+          <div className="flex flex-wrap gap-2 items-center">
+            {/* Search */}
+            <div className="relative flex-1 min-w-[160px] max-w-sm">
+              <span className="material-icons-round absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-white/30 text-[17px] pointer-events-none">
+                search
+              </span>
               <input
                 type="text"
                 placeholder="Buscar productos..."
-                className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm w-full mb-2"
                 value={search}
-                onChange={e => setSearch(e.target.value)}
+                onChange={(e) => setSearch(e.target.value)}
+                className={`${inputCls} w-full pl-9 pr-8`}
               />
-              <input
-                type="number"
-                placeholder="Precio mínimo"
-                className="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm w-full mb-2"
-                value={precioMin}
-                onChange={e => setPrecioMin(e.target.value)}
-                min={0}
-              />
-              <input
-                type="number"
-                placeholder="Precio máximo"
-                className="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm w-full mb-2"
-                value={precioMax}
-                onChange={e => setPrecioMax(e.target.value)}
-                min={0}
-              />
-              <select
-                className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm w-full"
-                value={orden}
-                onChange={e => setOrden(e.target.value)}
+              {search && (
+                <button
+                  onClick={() => setSearch("")}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-white/80"
+                >
+                  <span className="material-icons-round text-[15px]">close</span>
+                </button>
+              )}
+            </div>
+
+            {/* Toggle precio */}
+            <button
+              onClick={() => setShowPrecio((v) => !v)}
+              className={chip(showPrecio || !!(precioMin || precioMax))}
+            >
+              <span className="material-icons-round text-[15px]">attach_money</span>
+              Precio
+              {(precioMin || precioMax) && !showPrecio && (
+                <span className="w-1.5 h-1.5 rounded-full bg-purple-300" />
+              )}
+            </button>
+
+            {/* Limpiar */}
+            {hasFilters && (
+              <button
+                onClick={clearFilters}
+                className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium border border-red-200 dark:border-red-500/30 text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 transition-all whitespace-nowrap"
               >
-                <option value="newest">Más Nuevos</option>
-                <option value="price-low">Menor Precio</option>
-                <option value="price-high">Mayor Precio</option>
-              </select>
+                <span className="material-icons-round text-[14px]">close</span>
+                Limpiar
+              </button>
+            )}
+          </div>
+
+          {/* Precio expandible */}
+          {showPrecio && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs text-slate-500 dark:text-white/40 font-medium">Rango:</span>
+              <input
+                type="number"
+                placeholder="Mín"
+                value={precioMin}
+                onChange={(e) => setPrecioMin(e.target.value)}
+                min={0}
+                className={`${inputCls} w-24`}
+              />
+              <span className="text-slate-300 dark:text-white/20">—</span>
+              <input
+                type="number"
+                placeholder="Máx"
+                value={precioMax}
+                onChange={(e) => setPrecioMax(e.target.value)}
+                min={0}
+                className={`${inputCls} w-24`}
+              />
             </div>
-          </aside>
-          {/* PRODUCTOS */}
-          <section className="lg:col-span-3">
-            <h2 className="text-2xl font-bold mb-6 text-purple-700">Productos</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {loading ? (
-                <div className="text-slate-500 col-span-full">Cargando productos...</div>
-              ) : productosFiltrados.length === 0 ? (
-                <div className="text-slate-500 col-span-full">No se encontraron productos.</div>
-              ) : productosFiltrados.map((p) => (
-                <ProductoCard key={p.id} producto={p} showCart={true} showEye={true} />
-              ))}
-            </div>
-          </section>
+          )}
+
+          {/* Fila 2: orden + conteo */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs text-slate-400 dark:text-white/30 font-medium">Ordenar:</span>
+            {ordenOpciones.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => setOrden(opt.value)}
+                className={chip(orden === opt.value)}
+              >
+                {opt.label}
+              </button>
+            ))}
+            {!loading && (
+              <span className="ml-auto text-xs text-slate-400 dark:text-white/75 tabular-nums">
+                {productosFiltrados.length}{" "}
+                {productosFiltrados.length === 1 ? "resultado" : "resultados"}
+              </span>
+            )}
+          </div>
         </div>
+
+        {/* ── Grid de productos ─────────────────────────────────── */}
+        {loading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+            {Array.from({ length: 10 }).map((_, i) => (
+              <div
+                key={i}
+                className="rounded-2xl bg-white dark:bg-white/5 border border-slate-100 dark:border-white/5 h-60 animate-pulse"
+              />
+            ))}
+          </div>
+        ) : productosFiltrados.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-24 gap-4 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-white/5 flex items-center justify-center">
+              <span className="material-icons-round text-3xl text-slate-300 dark:text-white/20">
+                search_off
+              </span>
+            </div>
+            <div>
+              <p className="font-semibold text-slate-700 dark:text-white/80">Sin resultados</p>
+              <p className="text-sm text-slate-400 dark:text-white/30 mt-1 max-w-[240px]">
+                Prueba otros términos o ajusta los filtros de precio
+              </p>
+            </div>
+            {hasFilters && (
+              <button
+                onClick={clearFilters}
+                className="text-sm text-purple-500 dark:text-purple-400 underline underline-offset-2"
+              >
+                Limpiar filtros
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+            {productosFiltrados.map((p: any) => (
+                <ProductoCard
+                  key={p.id}
+                  producto={p}
+                  showCart
+                  showEye
+                  showFav={isAuthenticated}
+                  onClick={() => {}}
+                  onAddCart={() => {}}
+                  onEye={() => {}}
+                />
+            ))}
+          </div>
+        )}
+
       </main>
     </div>
+    
   );
 }

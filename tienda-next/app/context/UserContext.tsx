@@ -64,6 +64,21 @@ export function UserProvider({ children }: { children: ReactNode }) {
         setLoading(false);
         return;
       }
+      // Solo bloquear si fue creado en esta sesión (flag justRegisteredEmail)
+      let mustVerify = false;
+      try {
+        if (typeof window !== "undefined") {
+          const justRegistered = localStorage.getItem("justRegisteredEmail");
+          if (justRegistered && justRegistered === realUser.email) {
+            mustVerify = true;
+          }
+        }
+      } catch {}
+      if (mustVerify && !realUser.emailVerified) {
+        setUser(null);
+        setLoading(false);
+        return;
+      }
       try {
         // Forzar refresh del token para obtener claims actualizados
         await getIdToken(realUser, true);

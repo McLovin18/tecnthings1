@@ -15,7 +15,7 @@ export default function LoginPage() {
   const searchParams = useSearchParams();
 
   const [tab, setTab] = useState<TabType>(
-    searchParams.get("tab") === "register" ? "register" : "login"
+    searchParams && searchParams.get("tab") === "register" ? "register" : "login"
   );
 
   const [loading, setLoading] = useState(false);
@@ -74,12 +74,13 @@ export default function LoginPage() {
     try {
       setLoading(true);
       const result = await loginUser(loginEmail, loginPassword);
+      // Si loginUser lanza error, no llega aquí
       if (result.success) {
         setAlert({
           message: `Bienvenido ${result.user.email}`,
           type: "success",
         });
-        // Crear cookie de sesión + obtener rol real desde el backend
+        // Solo aquí se crea la cookie de sesión
         const idToken = result.idToken;
         let role = "client";
         try {
@@ -127,11 +128,21 @@ export default function LoginPage() {
         message: error.message,
         type: "error",
       });
+      // Si el error es de verificación, asegúrate de que no quede sesión local
+      try { await import("../lib/firebase-auth").then(m => m.logoutUser()); } catch {}
     } finally {
       setLoading(false);
     }
   }
 
+  // Solo mostrar mensaje de verificación si el usuario acaba de registrarse en esta sesión
+  const [registerSuccess, setRegisterSuccess] = useState(false);
+  // Guardar en localStorage que el usuario fue creado en esta sesión
+  useEffect(() => {
+    if (registerSuccess && registerEmail) {
+      localStorage.setItem("justRegisteredEmail", registerEmail);
+    }
+  }, [registerSuccess, registerEmail]);
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
 
@@ -157,14 +168,6 @@ export default function LoginPage() {
       });
       return;
     }
-    // Validación de cédula/RUC (Ecuador: cédula 10 dígitos, RUC 13 dígitos)
-    if (!/^\d{10}$/.test(registerId) && !/^\d{13}$/.test(registerId)) {
-      setAlert({
-        message: "Cédula/RUC inválido (10 o 13 dígitos)",
-        type: "error",
-      });
-      return;
-    }
 
     try {
       setLoading(true);
@@ -172,51 +175,15 @@ export default function LoginPage() {
         registerEmail,
         registerPassword,
         {
-          name,
-          phone: registerPhone,
-          id: registerId,
+          name
         },
       );
       if (result.success) {
+        setRegisterSuccess(true);
         setAlert({
-          message: "Cuenta creada",
+          message: "Cuenta creada. Se ha enviado un correo de verificación. Por favor revisa tu email y verifica tu cuenta antes de iniciar sesión.",
           type: "success",
         });
-        // Crear cookie de sesión inmediatamente después de registrar
-        try {
-          const res = await fetch("/api/auth/login", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ idToken: result.idToken }),
-          });
-          if (!res.ok) {
-            throw new Error("No se pudo crear la sesión");
-          }
-        } catch (err: any) {
-          setAlert({
-            message: err?.message || "Error al crear la sesión",
-            type: "error",
-          });
-          return;
-        }
-
-        // Reclamar órdenes de invitado hechas con el mismo correo
-        try {
-          await fetch("/api/auth/claim-guest-orders", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ idToken: result.idToken }),
-          });
-        } catch (e) {
-          // No es crítico, continuar sin bloquear el registro
-          console.warn("No se pudieron reclamar órdenes de invitado:", e);
-        }
-
-        setTimeout(() => {
-          router.push("/home");
-        }, 1200);
       }
     } catch (error: any) {
       setAlert({
@@ -277,100 +244,106 @@ ${tab === "register" ? "border-b-2 border-blue-500 text-blue-600 dark:text-blue-
         </div>
         {/* LOGIN */}
         {tab === "login" && (
-          <form onSubmit={handleLogin} className="space-y-5">
-            <input
-              placeholder="Correo electrónico"
-              type="email"
-              value={loginEmail}
-              onChange={(e) => setLoginEmail(e.target.value)}
-              className="w-full p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-slate-400 dark:placeholder:text-white/70"
-            />
-            <div className="relative">
+          <>
+            <form onSubmit={handleLogin} className="space-y-5">
               <input
-                placeholder="Contraseña"
-                type={showLoginPass ? "text" : "password"}
-                value={loginPassword}
-                onChange={(e) => setLoginPassword(e.target.value)}
+                placeholder="Correo electrónico"
+                type="email"
+                value={loginEmail}
+                onChange={(e) => setLoginEmail(e.target.value)}
                 className="w-full p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-slate-400 dark:placeholder:text-white/70"
               />
+              <div className="relative">
+                <input
+                  placeholder="Contraseña"
+                  type={showLoginPass ? "text" : "password"}
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  className="w-full p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-slate-400 dark:placeholder:text-white/70"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowLoginPass(!showLoginPass)}
+                  className="absolute right-3 top-4 text-slate-400 dark:text-white"
+                  tabIndex={-1}
+                >
+                  👁
+                </button>
+              </div>
               <button
-                type="button"
-                onClick={() => setShowLoginPass(!showLoginPass)}
-                className="absolute right-3 top-4 text-slate-400 dark:text-white"
-                tabIndex={-1}
+                disabled={loading}
+                className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 rounded-xl transition-colors duration-200 shadow-md disabled:opacity-60"
               >
-                👁
+                {loading ? <><Loading3DIcon /><span className="ml-2">Cargando...</span></> : "Iniciar Sesión"}
               </button>
+            </form>
+            <div className="mt-4 text-center">
+              <a href="/recuperar-password" className="text-blue-500 hover:underline text-sm">¿Olvidaste tu contraseña?</a>
             </div>
-            <button
-              disabled={loading}
-              className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 rounded-xl transition-colors duration-200 shadow-md disabled:opacity-60"
-            >
-              {loading ? <><Loading3DIcon /><span className="ml-2">Cargando...</span></> : "Iniciar Sesión"}
-            </button>
-          </form>
+          </>
         )}
         {/* REGISTER */}
         {tab === "register" && (
-          <form onSubmit={handleRegister} className="space-y-5">
-            <input
-              placeholder="Nombre"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-slate-400 dark:placeholder:text-white/70"
-            />
-            <input
-              type="email"
-              placeholder="Correo electrónico"
-              value={registerEmail}
-              onChange={(e) => setRegisterEmail(e.target.value)}
-              className="w-full p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-slate-400 dark:placeholder:text-white/70"
-            />
-            <input
-              type="text"
-              placeholder="Número de teléfono"
-              value={registerPhone}
-              onChange={(e) => setRegisterPhone(e.target.value)}
-              className="w-full p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-slate-400 dark:placeholder:text-white/70"
-            />
-            <input
-              type="text"
-              placeholder="Cédula o RUC"
-              value={registerId}
-              onChange={(e) => setRegisterId(e.target.value)}
-              className="w-full p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-slate-400 dark:placeholder:text-white/70"
-            />
-            <div className="relative">
+          (registerSuccess && localStorage.getItem("justRegisteredEmail") === registerEmail) ? (
+            <div className="text-center py-8">
+              <div className="text-green-600 text-lg font-semibold mb-2">¡Cuenta creada!</div>
+              <div className="mb-4">Se ha enviado un correo de verificación a <span className="font-bold">{registerEmail}</span>.<br />Por favor revisa tu email y verifica tu cuenta antes de iniciar sesión.</div>
+              <div className="text-sm text-slate-500 dark:text-slate-300">Si no ves el correo, revisa la carpeta de spam o promociones.</div>
+            </div>
+          ) : (
+            <form onSubmit={handleRegister} className="space-y-5">
+              <input
+                placeholder="Nombre"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-slate-400 dark:placeholder:text-white/70"
+              />
+              <input
+                type="email"
+                placeholder="Correo electrónico"
+                value={registerEmail}
+                onChange={(e) => setRegisterEmail(e.target.value)}
+                className="w-full p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-slate-400 dark:placeholder:text-white/70"
+              />
+              <input
+                type="text"
+                placeholder="Número de teléfono"
+                value={registerPhone}
+                onChange={(e) => setRegisterPhone(e.target.value)}
+                className="w-full p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-slate-400 dark:placeholder:text-white/70"
+              />
+              <div className="relative">
+                <input
+                  type={showRegisterPass ? "text" : "password"}
+                  placeholder="Contraseña"
+                  value={registerPassword}
+                  onChange={(e) => setRegisterPassword(e.target.value)}
+                  className="w-full p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-slate-400 dark:placeholder:text-white/70"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowRegisterPass(!showRegisterPass)}
+                  className="absolute right-3 top-4 text-slate-400 dark:text-white"
+                  tabIndex={-1}
+                >
+                  👁
+                </button>
+              </div>
               <input
                 type={showRegisterPass ? "text" : "password"}
-                placeholder="Contraseña"
-                value={registerPassword}
-                onChange={(e) => setRegisterPassword(e.target.value)}
+                placeholder="Confirmar contraseña"
+                value={registerPasswordConfirm}
+                onChange={(e) => setRegisterPasswordConfirm(e.target.value)}
                 className="w-full p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-slate-400 dark:placeholder:text-white/70"
               />
               <button
-                type="button"
-                onClick={() => setShowRegisterPass(!showRegisterPass)}
-                className="absolute right-3 top-4 text-slate-400 dark:text-white"
-                tabIndex={-1}
+                disabled={loading}
+                className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 rounded-xl transition-colors duration-200 shadow-md disabled:opacity-60"
               >
-                👁
+                {loading ? <><Loading3DIcon /><span className="ml-2">Creando...</span></> : "Crear Cuenta"}
               </button>
-            </div>
-            <input
-              type={showRegisterPass ? "text" : "password"}
-              placeholder="Confirmar contraseña"
-              value={registerPasswordConfirm}
-              onChange={(e) => setRegisterPasswordConfirm(e.target.value)}
-              className="w-full p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-slate-400 dark:placeholder:text-white/70"
-            />
-            <button
-              disabled={loading}
-              className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 rounded-xl transition-colors duration-200 shadow-md disabled:opacity-60"
-            >
-              {loading ? <><Loading3DIcon type="user" /><span className="ml-2">Creando...</span></> : "Crear Cuenta"}
-            </button>
-          </form>
+            </form>
+          )
         )}
       </div>
     </div>

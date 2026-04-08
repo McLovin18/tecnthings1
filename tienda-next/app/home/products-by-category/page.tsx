@@ -4,12 +4,13 @@ import ProductoCard from "../../components/ProductoCard";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import type { Producto } from "../../lib/productos-db";
 import { obtenerProductos, obtenerProductosPorCategoria, obtenerProductosPorSubcategoria, obtenerProductosPorSubsubcategoria } from "../../lib/productos-db";
+import { obtenerCategorias } from "../../lib/categorias-db";
 
 export default function ProductsByCategoryPage() {
   const searchParams = useSearchParams();
-  const categoria = searchParams?.get("cat") || searchParams?.get("category") || "";
-  const subcategoria = searchParams?.get("subcat") || searchParams?.get("subcategory") || "";
-  const subsubcategoria = searchParams?.get("subsubcat") || searchParams?.get("subsubcategory") || "";
+  const categoria = (searchParams?.get("cat") || searchParams?.get("category") || "").trim();
+  const subcategoria = (searchParams?.get("subcat") || searchParams?.get("subcategory") || searchParams?.get("sub") || "").trim();
+  const subsubcategoria = (searchParams?.get("subsubcat") || searchParams?.get("subsubcategory") || searchParams?.get("subsub") || "").trim();
 
   const [productos, setProductos] = useState<Producto[]>([]);
   const [loading, setLoading] = useState(true);
@@ -68,6 +69,7 @@ export default function ProductsByCategoryPage() {
             return false;
           }
         } else if (categoria) {
+          // Mostrar todos los productos de la categoría, sin importar subcategoría o subsubcategoría
           if (p.categoria !== categoria) {
             return false;
           }
@@ -127,20 +129,83 @@ export default function ProductsByCategoryPage() {
   const inputCls =
     "px-3 py-2 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-purple-400 transition-all";
 
+  // Estado para el mapeo de nombres
+  const [catMap, setCatMap] = useState<any>({});
+  const [subcatMap, setSubcatMap] = useState<any>({});
+  const [subsubcatMap, setSubsubcatMap] = useState<any>({});
+
+  useEffect(() => {
+    async function fetchCategorias() {
+      const cats = await obtenerCategorias();
+      const catObj: any = {};
+      const subcatObj: any = {};
+      const subsubcatObj: any = {};
+      cats.forEach((cat: any) => {
+        catObj[cat.id] = cat.nombre || cat.id;
+        if (cat.subcategorias) {
+          cat.subcategorias.forEach((sub: any) => {
+            subcatObj[sub.id] = sub.nombre || sub.id;
+            if (sub.subcategorias) {
+              sub.subcategorias.forEach((subsub: any) => {
+                subsubcatObj[subsub.id] = subsub.nombre || subsub.id;
+              });
+            }
+          });
+        }
+      });
+      setCatMap(catObj);
+      setSubcatMap(subcatObj);
+      setSubsubcatMap(subsubcatObj);
+    }
+    fetchCategorias();
+  }, []);
+
+  function getCategoryName(id: string) {
+    return catMap[id] || id;
+  }
+  function getSubcategoryName(id: string) {
+    return subcatMap[id] || id;
+  }
+  function getSubsubcategoryName(id: string) {
+    return subsubcatMap[id] || id;
+  }
+
   return (
     <div className="min-h-screen flex flex-col mt-2 bg-white dark:bg-black text-slate-900 dark:text-white transition-colors">
 
       <main className="max-w-7xl mx-auto w-full px-3 sm:px-5 py-10 flex-1">
 
         {/* ── Cabecera ─────────────────────────────────────────── */}
-        {(categoria || subcategoria) && (
+        {(categoria || subcategoria || subsubcategoria) && (
           <div className="mb-4">
-            <h1 className="text-xl sm:text-2xl font-bold leading-tight"></h1>
-            {subcategoria && categoria && (
-              <p className="text-xs text-slate-400 dark:text-white/30 mt-0.5">
-                {categoria}{subsubcategoria ? ` › ${subsubcategoria}` : ""}
-              </p>
-            )}
+            <nav className="flex items-center gap-1 text-xs text-slate-400 dark:text-white/30 mb-1 select-none">
+              <span className="hover:underline cursor-pointer" onClick={() => window.location.href = '/home/products-by-category'}>Categorías</span>
+              {categoria && (
+                <>
+                  <span className="mx-1">›</span>
+                  <span className="hover:underline cursor-pointer" onClick={() => window.location.href = `/home/products-by-category?cat=${encodeURIComponent(categoria)}`}>{getCategoryName(categoria)}</span>
+                </>
+              )}
+              {subcategoria && (
+                <>
+                  <span className="mx-1">›</span>
+                  <span className="hover:underline cursor-pointer" onClick={() => window.location.href = `/home/products-by-category?cat=${encodeURIComponent(categoria)}&subcat=${encodeURIComponent(subcategoria)}`}>{getSubcategoryName(subcategoria)}</span>
+                </>
+              )}
+              {subsubcategoria && (
+                <>
+                  <span className="mx-1">›</span>
+                  <span className="font-semibold text-slate-600 dark:text-white/80">{getSubsubcategoryName(subsubcategoria)}</span>
+                </>
+              )}
+            </nav>
+            <h1 className="text-xl sm:text-2xl font-bold leading-tight">
+              {subsubcategoria
+                ? getSubsubcategoryName(subsubcategoria)
+                : subcategoria
+                  ? getSubcategoryName(subcategoria)
+                  : getCategoryName(categoria)}
+            </h1>
           </div>
         )}
 

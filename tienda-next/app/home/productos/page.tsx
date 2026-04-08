@@ -244,16 +244,19 @@ export default function ProductsByCategoryPage() {
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
             {Array.from({ length: 10 }).map((_, i) => (
-                <ProductoCard
-                  key={p.id}
-                  producto={p}
-                  showCart
-                  showEye
-                  showFav={isAuthenticated}
-                  onClick={() => {}}
-                  onAddCart={() => {}}
-                  onEye={() => {}}
-                />
+              <ProductoCard
+                key={i} // skeleton, solo necesita key única
+                producto={{} as Producto} // placeholder vacío
+                showCart
+                showEye
+                showFav={false}
+                onClick={() => {}}
+                onAddCart={() => {}}
+                onEye={() => {}}
+              />
+            ))}
+          </div>
+        ) : productosFiltrados.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 gap-4 text-center">
             <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-white/5 flex items-center justify-center">
               <span className="material-icons-round text-3xl text-slate-300 dark:text-white/20">
@@ -283,7 +286,7 @@ export default function ProductsByCategoryPage() {
                 producto={p}
                 showCart
                 showEye
-                showFav={isAuthenticated} // ← ahora sí coincide con el prop
+                showFav={isAuthenticated}
               />
             ))}
           </div>
