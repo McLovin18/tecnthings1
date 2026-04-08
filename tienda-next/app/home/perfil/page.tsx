@@ -178,7 +178,7 @@ export default function PerfilPage() {
                 disabled={savingPhone}
               />
               <button
-                className="bg-purple-700 text-white px-3 py-1 rounded text-sm disabled:opacity-60"
+                className="bg-[#7b68ee] dark:bg-[#7b68ee] text-white px-3 py-1 rounded text-sm disabled:opacity-60"
                 onClick={handlePhoneSave}
                 disabled={savingPhone}
               >

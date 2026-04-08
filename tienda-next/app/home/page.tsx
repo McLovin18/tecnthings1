@@ -20,8 +20,8 @@ export default function HomePage() {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col items-center bg-white dark:bg-black text-slate-900 dark:text-white transition-colors py-6 sm:py-10">
-      <div className="w-full max-w-2xl mx-auto mt-10 mb-6 text-center">
+    <div className="min-h-screen flex flex-col items-center bg-white dark:bg-black text-slate-900 dark:text-white transition-colors py-3 sm:py-10">
+      <div className="w-full max-w-2xl mx-auto mt-4 sm:mt-10 mb-6 text-center">
         <h2 className="text-4xl md:text-5xl font-extrabold mb-2 text-[#3a1859] dark:text-white">¡Bienvenido, cliente!</h2>
         <p className="text-lg md:text-xl mb-4 text-[#3a1859] dark:text-white/80">
           Accede a las mejores ofertas, productos exclusivos y tu panel personalizado.

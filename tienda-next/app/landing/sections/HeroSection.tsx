@@ -213,10 +213,10 @@ export default function HeroSection({
         paddingBottom: 0,
         textAlign,
       }}
-      className="px-0 sm:px-0 lg:px-0 py-0"
+      className=""
     >
       <div
-        className="relative overflow-hidden w-full max-w-full aspect-[16/9] sm:aspect-[16/7] min-h-[220px] sm:min-h-[300px]"
+        className="relative overflow-hidden w-full max-w-full aspect-[16/9] sm:aspect-[16/7] min-h-0 sm:min-h-[300px]"
         style={{ borderRadius }}
       >
         {/* Placeholder/skeleton mientras la imagen carga */}
@@ -297,31 +297,35 @@ export default function HeroSection({
         )}
 
         {/* Contenido textual */}
-        <div className="absolute  left-0 right-0 bottom-5 z-20 flex flex-col items-start text-left gap-0 sm:gap-0 pb-1 px-2 sm:pb-4 sm:px-8 w-full max-w-full">
-          {current.badge && (
-            <span
-              className="inline-block  px-2 py-0.5 text-[6px] sm:px-3 sm:py-1 sm:text-xs font-bold tracking-widest uppercase bg-white/90 text-black dark:bg-slate-900/90 dark:text-white rounded-full shadow"
-              style={badgeStyle}
-            >
-              {current.badge}
-            </span>
-          )}
-          {current.title && (
-            <h2
-              className="text-xl sm:text-5xl lg:text-5xl font-extrabold text-white leading-tight max-w-[90vw] sm:max-w-2xl drop-shadow-lg"
-              style={titleStyle}
-            >
-              {current.title}
-            </h2>
-          )}
-          {current.subtitle && (
-            <p
-              className="text-white/80 text-[9px] sm:text-sm max-w-[90vw] sm:max-w-2xl drop-shadow "
-              style={subtitleStyle}
-            >
-              {current.subtitle}
-            </p>
-          )}
+        <div className="absolute  left-0 right-0 bottom-7 z-20 flex flex-col items-start text-left gap-0 sm:gap-0 pb-1 px-2 sm:pb-4 sm:px-8 w-full max-w-full">
+          <div className="absolute sm:bottom-50 bottom-15">
+            {current.badge && (
+              <span
+                className="inline-block  px-2 py-0.5 text-[6px] sm:px-3 sm:py-1 sm:text-xs font-bold tracking-widest uppercase bg-white/90 text-black dark:bg-slate-900/90 dark:text-white rounded-full shadow"
+                style={badgeStyle}
+              >
+                {current.badge}
+              </span>
+            )}
+            {current.title && (
+              <h2
+                className="text-xl sm:text-5xl lg:text-5xl font-extrabold text-white leading-tight max-w-[90vw] sm:max-w-2xl drop-shadow-lg"
+                style={titleStyle}
+              >
+                {current.title}
+              </h2>
+            )}
+            {current.subtitle && (
+              <p
+                className="text-white/80 text-[9px] sm:text-sm max-w-[90vw] sm:max-w-2xl drop-shadow "
+                style={subtitleStyle}
+              >
+                {current.subtitle}
+              </p>
+            )}
+            
+          </div>
+
           {current.buttonText && (
             <div className="w-full flex justify-center sm:py-3 pb-5">
               <a

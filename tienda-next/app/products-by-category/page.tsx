@@ -182,7 +182,7 @@ useEffect(() => {
   const chip = (active: boolean) =>
     `flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition-all cursor-pointer select-none whitespace-nowrap ${
       active
-        ? "bg-purple-600 border-purple-600 text-white shadow-sm"
+        ? "bg-[#7b68ee] border-purple-600 text-white shadow-sm"
         : "bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-600 dark:text-white/60 hover:border-purple-400 dark:hover:border-purple-500 hover:text-purple-600 dark:hover:text-purple-300"
     }`;
 
@@ -311,9 +311,6 @@ useEffect(() => {
                 showCart
                 showEye
                 showFav={isAuthenticated}
-                onClick={() => {}}
-                onAddCart={() => {}}
-                onEye={() => {}}
               />
             ))}
           </div>

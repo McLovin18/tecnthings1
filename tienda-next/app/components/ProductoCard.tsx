@@ -77,7 +77,7 @@ export default function ProductoCard({
         rounded-2xl overflow-hidden
         shadow-sm
         hover:shadow-xl dark:hover:shadow-purple-950/60
-        hover:border-purple-300 dark:hover:border-purple-500/40
+        hover:border-[#7b68ee] dark:hover:border-[#7b68ee]
         transition-all duration-300
 
         /* ── MÓVIL: horizontal (imagen izq + info der) ── */
@@ -198,13 +198,13 @@ export default function ProductoCard({
         {/* Precios */}
         <div className="mt-2 sm:mt-3 flex items-baseline gap-2 flex-wrap">
           {hasDiscount && (
-            <span className="text-xs sm:text-sm text-slate-400 dark:text-white/30 line-through">
+            <span className="text-xs sm:text-sm text-[#7b68ee] dark:text-white/30 line-through">
               ${fakeOldPrice.toFixed(2)}
             </span>
           )}
           <span className="
             text-xl sm:text-lg font-extrabold
-            text-purple-700 dark:text-purple-300
+            text-[#7b68ee] dark:text-purple-300
           ">
             ${finalPrice.toFixed(2)}
           </span>
@@ -224,8 +224,8 @@ export default function ProductoCard({
                   ${sinStock
                     ? "bg-slate-100 dark:bg-white/5 text-slate-400 dark:text-white/20 cursor-not-allowed"
                     : inCart
-                      ? "bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-900/60"
-                      : "bg-purple-600 hover:bg-purple-700 text-white shadow-sm hover:shadow-md active:scale-95"
+                      ? "bg-purple-100 dark:bg-purple-900/40 text-[#7b68ee] dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-900/60"
+                      : "bg-[#7b68ee] hover:bg-purple-700 text-white shadow-sm hover:shadow-md active:scale-95"
                   }
                 `}
               >

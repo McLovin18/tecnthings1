@@ -25,6 +25,7 @@ export default function ProductDetailPage({ params }) {
   const [reviewEmail, setReviewEmail] = useState("");
   const [cantidad, setCantidad] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<"caracteristicas" | "resenas" | null>("caracteristicas");
 
   const {
     isLogged, user, isCliente, isAdmin,
@@ -43,7 +44,6 @@ export default function ProductDetailPage({ params }) {
       setProducto(prod);
       setLoading(false);
       fetchReviews(id);
-      // Buscar productos relacionados solo si el producto existe
       if (prod) {
         let rel = [];
         console.log("[RELACIONADOS] subsubcategoria:", prod.subsubcategoria, "subcategoria:", prod.subcategoria, "categoria:", prod.categoria);
@@ -147,18 +147,11 @@ export default function ProductDetailPage({ params }) {
   const isFav = favoritos?.some((p) => p.id === producto.id);
   const inCart = carrito?.some((p) => p.id === producto.id);
 
-
-
-
-const basePrice = Number(producto.precio || 0); // precio original
-const discount = Number(producto.descuento || 0); // porcentaje de descuento
-
-const hasDiscount = !isNaN(discount) && discount > 0 && discount < 100;
-
-
-const finalPrice = basePrice; // precio real
-const fakeOldPrice = hasDiscount ? Math.round(basePrice / (1 - discount / 100)) : null;
-
+  const basePrice = Number(producto.precio || 0);
+  const discount = Number(producto.descuento || 0);
+  const hasDiscount = !isNaN(discount) && discount > 0 && discount < 100;
+  const finalPrice = basePrice;
+  const fakeOldPrice = hasDiscount ? Math.round(basePrice / (1 - discount / 100)) : null;
 
   const avgRating = reviews.length > 0
     ? reviews.reduce((a, b) => a + b.rating, 0) / reviews.length
@@ -171,7 +164,6 @@ const fakeOldPrice = hasDiscount ? Math.round(basePrice / (1 - discount / 100)) 
     isFav ? removeFavorito(producto.id) : addFavorito(producto);
   };
 
-  // Parser descripción jerárquica
   const parseDesc = (text: string) => {
     if (!text) return [];
     const lines = text.split(/\r?\n/);
@@ -207,6 +199,12 @@ const fakeOldPrice = hasDiscount ? Math.round(basePrice / (1 - discount / 100)) 
     handleSubmitReview, isLogged, inputCls,
   };
 
+  const hasCaracteristicas = producto.caracteristicas?.length > 0;
+
+  const handleTabToggle = (tab: "caracteristicas" | "resenas") => {
+    setActiveTab((prev) => (prev === tab ? null : tab));
+  };
+
   return (
     <div className="min-h-screen flex flex-col mt-2 bg-white dark:bg-black text-slate-900 dark:text-white transition-colors">
       <BottomBarPublic/>
@@ -214,7 +212,7 @@ const fakeOldPrice = hasDiscount ? Math.round(basePrice / (1 - discount / 100)) 
       <div className="max-w-5xl mx-auto w-full px-3 sm:px-6 py-6 sm:py-10">
         <div className="flex flex-col md:flex-row gap-8 lg:gap-14">
 
-          {/* ══ GALERÍA ═════════════════════════════════════════════ */}
+          {/* ══ GALERÍA + TABS ══════════════════════════════════════ */}
           <div className="w-full md:w-[44%] flex flex-col gap-3">
 
             {/* Imagen principal */}
@@ -266,27 +264,72 @@ const fakeOldPrice = hasDiscount ? Math.round(basePrice / (1 - discount / 100)) 
               </div>
             )}
 
-
-            {/* Características */}
-            <div className="hidden md:block">
-              {producto.caracteristicas?.length > 0 && (
-                <div>
-                  <p className="text-xs font-semibold text-black dark:text-white uppercase tracking-wider mb-3">
+            {/* ── TABS: Características / Reseñas — solo desktop ───── */}
+            <div className="hidden md:flex mt-1 flex-col gap-0">
+              {/* Botones tab */}
+              <div className="flex rounded-xl overflow-hidden border border-slate-200 dark:border-white/[0.08]">
+                {hasCaracteristicas && (
+                  <button
+                    onClick={() => handleTabToggle("caracteristicas")}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold transition-all ${
+                      activeTab === "caracteristicas"
+                        ? "bg-[#7b68ee] dark:[#7b68ee] text-white dark:text-slate-900"
+                        : "bg-white dark:bg-white/[0.03] text-slate-500 dark:text-white/40 hover:bg-slate-50 dark:hover:bg-white/[0.07]"
+                    }`}
+                  >
+                    <span className="material-icons-round text-[16px]">list_alt</span>
                     Características
-                  </p>
-                  <ul className="space-y-2">
-                    {producto.caracteristicas.map((c, idx) => (
-                      <li key={idx} className="flex items-start gap-2.5 text-sm text-black/80 dark:text-white/80">
-                        <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-white/20 mt-2 flex-shrink-0" />
-                        <Markdown>{c}</Markdown>
-                      </li>
-                    ))}
-                  </ul>
+                  </button>
+                )}
+                <button
+                  onClick={() => handleTabToggle("resenas")}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold transition-all ${
+                    hasCaracteristicas ? "border-l border-slate-200 dark:border-white/[0.08]" : ""
+                  } ${
+                    activeTab === "resenas"
+                      ? "bg-[#7b68ee] dark:bg-[#7b68ee] text-white dark:text-slate-900"
+                      : "bg-white dark:bg-white/[0.03] text-slate-500 dark:text-white/40 hover:bg-slate-50 dark:hover:bg-white/[0.07]"
+                  }`}
+                >
+                  <span className="material-icons-round text-[16px]">star_outline</span>
+                  Reseñas
+                  {reviews.length > 0 && (
+                    <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${
+                      activeTab === "resenas"
+                        ? "bg-white/20 dark:bg-slate-900/20"
+                        : "bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-white/50"
+                    }`}>
+                      {reviews.length}
+                    </span>
+                  )}
+                </button>
+              </div>
+
+              {/* Panel de contenido del tab activo */}
+              {activeTab && (
+                <div className="border border-t-0 border-slate-200 dark:border-white/[0.08] rounded-b-xl px-4 py-4 bg-slate-50 dark:bg-white/[0.02]">
+
+                  {/* Panel: Características */}
+                  {activeTab === "caracteristicas" && hasCaracteristicas && (
+                    <ul className="space-y-2">
+                      {producto.caracteristicas.map((c, idx) => (
+                        <li key={idx} className="flex items-start gap-2.5 text-sm text-black/80 dark:text-white/80">
+                          <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-white/20 mt-2 flex-shrink-0" />
+                          <Markdown>{c}</Markdown>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+
+                  {/* Panel: Reseñas */}
+                  {activeTab === "resenas" && (
+                    <ReviewsSection {...reviewsProps} />
+                  )}
+
                 </div>
               )}
             </div>
-
-
+            {/* ── FIN TABS ─────────────────────────────────────────── */}
 
           </div>
 
@@ -297,10 +340,7 @@ const fakeOldPrice = hasDiscount ? Math.round(basePrice / (1 - discount / 100)) 
             <div>
               <h1
                 className="text-2xl sm:text-3xl font-bold leading-tight text-slate-800 dark:text-white break-words max-w-full whitespace-pre-line"
-                style={{
-                  wordBreak: "break-word",
-                  maxWidth: "100%",
-                }}
+                style={{ wordBreak: "break-word", maxWidth: "100%" }}
                 title={producto.nombre}
               >
                 {producto.nombre}
@@ -340,8 +380,7 @@ const fakeOldPrice = hasDiscount ? Math.round(basePrice / (1 - discount / 100)) 
 
             <div className="h-px bg-slate-100 dark:bg-white/[0.06]" />
 
-
-                        {/* Stock */}
+            {/* Stock */}
             <div className="flex items-center gap-2">
               <span className="text-xs text-slate-400 dark:text-white/30 font-medium">Disponibilidad:</span>
               <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
@@ -380,10 +419,10 @@ const fakeOldPrice = hasDiscount ? Math.round(basePrice / (1 - discount / 100)) 
                 disabled={producto.stock === 0}
                 className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${
                   producto.stock === 0
-                    ? "bg-slate-100 dark:bg-white/[0.04] text-slate-300 dark:text-white/20 cursor-not-allowed"
+                    ? "bg-[#7b68ee] dark:bg-[#7b68ee] text-slate-300 dark:text-white/20 cursor-not-allowed"
                     : inCart
-                      ? "bg-slate-100 dark:bg-white/[0.08] text-slate-700 dark:text-white hover:bg-slate-200 dark:hover:bg-white/[0.12]"
-                      : "bg-slate-800 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-700 dark:hover:bg-white/90 shadow"
+                      ? "bg-[#7b68ee] dark:bg-[#7b68ee] text-slate-700 dark:text-white hover:bg-slate-200 dark:hover:bg-white/[0.12]"
+                      : "bg-[#7b68ee] dark:bg-[#7b68ee] text-white dark:text-white hover:bg-[#6857c7] dark:hover:bg-white/90 shadow"
                 }`}
               >
                 <span className="material-icons-round text-[18px]">
@@ -409,10 +448,8 @@ const fakeOldPrice = hasDiscount ? Math.round(basePrice / (1 - discount / 100)) 
               )}
             </div>
 
-
             {/* Descripción */}
             {descItems.length > 0 && (
-              
               <ul className="space-y-2">
                 <h1 className="text-black bg-text-white">Descripción:</h1>
                 {descItems.map((item, idx) => (
@@ -435,8 +472,6 @@ const fakeOldPrice = hasDiscount ? Math.round(basePrice / (1 - discount / 100)) 
               </ul>
             )}
 
-
-
             {/* Banner login */}
             {!isLogged && (
               <div className="flex items-center gap-2 text-xs text-slate-400 dark:text-white/25 bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/[0.04] rounded-xl px-3 py-2.5">
@@ -452,45 +487,69 @@ const fakeOldPrice = hasDiscount ? Math.round(basePrice / (1 - discount / 100)) 
 
           </div>
 
-
-
         </div>
-                    {/* Reseñas — desktop */}
-            <div className="hidden md:block mt-6">
-              <ReviewsSection {...reviewsProps} />
-            </div>
+      </div>
 
+        {/* ── TABS móvil: debajo de info, encima de relacionados ── */}
+        <div className="md:hidden mt-4 flex flex-col gap-0">
+          <div className="flex rounded-xl overflow-hidden border border-slate-200 dark:border-white/[0.08]">
+            {hasCaracteristicas && (
+              <button
+                onClick={() => handleTabToggle("caracteristicas")}
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold transition-all ${
+                  activeTab === "caracteristicas"
+                    ? "bg-[#7b68ee] dark:bg-[#7b68ee] text-white dark:text-slate-900"
+                    : "bg-white dark:bg-white/[0.03] text-slate-500 dark:text-white/40 hover:bg-slate-50 dark:hover:bg-white/[0.07]"
+                }`}
+              >
+                <span className="material-icons-round text-[16px]">list_alt</span>
+                Características
+              </button>
+            )}
+            <button
+              onClick={() => handleTabToggle("resenas")}
+              className={`flex-1 bg-[#7b68ee] flex items-center justify-center gap-2 py-2.5 text-sm font-semibold transition-all ${
+                hasCaracteristicas ? "border-l border-slate-200 dark:border-white/[0.08]" : ""
+              } ${
+                activeTab === "resenas"
+                  ? "bg-[#7b68ee] dark:bg-[#7b68ee] text-white dark:text-slate-900"
+                  : "bg-white dark:bg-white/[0.03] text-slate-500 dark:text-white/40 hover:bg-slate-50 dark:hover:bg-white/[0.07]"
+              }`}
+            >
+              <span className="material-icons-round text-[16px]">star_outline</span>
+              Reseñas
+              {reviews.length > 0 && (
+                <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${
+                  activeTab === "resenas"
+                    ? "bg-[#7b68ee] dark:bg-slate-900/20"
+                    : "bg-slate-100 dark:bg-[#7b68ee] text-slate-600 dark:text-white/50"
+                }`}>
+                  {reviews.length}
+                </span>
+              )}
+            </button>
+          </div>
 
-
-
-            {/* Características — SOLO MOBILE (debajo de reseñas) */}
-            <div className="md:hidden mt-6">
-              {producto.caracteristicas?.length > 0 && (
-                <div>
-                  <p className="text-xs font-semibold text-black/80 dark:text-white/80 uppercase tracking-wider mb-3">
-                    Características
-                  </p>
-                  <ul className="space-y-2">
-                    {producto.caracteristicas.map((c, idx) => (
-                      <li key={idx} className="flex items-start gap-2.5 text-sm text-black/80 dark:text-white/80">
-                        <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-white/20 mt-2 flex-shrink-0" />
-                        <Markdown>{c}</Markdown>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+          {activeTab && (
+            <div className="border border-t-0 border-slate-200 dark:border-white/[0.08] rounded-b-xl px-4 py-4 bg-slate-50 dark:bg-white/[0.02]">
+              {activeTab === "caracteristicas" && hasCaracteristicas && (
+                <ul className="space-y-2">
+                  {producto.caracteristicas.map((c, idx) => (
+                    <li key={idx} className="flex items-start gap-2.5 text-sm text-black/80 dark:text-white/80">
+                      <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-white/20 mt-2 flex-shrink-0" />
+                      <Markdown>{c}</Markdown>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {activeTab === "resenas" && (
+                <ReviewsSection {...reviewsProps} />
               )}
             </div>
-
-
-
-        {/* Reseñas — solo móvil */}
-        <div className="md:hidden mt-10 pt-8 border-t border-slate-100 dark:border-white/[0.06]">
-          <ReviewsSection {...reviewsProps} />
+          )}
         </div>
+        {/* ── FIN TABS móvil ───────────────────────────────────── */}
 
-
-      </div>
       {/* Productos relacionados */}
       <div className="max-w-7xl mx-auto w-full px-1 sm:px-3 pb-10">
         <h2 className="text-xl font-bold mb-4 mt-10 text-slate-800 dark:text-white">Productos relacionados</h2>
@@ -520,10 +579,6 @@ function ReviewsSection({
 }: any) {
   return (
     <div className="space-y-6">
-      <p className="text-xs font-semibold text-black dark:text-white/100 uppercase tracking-wider">
-        Reseñas de clientes
-      </p>
-
       {/* Resumen */}
       {reviews.length > 0 ? (
         <div className="flex items-center gap-3">
@@ -610,10 +665,9 @@ function ReviewsSection({
 
         <div className="flex items-center justify-between gap-4">
           <button type="submit" disabled={reviewLoading}
-            className="px-6 py-2.5 rounded-xl bg-slate-800 dark:bg-white text-white dark:text-slate-900 text-sm font-bold hover:bg-slate-700 dark:hover:bg-white/90 disabled:opacity-40 transition-all">
+            className="px-6 py-2.5 rounded-xl bg-[#7b68ee] dark:bg-[[#7b68ee]] text-white dark:text-slate-900 text-sm font-bold hover:bg-slate-700 dark:hover:bg-white/90 disabled:opacity-40 transition-all">
             {reviewLoading ? "Enviando..." : "Publicar reseña"}
           </button>
-
         </div>
       </form>
     </div>

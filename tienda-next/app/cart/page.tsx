@@ -565,7 +565,7 @@ export default function CartPage() {
       </div>
       <a
         href="/products-by-category"
-        className="mt-2 inline-flex items-center gap-2 bg-purple-700 hover:bg-purple-800 text-white font-semibold px-6 py-2.5 rounded-xl transition-colors shadow"
+        className="mt-2 inline-flex items-center gap-2 bg-[#7b68ee] hover:bg-purple-800 text-white font-semibold px-6 py-2.5 rounded-xl transition-colors shadow"
       >
         <span className="material-icons-round text-base">storefront</span>
         Ver productos
@@ -596,7 +596,7 @@ export default function CartPage() {
               Carrito
             </h1>
             {carrito.length > 0 && (
-              <span className="bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 text-xs font-bold px-2.5 py-1 rounded-full">
+              <span className="bg-purple-100 dark:bg-purple-900/40 text-[#7b68ee] dark:text-purple-300 text-xs font-bold px-2.5 py-1 rounded-full">
                 {carrito.length} {carrito.length === 1 ? "producto" : "productos"}
               </span>
             )}
@@ -662,7 +662,7 @@ export default function CartPage() {
                               ${fakeOldPrice.toFixed(2)}
                             </span>
                           )}
-                          <span className="text-sm font-bold text-purple-700 dark:text-purple-300">
+                          <span className="text-sm font-bold text-[#7b68ee] dark:text-purple-300">
                             ${finalPrice.toFixed(2)}
                           </span>
                           {hasDiscount && (
@@ -717,7 +717,7 @@ export default function CartPage() {
                 {/* Link continuar comprando */}
                 <a
                   href="/products-by-category"
-                  className="inline-flex items-center gap-1.5 text-sm text-purple-600 dark:text-purple-400 hover:underline mt-1"
+                  className="inline-flex items-center gap-1.5 text-sm text-[#7b68ee] dark:text-purple-400 hover:underline mt-1"
                 >
                   <span className="material-icons-round text-base">arrow_back</span>
                   Continuar comprando
@@ -747,7 +747,7 @@ export default function CartPage() {
                     </div>
                     <div className="border-t border-slate-100 dark:border-purple-900/40 mt-3 pt-3 flex justify-between font-bold text-base">
                       <span>Total</span>
-                      <span className="text-purple-700 dark:text-purple-300">
+                      <span className="text-[#7b68ee] dark:text-purple-300">
                         ${total.toFixed(2)}
                       </span>
                     </div>
@@ -763,7 +763,7 @@ export default function CartPage() {
                         onClick={() => setPayMode("order")}
                         className={`relative flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border-2 text-xs font-semibold transition-all ${
                           payMode === "order"
-                            ? "border-purple-600 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300"
+                            ? "border-[#7b68ee] bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300"
                             : "border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:border-purple-300"
                         }`}
                       >
@@ -782,7 +782,7 @@ export default function CartPage() {
                         onClick={() => setPayMode("stripe")}
                         className={`relative flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border-2 text-xs font-semibold transition-all ${
                           payMode === "stripe"
-                            ? "border-transparent bg-purple-700 text-white"
+                            ? "border-transparent bg-[#7b68ee] text-white"
                             : "border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:border-purple-300"
                         }`}
                       >

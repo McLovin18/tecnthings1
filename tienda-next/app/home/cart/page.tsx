@@ -258,7 +258,7 @@ export default function CartPage() {
                           {hasDiscount && (
                             <span className="text-xs line-through text-slate-400 dark:text-slate-500">${fakeOldPrice.toFixed(2)}</span>
                           )}
-                          <span className="text-sm font-semibold text-purple-700 dark:text-purple-300">${finalPrice.toFixed(2)} c/u</span>
+                          <span className="text-sm font-semibold text-[#7b68ee] dark:text-[#7b68ee]">${finalPrice.toFixed(2)} c/u</span>
                           {hasDiscount && (
                             <span className="text-xs font-bold text-red-600 bg-red-100 dark:bg-red-900/40 px-2 py-0.5 rounded-full">-{discount}%</span>
                           )}
@@ -337,7 +337,7 @@ export default function CartPage() {
                   </button>
 
                   <button
-                    className="w-full block text-center px-6 py-3 mt-3 text-lg bg-gradient-to-r from-[#6d28d9] via-[#7c3aed] to-[#a855f7] text-white font-extrabold rounded-2xl shadow-lg transition-all duration-200 disabled:opacity-60"
+                    className="w-full block text-center px-6 py-3 mt-3 text-lg bg-gradient-to-r from-[#7b68ee] via-[#7c3aed] to-[#a855f7] text-white font-extrabold rounded-2xl shadow-lg transition-all duration-200 disabled:opacity-60"
                     onClick={handleIniciarPago}
                     disabled={stripeLoading || !visitDate || !visitTime}
                   >

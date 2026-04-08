@@ -346,9 +346,6 @@ export default function ProductsByCategoryPage() {
                   showCart
                   showEye
                   showFav={isAuthenticated}
-                  onClick={() => {}}
-                  onAddCart={() => {}}
-                  onEye={() => {}}
                 />
             ))}
           </div>

@@ -24,7 +24,7 @@ const Sidebar = ({ role = "client" }) => {
   ];
   const items = role === "admin" ? adminItems : clientItems;
   return (
-    <aside className="hidden lg:flex flex-col w-56 min-h-screen bg-white dark:bg-black border-r border-slate-200 dark:border-slate-700 shadow-md px-6 py-15">
+    <aside className="hidden lg:flex flex-col w-56 min-h-screen bg-white dark:bg-black border-r border-slate-200 dark:border-slate-700 shadow-md px-6 py-4">
       <ul className="space-y-2">
         {items.map((item) => (
           <li key={item.path}>

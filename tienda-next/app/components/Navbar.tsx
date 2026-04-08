@@ -249,7 +249,7 @@ export const Navbar = () => {
       >
         {/* ── Fila 1: Logo + Search | Centro: info + redes | Derecha: carrito + usuario ── */}
         <div
-          className="flex items-center justify-between gap-4 px-4 py-3 lg:px-6"
+          className="flex items-center justify-between gap-4 px-4 py-1.5 lg:px-6 lg:py-3"
           style={{ color: "var(--text)" }}
         >
           {/* ── LEFT: hamburger + logo + búsqueda ── */}
@@ -365,14 +365,15 @@ export const Navbar = () => {
 
           {/* ── CENTER: Hablemos + Dirección + Redes (solo desktop) ── */}
           <div className="hidden lg:flex items-center gap-5 flex-1 justify-center">
-            {/* Hablemos */}
             <a
-              href="tel:+593999999999"
+              href="https://wa.me/593962873167"
+              target="_blank"
+              rel="noopener noreferrer"
               className="flex items-center gap-1.5 text-sm font-medium transition-opacity hover:opacity-70 whitespace-nowrap"
               style={{ color: "var(--text)" }}
             >
-              <span className="material-icons-round text-base " style={{ color: "bg"}}>
-                headset_mic
+              <span className="material-icons-round text-base">
+                chat
               </span>
               Hablemos
             </a>
