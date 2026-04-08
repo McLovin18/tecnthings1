@@ -103,7 +103,7 @@ export default function HomePage() {
               </p>
             </div>
             <a
-              href="/productos"
+              href="/home/productos"
               className="text-sm text-blue-500 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors whitespace-nowrap"
             >
               Ver todos →
