@@ -94,21 +94,17 @@ useEffect(() => {
       let prods = [];
       if (subsubcategoriaId) {
         // Nivel más específico
-        console.log('Query subsubcategoria:', { subsubcategoriaId, subcategoriaId, categoriaId });
         prods = await obtenerProductosPorSubsubcategoria(subsubcategoriaId, subcategoriaId, categoriaId);
       } else if (subcategoriaId) {
-        console.log('Query subcategoria:', { subcategoriaId, categoriaId });
         prods = await obtenerProductosPorSubcategoria(subcategoriaId, categoriaId);
       } else if (categoriaId) {
-        console.log('Query categoria:', { categoriaId });
         prods = await obtenerProductosPorCategoria(categoriaId);
       } else {
         prods = await obtenerProductos();
       }
-      console.log('Productos obtenidos:', prods);
       setProductos(prods || []);
     } catch (error) {
-      console.error("Error fetching products:", error);
+      // Error fetching products
     } finally {
       setLoading(false);
     }
