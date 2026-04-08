@@ -1,118 +1,72 @@
 "use client";
-"use client";
 
 import { useState, useEffect } from "react";
-import dynamic from "next/dynamic";
-const PopToolOnboarding = dynamic(() => import("../components/PopToolOnboarding"), { ssr: false });
 import { useRouter, useSearchParams } from "next/navigation";
 import BottomBarPublic from "../components/BottomBarPublic";
-import { loginUser, registerUser, getCurrentUser } from "../lib/firebase-auth";
-import { themeManager } from "../components/themeManager";
+import { loginUser, registerUser } from "../lib/firebase-auth";
 import { Loading3DIcon } from "../components/Loading3DIcon";
 
 type TabType = "login" | "register";
 
 export default function LoginPage() {
-    // Controla si se muestra el onboarding de bienvenida tras login
-    const [showWelcome, setShowWelcome] = useState(false);
-    const [pendingRedirect, setPendingRedirect] = useState<null | (() => void)>(null);
-    // Loader para evitar salto visual
-    const [showLoader, setShowLoader] = useState(false);
-    const [readyToShowWelcome, setReadyToShowWelcome] = useState(false);
-
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const [tab, setTab] = useState<TabType>(
-    searchParams && searchParams.get("tab") === "register" ? "register" : "login"
+    searchParams?.get("tab") === "register" ? "register" : "login"
   );
-
   const [loading, setLoading] = useState(false);
-
-  const [alert, setAlert] = useState<{
-    message: string;
-    type: "success" | "error";
-  } | null>(null);
-
+  const [alert, setAlert] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const [showLoginPass, setShowLoginPass] = useState(false);
-
   const [showRegisterPass, setShowRegisterPass] = useState(false);
 
-  // LOGIN STATE
-
+  // Login state
   const [loginEmail, setLoginEmail] = useState("");
-
   const [loginPassword, setLoginPassword] = useState("");
 
-
-  // REGISTER
+  // Register state
   const [name, setName] = useState("");
   const [registerEmail, setRegisterEmail] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
   const [registerPasswordConfirm, setRegisterPasswordConfirm] = useState("");
   const [registerPhone, setRegisterPhone] = useState("");
-  const [registerId, setRegisterId] = useState("");
+  const [registerSuccess, setRegisterSuccess] = useState(false);
 
-  // ALERT AUTO REMOVE
-
+  // Auto-dismiss alert
   useEffect(() => {
     if (!alert) return;
-
-    const t = setTimeout(() => {
-      setAlert(null);
-    }, 4000);
-
+    const t = setTimeout(() => setAlert(null), 4000);
     return () => clearTimeout(t);
   }, [alert]);
 
-  // LOGIN
+  useEffect(() => {
+    if (registerSuccess && registerEmail) {
+      localStorage.setItem("justRegisteredEmail", registerEmail);
+    }
+  }, [registerSuccess, registerEmail]);
 
+  // --- Handlers ---
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
-
     if (!loginEmail || !loginPassword) {
-      setAlert({
-        message: "Completa los campos",
-        type: "error",
-      });
+      setAlert({ message: "Completa los campos", type: "error" });
       return;
     }
-
     try {
       setLoading(true);
       const result = await loginUser(loginEmail, loginPassword);
-      // Si loginUser lanza error, no llega aquí
       if (result.success) {
-        setAlert({
-          message: `Bienvenido ${result.user.email}`,
-          type: "success",
-        });
-        // Solo aquí se crea la cookie de sesión
+        setAlert({ message: `Bienvenido ${result.user.displayName}`, type: "success" });
         const idToken = result.idToken;
         let role = "client";
-        try {
-          const res = await fetch("/api/auth/login", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ idToken }),
-          });
-          if (!res.ok) {
-            throw new Error("No se pudo crear la sesión");
-          }
-          const data = await res.json();
-          if (data.role) {
-            role = data.role;
-          }
-        } catch (err: any) {
-          setAlert({
-            message: err?.message || "Error al crear la sesión",
-            type: "error",
-          });
-          return;
-        }
-        // Reclamar órdenes de invitado con este correo
+        const res = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ idToken }),
+        });
+        if (!res.ok) throw new Error("No se pudo crear la sesión");
+        const data = await res.json();
+        if (data.role) role = data.role;
         try {
           await fetch("/api/auth/claim-guest-orders", {
             method: "POST",
@@ -122,292 +76,307 @@ export default function LoginPage() {
         } catch (e) {
           console.warn("No se pudieron reclamar órdenes de invitado:", e);
         }
-        // Detectar si es desktop o móvil
-        const isDesktopNow = typeof window !== "undefined" ? window.innerWidth >= 768 : true;
-        if (!isDesktopNow) {
-          // En móvil, redirigir directamente
-          if (role === "admin") {
-            router.push("/admin");
-          } else {
-            router.push("/home");
-          }
-        } else {
-          // Desktop: mostrar loader y modal como antes
-          setShowLoader(true);
-          setTimeout(() => {
-            if (role === "admin") {
-              router.push("/admin");
-            } else {
-              setShowWelcome(true);
-              setPendingRedirect(() => () => router.push("/home"));
-            }
-          }, 1200);
-        }
+        router.push(role === "admin" ? "/admin" : "/home");
       }
     } catch (error: any) {
-      setAlert({
-        message: error.message,
-        type: "error",
-      });
-      // Si el error es de verificación, asegúrate de que no quede sesión local
-      try { await import("../lib/firebase-auth").then(m => m.logoutUser()); } catch {}
+      setAlert({ message: error.message, type: "error" });
+      try {
+        await import("../lib/firebase-auth").then((m) => m.logoutUser());
+      } catch {}
     } finally {
       setLoading(false);
     }
   }
 
-  // Solo mostrar mensaje de verificación si el usuario acaba de registrarse en esta sesión
-  const [registerSuccess, setRegisterSuccess] = useState(false);
-  // Guardar en localStorage que el usuario fue creado en esta sesión
-  useEffect(() => {
-    if (registerSuccess && registerEmail) {
-      localStorage.setItem("justRegisteredEmail", registerEmail);
-    }
-  }, [registerSuccess, registerEmail]);
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
-
     if (registerPassword.length < 6) {
-      setAlert({
-        message: "Min 6 caracteres",
-        type: "error",
-      });
+      setAlert({ message: "La contraseña debe tener mínimo 6 caracteres", type: "error" });
       return;
     }
     if (registerPassword !== registerPasswordConfirm) {
-      setAlert({
-        message: "Las contraseñas no coinciden",
-        type: "error",
-      });
+      setAlert({ message: "Las contraseñas no coinciden", type: "error" });
       return;
     }
-    // Validación de número de teléfono (Ecuador: 10 dígitos)
     if (!/^\d{10}$/.test(registerPhone)) {
-      setAlert({
-        message: "Número de teléfono inválido (10 dígitos)",
-        type: "error",
-      });
+      setAlert({ message: "Número de teléfono inválido (10 dígitos)", type: "error" });
       return;
     }
-
     try {
       setLoading(true);
-      const result = await registerUser(
-        registerEmail,
-        registerPassword,
-        {
-          name
-        },
-      );
+      const result = await registerUser(registerEmail, registerPassword, { name });
       if (result.success) {
         setRegisterSuccess(true);
         setAlert({
-          message: "Cuenta creada. Se ha enviado un correo de verificación. Por favor revisa tu email y verifica tu cuenta antes de iniciar sesión.",
+          message: "Cuenta creada. Revisa tu email y verifica tu cuenta antes de iniciar sesión.",
           type: "success",
         });
       }
     } catch (error: any) {
-      setAlert({
-        message: error.message,
-        type: "error",
-      });
+      setAlert({ message: error.message, type: "error" });
     } finally {
       setLoading(false);
     }
   }
 
-  // Solo renderizar el PopToolOnboarding si es desktop
-  const [isDesktop, setIsDesktop] = useState(true);
-  useEffect(() => {
-    function check() {
-      setIsDesktop(window.innerWidth >= 768);
-    }
-    check();
-    window.addEventListener("resize", check);
-    return () => window.removeEventListener("resize", check);
-  }, []);
+  // --- Input class helper ---
+  const inputClass =
+    "w-full px-4 py-3.5 rounded-xl border border-slate-200 dark:border-slate-700 " +
+    "bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white " +
+    "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent " +
+    "placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-all duration-200";
+
+  const isRegisterDone =
+    registerSuccess && typeof window !== "undefined" &&
+    localStorage.getItem("justRegisteredEmail") === registerEmail;
 
   return (
-    <>
-      {showWelcome && (
-        <>
-          <div className="fixed inset-0 min-h-screen min-w-screen bg-[#1e1b2e] dark:bg-black flex items-center justify-center z-99998">
-            {isDesktop && (
-              <PopToolOnboarding
-                mode="welcome"
-                onReady={() => {
-                  setShowLoader(false);
-                  setReadyToShowWelcome(true);
-                }}
-                onFinish={() => {
-                  setShowWelcome(false);
-                  setReadyToShowWelcome(false);
-                  setShowLoader(false);
-                  if (pendingRedirect) pendingRedirect();
-                }}
-              />
-            )}
+    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white">
+      <BottomBarPublic />
+
+      {/* Hero header */}
+      <div className="w-full max-w-md mx-auto px-4 pt-10 pb-4 text-center">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-500 mb-5 shadow-lg shadow-blue-500/30">
+          <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+        </div>
+        <h1 className="text-3xl font-extrabold tracking-tight mb-2 text-slate-900 dark:text-white">
+          Tecno Things
+        </h1>
+        <p className="text-slate-500 dark:text-slate-400 text-base">
+          {tab === "login"
+            ? "Bienvenido de vuelta. Ingresa a tu cuenta."
+            : "Crea tu cuenta y empieza a comprar."}
+        </p>
+      </div>
+
+      {/* Card */}
+      <div className="w-full max-w-md mx-auto px-4 pb-16 flex-1 flex flex-col justify-start">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
+
+          {/* Tabs */}
+          <div className="flex border-b border-slate-200 dark:border-slate-800">
+            {(["login", "register"] as TabType[]).map((t) => (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className={`flex-1 py-4 text-sm font-semibold transition-all duration-200 ${
+                  tab === t
+                    ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-500 bg-blue-50/50 dark:bg-blue-500/5"
+                    : "text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
+                }`}
+              >
+                {t === "login" ? "Iniciar sesión" : "Crear cuenta"}
+              </button>
+            ))}
           </div>
-          {showLoader && isDesktop && (
-            <div className="fixed inset-0 min-h-screen min-w-screen bg-[#1e1b2e] dark:bg-black flex items-center justify-center z-99999">
-              <Loading3DIcon />
-            </div>
-          )}
-        </>
-      )}
-      {!showWelcome && (
-        <div
-          style={{
-            background: 'var(--bg)',
-            color: 'var(--text)'
-          }}
-          className="bg-white mt-2 dark:bg-black text-slate-900 dark:text-white min-h-screen flex flex-col"
-        >
-          <BottomBarPublic/>
-          <div className="w-full text-centew-full max-w-md mx-auto mt-0 mb-5 text-center ">
-            <h2 className="text-3xl md:text-4xl font-extrabold mb-2" style={{ color: 'var(--text)' }}>¡Bienvenido a Tecno Things!</h2>
-            <p className="text-base md:text-lg mb-4" style={{ color: 'var(--textSecondary)' }}>Inicia sesión o crea una cuenta para acceder a tu panel y disfrutar de la mejor tecnología.</p>
-          </div>
-          <div className="w-full max-w-md bg-white/90 dark:bg-slate-800/90 rounded-2xl shadow-xl p-6 md:p-10 mx-auto border border-slate-200 dark:border-slate-700">
-            {/* ALERT */}
+
+          <div className="p-6 md:p-8">
+            {/* Alert */}
             {alert && (
               <div
-                className={`mb-6 p-3 rounded-lg text-sm font-medium
-${
-  alert.type === "success"
-    ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200"
-    : "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200"
-}
-`}
+                className={`mb-6 p-4 rounded-xl text-sm font-medium flex items-start gap-3 ${
+                  alert.type === "success"
+                    ? "bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300 border border-green-100 dark:border-green-800"
+                    : "bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300 border border-red-100 dark:border-red-800"
+                }`}
               >
+                <span className="text-base leading-none mt-0.5">
+                  {alert.type === "success" ? "✓" : "!"}
+                </span>
                 {alert.message}
               </div>
             )}
-            {/* TABS */}
-            <div className={"flex border-b border-slate-200 dark:border-slate-700 mb-8"}>
-              <button
-                onClick={() => setTab("login")}
-                className={`flex-1 pb-3 font-semibold transition-colors duration-200
-${tab === "login" ? "border-b-2 border-blue-500 text-blue-600 dark:text-blue-200" : "text-gray-400 dark:text-white/70"}
-`}
-              >
-                Iniciar Sesión
-              </button>
-              <button
-                onClick={() => setTab("register")}
-                className={`flex-1 pb-3 font-semibold transition-colors duration-200
-${tab === "register" ? "border-b-2 border-blue-500 text-blue-600 dark:text-blue-200" : "text-gray-400 dark:text-white/70"}
-`}
-              >
-                Registrarse
-              </button>
-            </div>
+
             {/* LOGIN */}
             {tab === "login" && (
-              <>
-                <form onSubmit={handleLogin} className="space-y-5">
+              <form onSubmit={handleLogin} className="space-y-4" noValidate>
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">
+                    Correo electrónico
+                  </label>
                   <input
-                    placeholder="Correo electrónico"
                     type="email"
+                    placeholder="tu@email.com"
                     value={loginEmail}
                     onChange={(e) => setLoginEmail(e.target.value)}
-                    className="w-full p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-slate-400 dark:placeholder:text-white/70"
+                    autoComplete="email"
+                    className={inputClass}
                   />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">
+                    Contraseña
+                  </label>
                   <div className="relative">
                     <input
-                      placeholder="Contraseña"
                       type={showLoginPass ? "text" : "password"}
+                      placeholder="••••••••"
                       value={loginPassword}
                       onChange={(e) => setLoginPassword(e.target.value)}
-                      className="w-full p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-slate-400 dark:placeholder:text-white/70"
+                      autoComplete="current-password"
+                      className={inputClass + " pr-12"}
                     />
                     <button
                       type="button"
                       onClick={() => setShowLoginPass(!showLoginPass)}
-                      className="absolute right-3 top-4 text-slate-400 dark:text-white"
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
                       tabIndex={-1}
                     >
-                      👁
+                      {showLoginPass ? (
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+                        </svg>
+                      ) : (
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                      )}
                     </button>
                   </div>
-                  <button
-                    disabled={loading}
-                    className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 rounded-xl transition-colors duration-200 shadow-md disabled:opacity-60"
-                  >
-                    {loading ? <><Loading3DIcon /><span className="ml-2">Cargando...</span></> : "Iniciar Sesión"}
-                  </button>
-                </form>
-                <div className="mt-4 text-center">
-                  <a href="/recuperar-password" className="text-blue-500 hover:underline text-sm">¿Olvidaste tu contraseña?</a>
                 </div>
-              </>
+                <div className="flex justify-end">
+                  <a
+                    href="/recuperar-password"
+                    className="text-sm text-blue-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  >
+                    ¿Olvidaste tu contraseña?
+                  </a>
+                </div>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white font-semibold py-3.5 rounded-xl transition-all duration-200 shadow-sm disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2"
+                >
+                  {loading ? (
+                    <>
+                      <Loading3DIcon />
+                      <span>Ingresando...</span>
+                    </>
+                  ) : (
+                    "Iniciar sesión"
+                  )}
+                </button>
+              </form>
             )}
+
             {/* REGISTER */}
             {tab === "register" && (
-              (registerSuccess && localStorage.getItem("justRegisteredEmail") === registerEmail) ? (
-                <div className="text-center py-8">
-                  <div className="text-green-600 text-lg font-semibold mb-2">¡Cuenta creada!</div>
-                  <div className="mb-4">Se ha enviado un correo de verificación a <span className="font-bold">{registerEmail}</span>.<br />Por favor revisa tu email y verifica tu cuenta antes de iniciar sesión.</div>
-                  <div className="text-sm text-slate-500 dark:text-slate-300">Si no ves el correo, revisa la carpeta de spam o promociones.</div>
+              isRegisterDone ? (
+                <div className="text-center py-6">
+                  <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-green-100 dark:bg-green-900/40 mb-4">
+                    <svg className="w-7 h-7 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">¡Cuenta creada!</h3>
+                  <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">
+                    Se envió un correo de verificación a{" "}
+                    <span className="font-semibold text-slate-700 dark:text-slate-200">{registerEmail}</span>.
+                    <br />Verifica tu cuenta antes de iniciar sesión.
+                  </p>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-3">
+                    ¿No ves el correo? Revisa la carpeta de spam.
+                  </p>
+                  <button
+                    onClick={() => setTab("login")}
+                    className="mt-5 text-sm text-blue-500 hover:text-blue-600 font-medium"
+                  >
+                    Ir a iniciar sesión →
+                  </button>
                 </div>
               ) : (
-                <form onSubmit={handleRegister} className="space-y-5">
-                  <input
-                    placeholder="Nombre"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="w-full p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-slate-400 dark:placeholder:text-white/70"
-                  />
-                  <input
-                    type="email"
-                    placeholder="Correo electrónico"
-                    value={registerEmail}
-                    onChange={(e) => setRegisterEmail(e.target.value)}
-                    className="w-full p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-slate-400 dark:placeholder:text-white/70"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Número de teléfono"
-                    value={registerPhone}
-                    onChange={(e) => setRegisterPhone(e.target.value)}
-                    className="w-full p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-slate-400 dark:placeholder:text-white/70"
-                  />
-                  <div className="relative">
-                    <input
-                      type={showRegisterPass ? "text" : "password"}
-                      placeholder="Contraseña"
-                      value={registerPassword}
-                      onChange={(e) => setRegisterPassword(e.target.value)}
-                      className="w-full p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-slate-400 dark:placeholder:text-white/70"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowRegisterPass(!showRegisterPass)}
-                      className="absolute right-3 top-4 text-slate-400 dark:text-white"
-                      tabIndex={-1}
-                    >
-                      👁
-                    </button>
-                  </div>
-                  <input
-                    type={showRegisterPass ? "text" : "password"}
-                    placeholder="Confirmar contraseña"
-                    value={registerPasswordConfirm}
-                    onChange={(e) => setRegisterPasswordConfirm(e.target.value)}
-                    className="w-full p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-slate-400 dark:placeholder:text-white/70"
-                  />
+                <form onSubmit={handleRegister} className="space-y-4" noValidate>
+                  {[
+                    { label: "Nombre completo", value: name, onChange: setName, placeholder: "Juan Pérez", type: "text", auto: "name" },
+                    { label: "Correo electrónico", value: registerEmail, onChange: setRegisterEmail, placeholder: "tu@email.com", type: "email", auto: "email" },
+                    { label: "Teléfono (10 dígitos)", value: registerPhone, onChange: setRegisterPhone, placeholder: "0987654321", type: "tel", auto: "tel" },
+                  ].map(({ label, value, onChange, placeholder, type, auto }) => (
+                    <div key={label}>
+                      <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">
+                        {label}
+                      </label>
+                      <input
+                        type={type}
+                        placeholder={placeholder}
+                        value={value}
+                        onChange={(e) => onChange(e.target.value)}
+                        autoComplete={auto}
+                        className={inputClass}
+                      />
+                    </div>
+                  ))}
+                  {/* Password fields */}
+                  {[
+                    { label: "Contraseña", value: registerPassword, onChange: setRegisterPassword, placeholder: "Mínimo 6 caracteres" },
+                    { label: "Confirmar contraseña", value: registerPasswordConfirm, onChange: setRegisterPasswordConfirm, placeholder: "Repite tu contraseña" },
+                  ].map(({ label, value, onChange, placeholder }) => (
+                    <div key={label}>
+                      <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">
+                        {label}
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={showRegisterPass ? "text" : "password"}
+                          placeholder={placeholder}
+                          value={value}
+                          onChange={(e) => onChange(e.target.value)}
+                          className={inputClass + " pr-12"}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowRegisterPass(!showRegisterPass)}
+                          className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+                          tabIndex={-1}
+                        >
+                          {showRegisterPass ? (
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+                            </svg>
+                          ) : (
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                   <button
+                    type="submit"
                     disabled={loading}
-                    className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 rounded-xl transition-colors duration-200 shadow-md disabled:opacity-60"
+                    className="w-full bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white font-semibold py-3.5 rounded-xl transition-all duration-200 shadow-sm disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2"
                   >
-                    {loading ? <><Loading3DIcon /><span className="ml-2">Creando...</span></> : "Crear Cuenta"}
+                    {loading ? (
+                      <>
+                        <Loading3DIcon />
+                        <span>Creando cuenta...</span>
+                      </>
+                    ) : (
+                      "Crear cuenta"
+                    )}
                   </button>
                 </form>
               )
             )}
           </div>
         </div>
-      )}
-    </>
+
+        {/* Footer note */}
+        <p className="text-center text-xs text-slate-400 dark:text-slate-600 mt-6">
+          Al continuar, aceptas nuestros{" "}
+          <a href="/terminos" className="underline hover:text-slate-600 dark:hover:text-slate-400 transition-colors">
+            Términos de uso
+          </a>{" "}
+          y{" "}
+          <a href="/privacidad" className="underline hover:text-slate-600 dark:hover:text-slate-400 transition-colors">
+            Política de privacidad
+          </a>.
+        </p>
+      </div>
+    </div>
   );
 }
