@@ -456,6 +456,7 @@ export const Navbar = () => {
                 className="flex items-center dark:color-white justify-center px-1 rounded-xl transition-colors"
                 style={{ background: "bg"}}
                 aria-label="Carrito"
+                data-onboarding="carrito"
               >
                 <span className="material-icons-round dark:color-white text-xl">shopping_bag</span>
                 {/* Badge solo cantidad, pequeño */}
@@ -474,6 +475,7 @@ export const Navbar = () => {
                   className="rounded-full transition-opacity hover:opacity-80"
                   onClick={() => setUserMenu(!userMenu)}
                   title="Opciones de usuario"
+                  data-onboarding="usuario"
                 >
                   {user.photoURL ? (
                     <img
@@ -531,6 +533,7 @@ export const Navbar = () => {
                 href="/login"
                 className="flex color:black dark:color-white items-center gap-2 p-1 rounded-xl border-2 text-sm font-semibold transition-opacity hover:opacity-80 whitespace-nowrap"
                 style={{ }}
+                data-onboarding="usuario"
               >
                 <span className="material-icons-round text-base">person</span>
                 Ingresa
