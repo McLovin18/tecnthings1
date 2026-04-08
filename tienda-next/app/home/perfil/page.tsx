@@ -60,15 +60,25 @@ export default function PerfilPage() {
     if (!file || !user) return;
     setLoading(true);
     try {
+      // Log UID y estado de autenticación
+      console.log("[Perfil] UID:", user.uid);
+      const auth = getAuth(app);
+      console.log("[Perfil] Auth currentUser:", auth.currentUser);
+      auth.onAuthStateChanged((firebaseUser) => {
+        console.log("[Perfil] onAuthStateChanged user:", firebaseUser);
+      });
+
       // Sube la imagen a Storage en la carpeta del usuario
       const storageRef = ref(storage, `profile_pictures/${user.uid}/${file.name}`);
       await uploadBytes(storageRef, file);
       // Obtén la URL pública
       const url = await getDownloadURL(storageRef);
+      console.log("[Perfil] URL de imagen subida:", url);
       setPhotoURL(url);
       await updateProfile(user, { photoURL: url });
     } catch (e) {
-      alert("Error al subir la foto de perfil");
+      console.error("[Perfil] Error al subir imagen:", e);
+      alert("Error al subir la foto de perfil: " + (e?.message || e));
     }
     setLoading(false);
   };

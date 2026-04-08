@@ -234,6 +234,8 @@ export default function HeroSection({
             alt={current.title || "Hero"}
             width={1920}
             height={840}
+            loading="lazy" // <--- AÑADE ESTO
+            decoding="async" // <--- AYUDA AL RENDIMIENTO
             className="absolute inset-0 w-full h-full object-contain sm:object-cover"
             style={{
               borderRadius,
@@ -241,8 +243,6 @@ export default function HeroSection({
               transition: "opacity 0.35s ease",
             }}
             draggable={false}
-            decoding="async"
-            loading="eager"
             onLoad={() => setImageLoaded(true)}
           />
         )}

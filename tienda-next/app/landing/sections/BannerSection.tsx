@@ -59,7 +59,7 @@ export default function BannerSection({
               className="absolute inset-0 w-full h-full object-cover transition-none"
               draggable={false}
               decoding="async"
-              loading="eager"
+              loading="lazy" // <--- AÑADE ESTO
               style={{ display: 'block', borderRadius }}
             />
           </div>

@@ -101,17 +101,18 @@ export default function ProductoCard({
           sm:w-full sm:h-56
         "
       >
-        <img
-          src={producto.imagenes?.[0] || "/no-image.png"}
-          alt={producto.nombre}
-          className="
-            w-full h-full object-contain
-            p-3 sm:p-5
-            group-hover:scale-105
-            transition-transform duration-500
-          "
-        />
-
+      <img
+        src={producto.imagenes?.[0] || "/no-image.png"}
+        alt={producto.nombre}
+        loading="lazy" // <--- AÑADE ESTO
+        decoding="async" // <--- AYUDA AL RENDIMIENTO
+        className="
+          w-full h-full object-contain
+          p-3 sm:p-5
+          group-hover:scale-105
+          transition-transform duration-500
+        "
+      />
         {/* Badge descuento */}
         {hasDiscount && (
           <span className="
