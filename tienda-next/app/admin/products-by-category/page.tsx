@@ -104,6 +104,34 @@ export default function ProductsByCategoryPage() {
       });
   }, [productos, categoria, subcategoria, subsubcategoria, search, precioMin, precioMax, orden]);
 
+
+    // --- Paginación ---
+    const [currentPage, setCurrentPage] = useState(1);
+      // Detectar columnas según el grid responsive
+      const getCols = () => {
+        if (typeof window !== 'undefined') {
+          if (window.innerWidth >= 1024) return 4; // lg
+          if (window.innerWidth >= 768) return 3; // md
+          if (window.innerWidth >= 640) return 2; // sm
+        }
+        return 1;
+      };
+      const [cols, setCols] = useState(getCols());
+      useEffect(() => {
+        function handleResize() {
+          setCols(getCols());
+        }
+        window.addEventListener('resize', handleResize);
+        handleResize();
+        return () => window.removeEventListener('resize', handleResize);
+      }, []);
+      const productsPerPage = cols * 3;
+      const totalPages = Math.ceil(productosFiltrados.length / productsPerPage);
+      const paginatedProducts = productosFiltrados.slice((currentPage - 1) * productsPerPage, currentPage * productsPerPage);
+
+
+
+
   const hasFilters = !!(search || precioMin || precioMax || orden !== "newest");
 
   const clearFilters = useCallback(() => {
@@ -122,7 +150,7 @@ export default function ProductsByCategoryPage() {
   const chip = (active: boolean) =>
     `flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition-all cursor-pointer select-none whitespace-nowrap ${
       active
-        ? "bg-purple-600 border-purple-600 text-white shadow-sm"
+        ? "bg-[#7b68ee] border-purple-600 text-white shadow-sm"
         : "bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-600 dark:text-white/60 hover:border-purple-400 dark:hover:border-purple-500 hover:text-purple-600 dark:hover:text-purple-300"
     }`;
 
@@ -338,8 +366,9 @@ export default function ProductsByCategoryPage() {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-            {productosFiltrados.map((p: any) => (
+            <>
+            <div className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 animate-in fade-in duration-700`}>
+              {paginatedProducts.map((p: any) => (
                 <ProductoCard
                   key={p.id}
                   producto={p}
@@ -347,8 +376,37 @@ export default function ProductsByCategoryPage() {
                   showEye
                   showFav={isAuthenticated}
                 />
-            ))}
-          </div>
+              ))}
+            </div>
+            {/* Paginación */}
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center gap-2 mt-8 select-none">
+                <button
+                  className="px-3 py-1.5 rounded border text-xs font-medium bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-600 dark:text-white/60 hover:border-purple-400 dark:hover:border-purple-500 hover:text-purple-600 dark:hover:text-purple-300 transition-all disabled:opacity-40"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                >
+                  &lt;
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
+                  <button
+                    key={n}
+                    className={`px-3 py-1.5 rounded border text-xs font-medium transition-all ${currentPage === n ? 'bg-[#7b68ee] border-purple-600 text-white shadow-sm' : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-600 dark:text-white/60 hover:border-purple-400 dark:hover:border-purple-500 hover:text-purple-600 dark:hover:text-purple-300'}`}
+                    onClick={() => setCurrentPage(n)}
+                  >
+                    {n}
+                  </button>
+                ))}
+                <button
+                  className="px-3 py-1.5 rounded border text-xs font-medium bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-600 dark:text-white/60 hover:border-purple-400 dark:hover:border-purple-500 hover:text-purple-600 dark:hover:text-purple-300 transition-all disabled:opacity-40"
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  &gt;
+                </button>
+              </div>
+            )}
+          </>
         )}
 
       </main>

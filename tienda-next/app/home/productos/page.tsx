@@ -11,6 +11,8 @@ export default function ProductsByCategoryPage() {
   const subcategoria = searchParams?.get("subcat") || searchParams?.get("subcategory") || "";
   const subsubcategoria = searchParams?.get("subsubcat") || searchParams?.get("subsubcategory") || "";
 
+   const [currentPage, setCurrentPage] = useState(1);
+
   const [productos, setProductos] = useState<Producto[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -102,6 +104,34 @@ export default function ProductsByCategoryPage() {
       });
   }, [productos, categoria, subcategoria, subsubcategoria, search, precioMin, precioMax, orden]);
 
+
+
+    // --- Paginación ---
+  // Detectar columnas según el grid responsive
+  const getCols = () => {
+    if (typeof window !== 'undefined') {
+      if (window.innerWidth >= 1280) return 5; // xl
+      if (window.innerWidth >= 1024) return 4; // lg
+      if (window.innerWidth >= 640) return 3; // sm/md
+    }
+    return 1;
+  };
+  const [cols, setCols] = useState(getCols());
+  useEffect(() => {
+    function handleResize() {
+      setCols(getCols());
+    }
+    window.addEventListener('resize', handleResize);
+    handleResize();
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  const productsPerPage = cols * 3;
+  const totalPages = Math.ceil(productosFiltrados.length / productsPerPage);
+  const paginatedProducts = productosFiltrados.slice((currentPage - 1) * productsPerPage, currentPage * productsPerPage);
+
+
+
+
   const hasFilters = !!(search || precioMin || precioMax || orden !== "newest");
 
   const clearFilters = useCallback(() => {
@@ -187,8 +217,8 @@ export default function ProductsByCategoryPage() {
             {hasFilters && (
               <button
                 onClick={clearFilters}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium border border-red-200 dark:border-red-500/30 text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 transition-all whitespace-nowrap"
-              >
+                  className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+              
                 <span className="material-icons-round text-[14px]">close</span>
                 Limpiar
               </button>
@@ -242,7 +272,7 @@ export default function ProductsByCategoryPage() {
 
         {/* ── Grid de productos ─────────────────────────────────── */}
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
             {Array.from({ length: 10 }).map((_, i) => (
               <ProductoCard
                 key={i} // skeleton, solo necesita key única
@@ -279,17 +309,50 @@ export default function ProductsByCategoryPage() {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
-            {productosFiltrados.map((p: any) => (
-              <ProductoCard
-                key={p.id}
-                producto={p}
-                showCart
-                showEye
-                showFav={isAuthenticated}
-              />
-            ))}
-          </div>
+          <>
+            <div className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4`}>
+              {paginatedProducts.map((p: any) => (
+                <ProductoCard
+                  key={p.id}
+                  producto={p}
+                  showCart
+                  showEye
+                  showFav={isAuthenticated}
+                  onClick={() => {}}
+                  onAddCart={() => {}}
+                  onEye={() => {}}
+                />
+              ))}
+            </div>
+            {/* Paginación */}
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center gap-2 mt-8 select-none">
+                <button
+                  className="px-3 py-1.5 rounded border text-xs font-medium bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-600 dark:text-white/60 hover:border-purple-400 dark:hover:border-purple-500 hover:text-purple-600 dark:hover:text-purple-300 transition-all disabled:opacity-40"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                >
+                  &lt;
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
+                  <button
+                    key={n}
+                    className={`px-3 py-1.5 rounded border text-xs font-medium transition-all ${currentPage === n ? 'bg-[#7b68ee] border-purple-600 text-white shadow-sm' : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-600 dark:text-white/60 hover:border-purple-400 dark:hover:border-purple-500 hover:text-purple-600 dark:hover:text-purple-300'}`}
+                    onClick={() => setCurrentPage(n)}
+                  >
+                    {n}
+                  </button>
+                ))}
+                <button
+                  className="px-3 py-1.5 rounded border text-xs font-medium bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-600 dark:text-white/60 hover:border-purple-400 dark:hover:border-purple-500 hover:text-purple-600 dark:hover:text-purple-300 transition-all disabled:opacity-40"
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  &gt;
+                </button>
+              </div>
+            )}
+          </>
         )}
 
       </main>

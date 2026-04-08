@@ -36,55 +36,121 @@ export default function SearchResultsPage() {
     const coincideMarca = !marca || p.marca === marca;
     return coincideTexto && coincideMarca;
   });
+
+        // --- Paginación ---
+    const [currentPage, setCurrentPage] = useState(1);
+      // Detectar columnas según el grid responsive
+      const getCols = () => {
+        if (typeof window !== 'undefined') {
+          if (window.innerWidth >= 1024) return 4; // lg
+          if (window.innerWidth >= 768) return 3; // md
+          if (window.innerWidth >= 640) return 2; // sm
+        }
+        return 1;
+      };
+      const [cols, setCols] = useState(getCols());
+      useEffect(() => {
+        function handleResize() {
+          setCols(getCols());
+        }
+        window.addEventListener('resize', handleResize);
+        handleResize();
+        return () => window.removeEventListener('resize', handleResize);
+      }, []);
+      const productsPerPage = cols * 3;
+      const totalPages = Math.ceil(productosFiltrados.length / productsPerPage);
+      const paginatedProducts = productosFiltrados.slice((currentPage - 1) * productsPerPage, currentPage * productsPerPage);
+
+
+
+
   if (orden === "price-low") productosFiltrados = productosFiltrados.sort((a, b) => a.precio - b.precio);
   if (orden === "price-high") productosFiltrados = productosFiltrados.sort((a, b) => b.precio - a.precio);
 
   return (
-    <div style={{ background: 'var(--bg)', color: 'var(--text)' }} className="min-h-screen flex flex-col">
-      <main className="px-4 lg:px-6 py-6 sm:py-15 flex-1">
-        {/* Breadcrumb */}
-        <div className="flex items-center gap-2 mb-6">
-          <a href="/" className="text-sm text-slate-500 dark:text-white hover:text-accent">Inicio</a>
-          <span className="text-slate-500 dark:text-white">/</span>
-          <span className="text-sm font-medium text-accent">Búsqueda</span>
+    <main className="min-h-screen bg-white dark:bg-black text-slate-900 dark:text-white px-4 lg:px-6 py-8 flex-1">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-2 mb-6 text-xs text-slate-500 dark:text-white/50 select-none">
+        <a href="/" className="hover:underline">Inicio</a>
+        <span>/</span>
+        <span className="font-semibold text-accent">Búsqueda</span>
+      </nav>
+      {/* Filtros y opciones */}
+      <div className="mb-6 flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold mb-2 text-[#3a1859] dark:text-white">Resultados de búsqueda</h1>
+          <input
+            className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm w-full mt-2"
+            placeholder="Buscar productos..."
+            value={query}
+            readOnly
+          />
         </div>
-        {/* Filtros y opciones */}
-        <div className="mb-6 flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+        <div className="flex gap-2 w-full lg:w-auto">
+          <select className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm" value={orden} onChange={e => setOrden(e.target.value)}>
+            <option value="newest">Más Nuevos</option>
+            <option value="price-low">Menor Precio</option>
+            <option value="price-high">Mayor Precio</option>
+          </select>
+          <select className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm" value={marca} onChange={e => setMarca(e.target.value)}>
+            <option value="">Todas las marcas</option>
+            {marcas.map(m => <option key={m} value={m}>{m}</option>)}
+          </select>
+        </div>
+      </div>
+      {/* Grid de productos y estados */}
+      {productosFiltrados.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-24 gap-4 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-white/5 flex items-center justify-center">
+            <span className="material-icons-round text-3xl text-slate-300 dark:text-white/20">search_off</span>
+          </div>
           <div>
-            <h1 className="text-3xl font-bold mb-2 text-slate-900 dark:text-white">Resultados de búsqueda</h1>
-            <input
-              className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm w-full mt-2"
-              placeholder="Buscar productos..."
-              value={query}
-              readOnly
-            />
-          </div>
-          <div className="flex gap-2 w-full lg:w-auto">
-            <select className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm" value={orden} onChange={e => setOrden(e.target.value)}>
-              <option value="newest">Más Nuevos</option>
-              <option value="price-low">Menor Precio</option>
-              <option value="price-high">Mayor Precio</option>
-              {/* <option value="popular">Más Popular</option> */}
-            </select>
-            <select className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm" value={marca} onChange={e => setMarca(e.target.value)}>
-              <option value="">Todas las marcas</option>
-              {marcas.map(m => <option key={m} value={m}>{m}</option>)}
-            </select>
+            <p className="font-semibold text-slate-700 dark:text-white/80">Sin resultados</p>
+            <p className="text-sm text-slate-400 dark:text-white/30 mt-1 max-w-[240px]">Prueba otros términos o ajusta los filtros</p>
           </div>
         </div>
-        {/* Grid de productos */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {productosFiltrados.length > 0 ? (
-            productosFiltrados.map(p => <ProductoCard key={p.id} producto={p} showCart showEye showFav />)
-          ) : (
-            <div className="col-span-full text-center py-12">
-              <span className="material-icons-round text-5xl opacity-20">search</span>
-              <h3 className="text-lg font-semibold mt-4">No encontramos productos</h3>
-              <p className="text-sm text-slate-500 dark:text-white">No hay productos que coincidan con tu búsqueda</p>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 animate-in fade-in duration-700">
+            {paginatedProducts.map((p: any) => (
+              <ProductoCard
+                key={p.id}
+                producto={p}
+                showCart
+                showEye
+              />
+            ))}
+          </div>
+          {/* Paginación */}
+          {totalPages > 1 && (
+            <div className="flex justify-center items-center gap-2 mt-8 select-none">
+              <button
+                className="px-3 py-1.5 rounded border text-xs font-medium bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-600 dark:text-white/60 hover:border-purple-400 dark:hover:border-purple-500 hover:text-purple-600 dark:hover:text-purple-300 transition-all disabled:opacity-40"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+              >
+                &lt;
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
+                <button
+                  key={n}
+                  className={`px-3 py-1.5 rounded border text-xs font-medium transition-all ${currentPage === n ? 'bg-[#7b68ee] border-purple-600 text-white shadow-sm' : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-600 dark:text-white/60 hover:border-purple-400 dark:hover:border-purple-500 hover:text-purple-600 dark:hover:text-purple-300'}`}
+                  onClick={() => setCurrentPage(n)}
+                >
+                  {n}
+                </button>
+              ))}
+              <button
+                className="px-3 py-1.5 rounded border text-xs font-medium bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-600 dark:text-white/60 hover:border-purple-400 dark:hover:border-purple-500 hover:text-purple-600 dark:hover:text-purple-300 transition-all disabled:opacity-40"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+              >
+                &gt;
+              </button>
             </div>
           )}
-        </div>
-      </main>
-    </div>
+        </>
+      )}
+    </main>
   );
 }
