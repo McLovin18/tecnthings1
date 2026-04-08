@@ -263,7 +263,7 @@ export default function ProductDetailPage({ params }) {
             )}
 
             {/* ── TABS: Características / Reseñas — solo desktop ───── */}
-            <div className="hidden md:flex mt-1 flex-col gap-0">
+            <div className="hidden md:flex mt-1 flex-col gap-0 py-9">
               {/* Botones tab */}
               <div className="flex rounded-xl overflow-hidden border border-slate-200 dark:border-white/[0.08]">
                 {hasCaracteristicas && (

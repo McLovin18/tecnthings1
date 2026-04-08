@@ -489,7 +489,7 @@ export default function ProductDetailPage({ params }) {
       </div>
 
         {/* ── TABS móvil: debajo de info, encima de relacionados ── */}
-        <div className="md:hidden mt-4 flex flex-col gap-0">
+        <div className="md:hidden mt-4 flex flex-col gap-0 py-9">
           <div className="flex rounded-xl overflow-hidden border border-slate-200 dark:border-white/[0.08]">
             {hasCaracteristicas && (
               <button

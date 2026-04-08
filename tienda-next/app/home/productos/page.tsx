@@ -107,25 +107,25 @@ export default function ProductsByCategoryPage() {
 
 
     // --- Paginación ---
-  // Detectar columnas según el grid responsive
-  const getCols = () => {
+  // Paginación responsive: 10 productos en móvil, cols*3 en desktop
+  const getProductsPerPage = () => {
     if (typeof window !== 'undefined') {
-      if (window.innerWidth >= 1280) return 5; // xl
-      if (window.innerWidth >= 1024) return 4; // lg
-      if (window.innerWidth >= 640) return 3; // sm/md
+      if (window.innerWidth < 640) return 10; // móvil
+      if (window.innerWidth >= 1024) return 4 * 3; // lg: 4 cols x 3 filas
+      if (window.innerWidth >= 768) return 3 * 3; // md: 3 cols x 3 filas
+      if (window.innerWidth >= 640) return 2 * 3; // sm: 2 cols x 3 filas
     }
-    return 1;
+    return 10;
   };
-  const [cols, setCols] = useState(getCols());
+  const [productsPerPage, setProductsPerPage] = useState(getProductsPerPage());
   useEffect(() => {
     function handleResize() {
-      setCols(getCols());
+      setProductsPerPage(getProductsPerPage());
     }
     window.addEventListener('resize', handleResize);
     handleResize();
     return () => window.removeEventListener('resize', handleResize);
   }, []);
-  const productsPerPage = cols * 3;
   const totalPages = Math.ceil(productosFiltrados.length / productsPerPage);
   const paginatedProducts = productosFiltrados.slice((currentPage - 1) * productsPerPage, currentPage * productsPerPage);
 
@@ -326,7 +326,7 @@ export default function ProductsByCategoryPage() {
             </div>
             {/* Paginación */}
             {totalPages > 1 && (
-              <div className="flex justify-center items-center gap-2 mt-8 select-none">
+              <div className="flex flex-wrap justify-center items-center gap-2 mt-8 select-none w-full">
                 <button
                   className="px-3 py-1.5 rounded border text-xs font-medium bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-600 dark:text-white/60 hover:border-purple-400 dark:hover:border-purple-500 hover:text-purple-600 dark:hover:text-purple-300 transition-all disabled:opacity-40"
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
