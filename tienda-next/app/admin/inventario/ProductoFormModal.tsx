@@ -7,10 +7,10 @@ export default function ProductoFormModal({ show, onClose, initialData, onSave }
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-purple-900/80 via-black/70 to-slate-900/90 backdrop-blur-sm">
       <div
-        className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-2xl mx-2 relative animate-fade-in border-4 border-purple-700/60 flex flex-col"
+        className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-6xl mx-2 relative animate-fade-in border-4 border-purple-700/60 flex flex-col"
         style={{
-          maxHeight: '95vh',
-          minHeight: 'min(90vh, 400px)',
+          maxHeight: '98vh',
+          minHeight: 'min(94vh, 500px)',
         }}
       >
         <button
@@ -35,18 +35,20 @@ export default function ProductoFormModal({ show, onClose, initialData, onSave }
         </div>
       </div>
       <style jsx global>{`
+        @media (max-width: 900px) {
+          .max-w-5xl {
+            max-width: 120vw !important;
+          }
+        }
         @media (max-width: 640px) {
-          .max-w-2xl {
-            max-width: 98vw !important;
+          .max-w-4xl {
+            max-width: 100vw !important;
           }
           .rounded-3xl {
             border-radius: 1.2rem !important;
           }
         }
         @media (max-width: 480px) {
-          .max-w-2xl {
-            max-width: 100vw !important;
-          }
           .p-8, .md\:p-8 {
             padding: 1rem !important;
           }
