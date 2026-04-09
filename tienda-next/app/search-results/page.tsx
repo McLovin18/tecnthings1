@@ -41,7 +41,6 @@ export default function SearchResultsPage() {
       .filter(p => {
         const texto = search.toLowerCase().trim();
         const nombre = p.nombre?.toLowerCase() || "";
-        const desc = p.descripcion?.toLowerCase() || "";
         const marcaProd = p.marca?.toLowerCase() || "";
         const categoria = p.categoria?.toLowerCase() || "";
         const subcategoria = p.subcategoria?.toLowerCase() || "";
@@ -50,7 +49,6 @@ export default function SearchResultsPage() {
         const coincideTexto =
           !texto ||
           nombre.includes(texto) ||
-          desc.includes(texto) ||
           marcaProd.includes(texto) ||
           categoria.includes(texto) ||
           subcategoria.includes(texto) ||

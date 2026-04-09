@@ -27,12 +27,11 @@ export default function SearchResultsPage() {
     const texto = query.trim().toLowerCase();
     if (!texto) return false; // Si no hay query, no mostrar nada
     const nombre = p.nombre?.toLowerCase() || "";
-    const desc = p.descripcion?.toLowerCase() || "";
     const marcaProd = p.marca?.toLowerCase() || "";
     const categoria = p.categoria?.toLowerCase() || "";
     const subcategoria = p.subcategoria?.toLowerCase() || "";
     const subsubcategoria = p.subsubcategoria?.toLowerCase() || "";
-    const coincideTexto = nombre.includes(texto) || desc.includes(texto) || marcaProd.includes(texto) || categoria.includes(texto) || subcategoria.includes(texto) || subsubcategoria.includes(texto);
+    const coincideTexto = nombre.includes(texto) || marcaProd.includes(texto) || categoria.includes(texto) || subcategoria.includes(texto) || subsubcategoria.includes(texto);
     const coincideMarca = !marca || p.marca === marca;
     return coincideTexto && coincideMarca;
   });

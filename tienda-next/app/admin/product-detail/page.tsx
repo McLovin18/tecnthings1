@@ -187,6 +187,7 @@ export default function ProductDetailPage({ params }) {
   };
 
   const descItems = parseDesc((producto as any).descripcion || "");
+  const rawDescripcion = (producto as any).descripcion || "";
 
   const inputCls =
     "w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-white/25 focus:outline-none focus:border-slate-400 dark:focus:border-white/30 transition-colors";
@@ -443,6 +444,38 @@ export default function ProductDetailPage({ params }) {
                     {isFav ? "favorite" : "favorite_border"}
                   </span>
                 </button>
+              )}
+            </div>
+
+            {/* Descripción debajo de Añadir al carrito */}
+            <div className="mt-6">
+              <h2 className="text-lg font-semibold mb-2 text-black dark:text-white">Descripción del producto</h2>
+              {rawDescripcion.trim() ? (
+                descItems.length > 0 && (descItems.length > 1 || descItems[0].sub.length > 0 || descItems[0].text !== rawDescripcion.trim()) ? (
+                  <ul className="space-y-2">
+                    {descItems.map((item, idx) => (
+                      <li key={idx} className="flex gap-2 text-sm text-black/80 dark:text-white/80 leading-relaxed">
+                        <span className="text-slate-300 dark:text-white/20 flex-shrink-0 mt-0.5">›</span>
+                        <span>
+                          {item.text}
+                          {item.sub.length > 0 && (
+                            <ul className="mt-1 space-y-0.5 ml-3">
+                              {item.sub.map((s, j) => (
+                                <li key={j} className="flex gap-1.5 text-slate-400 dark:text-white/35">
+                                  <span className="flex-shrink-0">–</span>{s}
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-black/80 dark:text-white/80 leading-relaxed whitespace-pre-line">{rawDescripcion}</p>
+                )
+              ) : (
+                <p className="text-sm text-slate-400 dark:text-white/40">Sin descripción</p>
               )}
             </div>
 

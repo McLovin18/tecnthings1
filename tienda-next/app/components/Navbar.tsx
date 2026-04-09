@@ -197,7 +197,6 @@ export const Navbar = () => {
     const filtered = allProducts.filter((p) => {
       return (
         p.nombre?.toLowerCase().includes(texto) ||
-        p.descripcion?.toLowerCase().includes(texto) ||
         p.marca?.toLowerCase().includes(texto) ||
         p.categoria?.toLowerCase().includes(texto) ||
         p.subcategoria?.toLowerCase().includes(texto) ||
