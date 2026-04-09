@@ -40,20 +40,31 @@ export default function SearchResultsPage() {
     return productos
       .filter(p => {
         const texto = search.toLowerCase().trim();
-        if (!texto) return false;
-        // Expresión regular para coincidencia exacta y corrida
-        const regex = new RegExp(`\\b${texto.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i");
-        const campos = [p.nombre, p.marca, p.categoria, p.subcategoria, p.subsubcategoria]
-          .map(v => (v || "").toLowerCase());
-        const coincideTexto = campos.some(campo => regex.test(campo));
+        const nombre = p.nombre?.toLowerCase() || "";
+        const marcaProd = p.marca?.toLowerCase() || "";
+        const categoria = p.categoria?.toLowerCase() || "";
+        const subcategoria = p.subcategoria?.toLowerCase() || "";
+        const subsubcategoria = p.subsubcategoria?.toLowerCase() || "";
+
+        const coincideTexto =
+          !texto ||
+          nombre.includes(texto) ||
+          marcaProd.includes(texto) ||
+          categoria.includes(texto) ||
+          subcategoria.includes(texto) ||
+          subsubcategoria.includes(texto);
+
         const coincideMarca = !marca || p.marca === marca;
+
         const basePrice = Number(p.precio || 0);
         const discount = Number(p.descuento || 0);
         const finalPrice = discount > 0 && discount < 100 ? basePrice * (1 - discount / 100) : basePrice;
+
         const min = precioMin ? parseFloat(precioMin) : null;
         const max = precioMax ? parseFloat(precioMax) : null;
         const matchMin = min === null || finalPrice >= min;
         const matchMax = max === null || finalPrice <= max;
+
         return coincideTexto && coincideMarca && matchMin && matchMax;
       })
       .sort((a, b) => {

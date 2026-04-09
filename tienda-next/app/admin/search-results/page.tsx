@@ -25,12 +25,13 @@ export default function SearchResultsPage() {
   // Filtros
   let productosFiltrados = productos.filter(p => {
     const texto = query.trim().toLowerCase();
-    if (!texto) return false;
-    // Expresión regular para palabra/frase exacta (con límites de palabra)
-    const regex = new RegExp(`\\b${texto.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i");
-    const campos = [p.nombre, p.marca, p.categoria, p.subcategoria, p.subsubcategoria]
-      .map(v => (v || "").toLowerCase());
-    const coincideTexto = campos.some(campo => regex.test(campo));
+    if (!texto) return false; // Si no hay query, no mostrar nada
+    const nombre = p.nombre?.toLowerCase() || "";
+    const marcaProd = p.marca?.toLowerCase() || "";
+    const categoria = p.categoria?.toLowerCase() || "";
+    const subcategoria = p.subcategoria?.toLowerCase() || "";
+    const subsubcategoria = p.subsubcategoria?.toLowerCase() || "";
+    const coincideTexto = nombre.includes(texto) || marcaProd.includes(texto) || categoria.includes(texto) || subcategoria.includes(texto) || subsubcategoria.includes(texto);
     const coincideMarca = !marca || p.marca === marca;
     return coincideTexto && coincideMarca;
   });
