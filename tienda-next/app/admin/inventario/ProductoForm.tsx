@@ -420,9 +420,16 @@ export default function ProductoForm({ initialData = null, onSave, onCancel }: P
           <span className="mb-1 flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-green-400 inline-block"></span> Características</span>
         </label>
         {caracteristicas.map((c, idx) => (
-          <div key={idx} className="flex items-center gap-2 mb-2 bg-green-50/60 dark:bg-green-900/20 rounded-lg p-2 border border-green-100 dark:border-green-800">
-            <input className="input flex-1 bg-white/80 border-2 border-green-200 focus:border-green-400 rounded-lg px-3 py-2 text-base text-slate-800 dark:text-slate-900" value={c} onChange={e => handleCaracteristicaChange(idx, e.target.value)} placeholder="Característica" />
-            <button type="button" className="text-red-600 font-bold hover:text-red-800 transition" onClick={() => handleRemoveCaracteristica(idx)}>Eliminar</button>
+          <div key={idx} className="flex flex-col mb-2 bg-green-50/60 dark:bg-green-900/20 rounded-lg p-2 border border-green-100 dark:border-green-800">
+            <textarea
+              className="input w-full bg-white/80 border-2 border-green-200 focus:border-green-400 rounded-lg px-4 py-3 text-base text-slate-800 dark:text-slate-900 resize-y min-h-[4.5rem] max-h-56 text-lg font-medium"
+              value={c}
+              onChange={e => handleCaracteristicaChange(idx, e.target.value)}
+              placeholder="Característica"
+              rows={3}
+              style={{overflow: 'auto'}}
+            />
+            <button type="button" className="mt-2 w-fit bg-red-100 hover:bg-red-200 text-red-700 font-bold py-1 px-4 rounded transition self-end" onClick={() => handleRemoveCaracteristica(idx)}>Eliminar</button>
           </div>
         ))}
         <button type="button" className="text-green-700 underline font-semibold hover:text-green-900 transition" onClick={handleAddCaracteristica}>Agregar característica</button>
