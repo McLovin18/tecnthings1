@@ -244,7 +244,29 @@ export default function HeroSection({
     return () => clearInterval(id);
   }, [heroItems.length, goToNext]);
 
-  // No image preloading state — images render immediately
+  // One-time preload for the very first hero image to avoid initial layout jump
+  const [initialImagePreloaded, setInitialImagePreloaded] = React.useState(false);
+  React.useEffect(() => {
+    const firstImage = heroItems?.[0]?.image;
+    if (!firstImage) {
+      setInitialImagePreloaded(true);
+      return;
+    }
+
+    let canceled = false;
+    const img = new Image();
+    img.onload = () => {
+      if (!canceled) setInitialImagePreloaded(true);
+    };
+    img.onerror = () => {
+      if (!canceled) setInitialImagePreloaded(true);
+    };
+    img.src = firstImage;
+
+    return () => {
+      canceled = true;
+    };
+  }, []);
 
   // ── Return condicional DESPUÉS de todos los hooks ────────────────────────
   if (!heroItems.length) return null;
@@ -339,7 +361,16 @@ export default function HeroSection({
         className="relative overflow-hidden w-full max-w-full min-h-0"
         style={innerStyle}
       >
-        {current.image && (
+        {!initialImagePreloaded && heroItems[0]?.image ? (
+          <div
+            style={{
+              width: "100%",
+              paddingTop: `${(BASE_IMAGE_HEIGHT / BASE_IMAGE_WIDTH) * 100}%`,
+              backgroundColor: "#f8fafc",
+              borderRadius,
+            }}
+          />
+        ) : current.image ? (
           <img
             key={currentIndex}
             src={current.image}
@@ -352,7 +383,7 @@ export default function HeroSection({
             style={{ borderRadius, display: "block" }}
             draggable={false}
           />
-        )}
+        ) : null}
 
         {/* Badge de Google Maps */}
         {current.googleMaps && (current.rating || current.ratingCount) && (

@@ -251,7 +251,15 @@ export default function DraggablePreviewEditor({
       <div className="w-full flex justify-center">
         <div
           ref={containerRef}
-          onClick={() => image && setShowModal(true)}
+          onClick={(e) => {
+            // Only open modal when click is on the container itself (not on draggable children)
+            // and when there's an image. Also avoid opening while dragging/resizing.
+            if (!image) return;
+            if (dragState || resizeState) return;
+            if (e.target === containerRef.current) {
+              setShowModal(true);
+            }
+          }}
           className="relative border-2 border-slate-300 dark:border-slate-600 overflow-hidden rounded-lg shadow-md cursor-pointer hover:shadow-lg transition-all hover:border-purple-400"
           style={{
             width: containerSize.width,
