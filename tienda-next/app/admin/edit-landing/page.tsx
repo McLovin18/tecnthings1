@@ -1,6 +1,6 @@
 "use client";
 import { Loading3DIcon } from "@/app/components/Loading3DIcon";
-import { useEffect, useState, ChangeEvent, useRef } from "react";
+import { useEffect, useState, ChangeEvent, useRef, useCallback } from "react";
 import {
   DragDropContext,
   Droppable,
@@ -24,6 +24,7 @@ import { SectionRenderer } from "../../landing/sectionRegistry";
 
 import { obtenerProductos } from "../../lib/productos-db";
 import ProductoCard from "../../components/ProductoCard";
+import DraggablePreviewEditor from "../components/DraggablePreviewEditor";
 
 /* ============================
    TIPOS
@@ -87,7 +88,7 @@ export default function LandingEditor() {
   const [saving, setSaving] = useState<boolean>(false);
   const [allProductos, setAllProductos] = useState<any[]>([]);
   const [activeTabs, setActiveTabs] = useState<
-    Record<string, "content" | "styles" | "advanced">
+    Record<string, "content" | "styles" | "advanced" | "positioning">
   >({});
   const [activeFieldStyles, setActiveFieldStyles] = useState<
     Record<string, string | null>
@@ -98,6 +99,8 @@ export default function LandingEditor() {
   const [previewDevice, setPreviewDevice] = useState<"desktop" | "mobile">(
     "desktop"
   );
+  const [activeHeroIndex, setActiveHeroIndex] = useState<Record<string, number>>({});
+  const [editingPositionsSection, setEditingPositionsSection] = useState<string | null>(null);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [showFullPreview, setShowFullPreview] = useState<boolean>(false);
   const featuredScrollRef = useRef<HTMLDivElement | null>(null);
@@ -367,19 +370,16 @@ export default function LandingEditor() {
       ...(current.props || {}),
       [field]: value,
     };
-
-    // Si la sección es de tipo hero y ya tiene un array de items,
-    // sincronizamos el primer item con los campos base para que
-    // el "primer hero" y los heros agregados compartan estructura
-    // y estilos.
+    // If this is a hero section with items, update the active hero item instead
     if (current.type === "hero" && Array.isArray(current.props?.items)) {
-      const items = (current.props?.items as any[]) || [];
-      const first = items[0] || {};
-      const updatedFirst = {
-        ...first,
-        [field]: value,
-      };
-      baseProps.items = [updatedFirst, ...items.slice(1)];
+      const items = ((current.props?.items as any[]) || []) as any[];
+      const sectionId = current.id;
+      const activeIdx = (activeHeroIndex[sectionId] ?? 0) as number;
+      const newItems = [...items];
+      const target = { ...(newItems[activeIdx] || {}) };
+      target[field] = value;
+      newItems[activeIdx] = target;
+      baseProps.items = newItems;
     }
 
     updated[idx] = {
@@ -443,17 +443,40 @@ export default function LandingEditor() {
     styleKey: keyof import("../../lib/landing-types").LandingFieldStyle,
     value: any
   ) => {
+    // If this section is a hero with items and there's an active item,
+    // delegate to the hero-item specific handler so styles are saved per-variant.
+    const sec = sections[idx];
+    const items = (sec?.props?.items as any[]) || [];
+    const activeIdx = sec ? (activeHeroIndex[sec.id] as number | undefined) : undefined;
+    if (sec && sec.type === "hero" && items.length > 0 && typeof activeIdx === "number") {
+      await handleHeroItemFieldStyleChange(idx, activeIdx, fieldName, styleKey, value as any);
+      return;
+    }
+
     const updated = [...sections];
     const current = updated[idx];
     const currentFieldStyles = current.fieldStyles || {};
-    const currentStyle = currentFieldStyles[fieldName] || {};
+    let currentStyle = currentFieldStyles[fieldName] || {};
+
+    // Normalize legacy shape -> { desktop: legacy }
+    if (currentStyle && ((currentStyle as any).desktop === undefined && (currentStyle as any).mobile === undefined)) {
+      currentStyle = { desktop: { ...(currentStyle as any) } } as any;
+    }
+
+    const deviceKey = previewDevice || "desktop";
+
+    const newFieldStyleForDevice = {
+      ...((currentStyle as any)?.[deviceKey] || {}),
+      [styleKey]: value,
+    };
+
     updated[idx] = {
       ...current,
       fieldStyles: {
         ...currentFieldStyles,
         [fieldName]: {
-          ...currentStyle,
-          [styleKey]: value,
+          ...((currentStyle as any) || {}),
+          [deviceKey]: newFieldStyleForDevice,
         },
       },
     };
@@ -522,21 +545,33 @@ export default function LandingEditor() {
     setSaving(true);
     await saveLandingSections(updated);
     setSaving(false);
+    return newItems;
   };
 
   const handleAddHeroItem = async (sectionIndex: number) => {
-    await updateHeroItems(sectionIndex, (items) => [
+    const sec = sections[sectionIndex];
+    const baseProps = sec?.props || {};
+    const newItemTemplate = {
+      title: baseProps.title || "",
+      subtitle: baseProps.subtitle || "",
+      badge: baseProps.badge || "",
+      buttonText: baseProps.buttonText || "",
+      buttonLink: baseProps.buttonLink || "",
+      image: baseProps.image || null,
+      fieldStyles: {},
+      fieldPositions: {},
+    };
+
+    const newItems = await updateHeroItems(sectionIndex, (items) => [
       ...items,
-      {
-        title: "",
-        subtitle: "",
-        badge: "",
-        buttonText: "",
-        buttonLink: "",
-        image: null,
-        fieldStyles: {},
-      },
+      newItemTemplate,
     ]);
+    // Select the newly created hero as active (last index)
+    if (sec) {
+      const id = sec.id;
+      const newLen = (newItems || []).length || 0;
+      setActiveHeroIndex((prev) => ({ ...prev, [id]: Math.max(0, newLen - 1) }));
+    }
   };
 
   const handleHeroItemFieldChange = async (
@@ -564,15 +599,23 @@ export default function LandingEditor() {
       const copy = [...items];
       const current = copy[itemIndex] || {};
       const currentFieldStyles = (current as any).fieldStyles || {};
-      const currentStyle = currentFieldStyles[fieldName] || {};
+      let currentStyle = currentFieldStyles[fieldName] || {};
+      if (currentStyle && (((currentStyle as any).desktop === undefined) && ((currentStyle as any).mobile === undefined))) {
+        currentStyle = { desktop: { ...(currentStyle as any) } } as any;
+      }
+      const deviceKey = previewDevice || "desktop";
+      const newFieldStyleForDevice = {
+        ...(((currentStyle as any)?.[deviceKey]) || {}),
+        [styleKey]: value,
+      };
 
       copy[itemIndex] = {
         ...current,
         fieldStyles: {
           ...currentFieldStyles,
           [fieldName]: {
-            ...currentStyle,
-            [styleKey]: value,
+            ...((currentStyle as any) || {}),
+            [deviceKey]: newFieldStyleForDevice,
           },
         },
       } as any;
@@ -606,10 +649,105 @@ export default function LandingEditor() {
     sectionIndex: number,
     itemIndex: number
   ) => {
+    const oldLen = ((sections[sectionIndex]?.props?.items as any[]) || []).length || 0;
     await updateHeroItems(sectionIndex, (items) =>
       items.filter((_, idx) => idx !== itemIndex)
     );
+    // Adjust active selection for this section
+    const sec = sections[sectionIndex];
+    if (sec) {
+      const id = sec.id;
+      const prevIdx = activeHeroIndex[id] ?? 0;
+      const newLen = Math.max(0, oldLen - 1);
+      const newIdx = Math.max(0, Math.min(prevIdx, newLen - 1 >= 0 ? newLen - 1 : 0));
+      setActiveHeroIndex((p) => ({ ...p, [id]: newIdx }));
+    }
   };
+
+  // ──────── Manejador para actualizar fieldPositions ──────────────────────────
+  const handleFieldPositionChange = async (
+    sectionIndex: number,
+    fieldPositions: Record<string, { desktop?: any; mobile?: any }>
+  ) => {
+    const updated = [...sections];
+    const current = updated[sectionIndex];
+    if (!current) return;
+
+    updated[sectionIndex] = {
+      ...current,
+      fieldPositions,
+    };
+
+    setSections(updated);
+    setSaving(true);
+    await saveLandingSections(updated);
+    setSaving(false);
+  };
+
+  // ──────── Crear callback memoizado para onPositionChange del editor ─────────
+  const [autosaveTimer, setAutosaveTimer] = useState<NodeJS.Timeout | null>(null);
+
+  const createPositionChangeHandler = useCallback(
+    (sectionIndex: number, itemIndex?: number) => (field: string, position: any) => {
+      const updated = [...sections];
+      const current = updated[sectionIndex];
+      if (!current) return;
+
+      // If this is a hero item position (itemIndex provided), store under props.items[itemIndex].fieldPositions
+      if (current.type === "hero" && typeof itemIndex === "number") {
+        const items = ((current.props?.items as any[]) || []) as any[];
+        const newItems = [...items];
+        const targetItem = { ...(newItems[itemIndex] || {}) };
+        const currentFieldPositions = (targetItem.fieldPositions || {}) as Record<string, any>;
+        const newFieldPositionsForItem = {
+          ...currentFieldPositions,
+          [field]: {
+            ...((currentFieldPositions[field] as any) || {}),
+            [previewDevice]: position,
+          },
+        };
+        targetItem.fieldPositions = newFieldPositionsForItem;
+        newItems[itemIndex] = targetItem;
+
+        updated[sectionIndex] = {
+          ...current,
+          props: {
+            ...(current.props || {}),
+            items: newItems,
+          },
+        };
+      } else {
+        const newFieldPositions = { ...(current.fieldPositions || {}) };
+        newFieldPositions[field] = {
+          ...newFieldPositions[field],
+          [previewDevice]: position,
+        };
+        updated[sectionIndex] = {
+          ...current,
+          fieldPositions: newFieldPositions,
+        };
+      }
+
+      setSections(updated);
+
+      // Autosave con debounce de 1s
+      if (autosaveTimer) clearTimeout(autosaveTimer);
+      const newTimer = setTimeout(async () => {
+        setSaving(true);
+        await saveLandingSections(updated);
+        setSaving(false);
+      }, 1000);
+      setAutosaveTimer(newTimer);
+    },
+    [sections, previewDevice, autosaveTimer]
+  );
+
+  // Cleanup del timer al desmontar
+  useEffect(() => {
+    return () => {
+      if (autosaveTimer) clearTimeout(autosaveTimer);
+    };
+  }, [autosaveTimer]);
 
   const updateGalleryItems = async (
     sectionIndex: number,
@@ -1103,12 +1241,15 @@ export default function LandingEditor() {
                             </div>
                           </div>
 
-                          {/* Tabs Contenido / Estilos / Avanzado */}
-                          <div className="flex gap-2 mb-3 text-[11px]">
+                          {/* Tabs Contenido / Estilos / Avanzado / Posiciones (si hero o banner) */}
+                          <div className="flex gap-2 mb-3 text-[11px] flex-wrap">
                             {[
                               { id: "content", label: "Contenido" },
                               { id: "styles", label: "Estilos" },
                               { id: "advanced", label: "Avanzado" },
+                              ...(section.type === "hero" || section.type === "banner"
+                                ? [{ id: "positioning", label: "Posiciones" }]
+                                : []),
                             ].map((tab) => (
                               <button
                                 key={tab.id}
@@ -1120,7 +1261,8 @@ export default function LandingEditor() {
                                       tab.id as
                                         | "content"
                                         | "styles"
-                                        | "advanced",
+                                        | "advanced"
+                                        | "positioning",
                                   }))
                                 }
                                 className={`px-2 py-1 rounded-full border text-xs ${
@@ -1139,8 +1281,15 @@ export default function LandingEditor() {
                             const schema = sectionSchemas[section.type];
                             if (!schema) return null;
                             const props = section.props || {};
+                            const heroItems = (props?.items as any[]) || [];
+                            const activeHeroIdx = activeHeroIndex[section.id] ?? 0;
                             const styles = section.styles || {};
-                            const fieldStyles = section.fieldStyles || {};
+                            // If editing a hero item, prefer the item's fieldStyles so the editor
+                            // reflects and edits the active variant. Otherwise fall back to section styles.
+                            const fieldStyles =
+                              section.type === "hero" && heroItems.length > 0
+                                ? (heroItems[activeHeroIdx]?.fieldStyles || {})
+                                : (section.fieldStyles || {});
 
                             const contentFields = schema.fields.filter(
                               (f: any) => !f.group || f.group === "content"
@@ -1159,10 +1308,23 @@ export default function LandingEditor() {
                                       Contenido
                                     </h4>
                                     {contentFields.map((field: any) => {
-                                      const value = props[field.name] ?? "";
+                                      let value = props[field.name] ?? "";
+                                      if (section.type === "hero" && Array.isArray(heroItems) && heroItems.length > 0) {
+                                        value = (heroItems[activeHeroIdx] && (heroItems[activeHeroIdx][field.name] ?? "")) || "";
+                                      }
                                       const isStylable = field.stylable;
                                       const isActiveField = activeFieldStyles[section.id] === field.name;
-                                      const currentFieldStyle = fieldStyles[field.name] || {};
+                                      const rawFieldStyle = fieldStyles[field.name] || {};
+                                      let currentFieldStyle: any = {};
+                                      // Normalize device-scoped styles: prefer current previewDevice, fallback to desktop, then legacy flat shape
+                                      if (rawFieldStyle) {
+                                        if ((rawFieldStyle as any).desktop === undefined && (rawFieldStyle as any).mobile === undefined) {
+                                          // legacy flat shape
+                                          currentFieldStyle = rawFieldStyle;
+                                        } else {
+                                          currentFieldStyle = (rawFieldStyle as any)[previewDevice] || (rawFieldStyle as any).desktop || {};
+                                        }
+                                      }
 
                                       // Checkbox Google Maps
                                       if (field.type === "boolean" && field.name === "googleMaps") {
@@ -1198,11 +1360,9 @@ export default function LandingEditor() {
                                                 placeholder={field.label}
                                                 value={value}
                                                 onChange={(e) =>
-                                                  handleSectionPropChange(
-                                                    idx,
-                                                    field.name,
-                                                    e.target.value
-                                                  )
+                                                  section.type === "hero" && Array.isArray(heroItems) && heroItems.length > 0
+                                                    ? handleHeroItemFieldChange(idx, activeHeroIdx, field.name, e.target.value)
+                                                    : handleSectionPropChange(idx, field.name, e.target.value)
                                                 }
                                               />
                                               {isStylable && (
@@ -1239,12 +1399,20 @@ export default function LandingEditor() {
                                                     className="h-6 w-8 border rounded"
                                                     value={currentFieldStyle.color || "#000000"}
                                                     onChange={(e) =>
-                                                      handleFieldStyleChange(
-                                                        idx,
-                                                        field.name,
-                                                        "color",
-                                                        e.target.value
-                                                      )
+                                                      section.type === "hero" && heroItems.length > 0
+                                                        ? handleHeroItemFieldStyleChange(
+                                                            idx,
+                                                            activeHeroIdx,
+                                                            field.name,
+                                                            "color",
+                                                            e.target.value
+                                                          )
+                                                        : handleFieldStyleChange(
+                                                            idx,
+                                                            field.name,
+                                                            "color",
+                                                            e.target.value
+                                                          )
                                                     }
                                                   />
                                                 </div>
@@ -1257,15 +1425,20 @@ export default function LandingEditor() {
                                                       : "bg-white text-slate-700 border-slate-300"
                                                   }`}
                                                   onClick={() =>
-                                                    handleFieldStyleChange(
-                                                      idx,
-                                                      field.name,
-                                                      "fontWeight",
-                                                      currentFieldStyle.fontWeight ===
-                                                        "bold"
-                                                        ? "normal"
-                                                        : "bold"
-                                                    )
+                                                    section.type === "hero" && heroItems.length > 0
+                                                      ? handleHeroItemFieldStyleChange(
+                                                          idx,
+                                                          activeHeroIdx,
+                                                          field.name,
+                                                          "fontWeight",
+                                                          currentFieldStyle.fontWeight === "bold" ? "normal" : "bold"
+                                                        )
+                                                      : handleFieldStyleChange(
+                                                          idx,
+                                                          field.name,
+                                                          "fontWeight",
+                                                          currentFieldStyle.fontWeight === "bold" ? "normal" : "bold"
+                                                        )
                                                   }
                                                 >
                                                   <span className="material-icons-round text-[14px]">format_bold</span>
@@ -1279,15 +1452,20 @@ export default function LandingEditor() {
                                                       : "bg-white text-slate-700 border-slate-300"
                                                   }`}
                                                   onClick={() =>
-                                                    handleFieldStyleChange(
-                                                      idx,
-                                                      field.name,
-                                                      "fontStyle",
-                                                      currentFieldStyle.fontStyle ===
-                                                        "italic"
-                                                        ? "normal"
-                                                        : "italic"
-                                                    )
+                                                    section.type === "hero" && heroItems.length > 0
+                                                      ? handleHeroItemFieldStyleChange(
+                                                          idx,
+                                                          activeHeroIdx,
+                                                          field.name,
+                                                          "fontStyle",
+                                                          currentFieldStyle.fontStyle === "italic" ? "normal" : "italic"
+                                                        )
+                                                      : handleFieldStyleChange(
+                                                          idx,
+                                                          field.name,
+                                                          "fontStyle",
+                                                          currentFieldStyle.fontStyle === "italic" ? "normal" : "italic"
+                                                        )
                                                   }
                                                 >
                                                   <span className="material-icons-round text-[14px]">format_italic</span>
@@ -1301,15 +1479,20 @@ export default function LandingEditor() {
                                                       : "bg-white text-slate-700 border-slate-300"
                                                   }`}
                                                   onClick={() =>
-                                                    handleFieldStyleChange(
-                                                      idx,
-                                                      field.name,
-                                                      "textDecoration",
-                                                      currentFieldStyle.textDecoration ===
-                                                        "underline"
-                                                        ? "none"
-                                                        : "underline"
-                                                    )
+                                                    section.type === "hero" && heroItems.length > 0
+                                                      ? handleHeroItemFieldStyleChange(
+                                                          idx,
+                                                          activeHeroIdx,
+                                                          field.name,
+                                                          "textDecoration",
+                                                          currentFieldStyle.textDecoration === "underline" ? "none" : "underline"
+                                                        )
+                                                      : handleFieldStyleChange(
+                                                          idx,
+                                                          field.name,
+                                                          "textDecoration",
+                                                          currentFieldStyle.textDecoration === "underline" ? "none" : "underline"
+                                                        )
                                                   }
                                                 >
                                                   <span className="material-icons-round text-[14px]">format_underlined</span>
@@ -1322,12 +1505,20 @@ export default function LandingEditor() {
                                                     placeholder="16px"
                                                     value={currentFieldStyle.fontSize || ""}
                                                     onChange={(e) =>
-                                                      handleFieldStyleChange(
-                                                        idx,
-                                                        field.name,
-                                                        "fontSize",
-                                                        e.target.value
-                                                      )
+                                                      section.type === "hero" && heroItems.length > 0
+                                                        ? handleHeroItemFieldStyleChange(
+                                                            idx,
+                                                            activeHeroIdx,
+                                                            field.name,
+                                                            "fontSize",
+                                                            e.target.value
+                                                          )
+                                                        : handleFieldStyleChange(
+                                                            idx,
+                                                            field.name,
+                                                            "fontSize",
+                                                            e.target.value
+                                                          )
                                                     }
                                                   />
                                                 </div>
@@ -1341,13 +1532,21 @@ export default function LandingEditor() {
                                                         type="color"
                                                         className="h-6 w-8 border rounded"
                                                         value={currentFieldStyle.backgroundColor || "#000000"}
-                                                        onChange={(e) =>
-                                                          handleFieldStyleChange(
-                                                            idx,
-                                                            field.name,
-                                                            "backgroundColor",
-                                                            e.target.value
-                                                          )
+                                                          onChange={(e) =>
+                                                          section.type === "hero" && heroItems.length > 0
+                                                            ? handleHeroItemFieldStyleChange(
+                                                                idx,
+                                                                activeHeroIdx,
+                                                                field.name,
+                                                                "backgroundColor",
+                                                                e.target.value
+                                                              )
+                                                            : handleFieldStyleChange(
+                                                                idx,
+                                                                field.name,
+                                                                "backgroundColor",
+                                                                e.target.value
+                                                              )
                                                         }
                                                       />
                                                     </div>
@@ -1358,13 +1557,21 @@ export default function LandingEditor() {
                                                         className="w-20 border rounded px-1 py-0.5 text-[11px]"
                                                         placeholder="9999px"
                                                         value={currentFieldStyle.borderRadius || ""}
-                                                        onChange={(e) =>
-                                                          handleFieldStyleChange(
-                                                            idx,
-                                                            field.name,
-                                                            "borderRadius",
-                                                            e.target.value
-                                                          )
+                                                          onChange={(e) =>
+                                                          section.type === "hero" && heroItems.length > 0
+                                                            ? handleHeroItemFieldStyleChange(
+                                                                idx,
+                                                                activeHeroIdx,
+                                                                field.name,
+                                                                "borderRadius",
+                                                                e.target.value
+                                                              )
+                                                            : handleFieldStyleChange(
+                                                                idx,
+                                                                field.name,
+                                                                "borderRadius",
+                                                                e.target.value
+                                                              )
                                                         }
                                                       />
                                                     </div>
@@ -1375,13 +1582,21 @@ export default function LandingEditor() {
                                                         className="w-16 border rounded px-1 py-0.5 text-[11px]"
                                                         placeholder="12px"
                                                         value={currentFieldStyle.paddingInline || ""}
-                                                        onChange={(e) =>
-                                                          handleFieldStyleChange(
-                                                            idx,
-                                                            field.name,
-                                                            "paddingInline",
-                                                            e.target.value
-                                                          )
+                                                          onChange={(e) =>
+                                                          section.type === "hero" && heroItems.length > 0
+                                                            ? handleHeroItemFieldStyleChange(
+                                                                idx,
+                                                                activeHeroIdx,
+                                                                field.name,
+                                                                "paddingInline",
+                                                                e.target.value
+                                                              )
+                                                            : handleFieldStyleChange(
+                                                                idx,
+                                                                field.name,
+                                                                "paddingInline",
+                                                                e.target.value
+                                                              )
                                                         }
                                                       />
                                                       <span className="text-slate-600">Y</span>
@@ -1390,13 +1605,21 @@ export default function LandingEditor() {
                                                         className="w-16 border rounded px-1 py-0.5 text-[11px]"
                                                         placeholder="6px"
                                                         value={currentFieldStyle.paddingBlock || ""}
-                                                        onChange={(e) =>
-                                                          handleFieldStyleChange(
-                                                            idx,
-                                                            field.name,
-                                                            "paddingBlock",
-                                                            e.target.value
-                                                          )
+                                                          onChange={(e) =>
+                                                          section.type === "hero" && heroItems.length > 0
+                                                            ? handleHeroItemFieldStyleChange(
+                                                                idx,
+                                                                activeHeroIdx,
+                                                                field.name,
+                                                                "paddingBlock",
+                                                                e.target.value
+                                                              )
+                                                            : handleFieldStyleChange(
+                                                                idx,
+                                                                field.name,
+                                                                "paddingBlock",
+                                                                e.target.value
+                                                              )
                                                         }
                                                       />
                                                     </div>
@@ -2231,7 +2454,11 @@ export default function LandingEditor() {
                                               {heroItems.map((item, itemIndex) => (
                                                 <div
                                                   key={itemIndex}
-                                                  className="shrink-0 w-72 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 p-3 flex flex-col gap-2"
+                                                  className={`shrink-0 w-72 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 p-3 flex flex-col gap-2 ${
+                                                    (activeHeroIndex[section.id] ?? 0) === itemIndex
+                                                      ? "ring-2 ring-purple-500"
+                                                      : ""
+                                                  }`}
                                                 >
                                                   {(() => {
                                                     const active =
@@ -2253,8 +2480,15 @@ export default function LandingEditor() {
                                                       const isThisFieldActive =
                                                         isActive &&
                                                         active?.fieldName === fieldName;
-                                                      const currentFieldStyle =
-                                                        itemFieldStyles[fieldName] || {};
+                                                      const rawFieldStyle = itemFieldStyles[fieldName] || {};
+                                                      let currentFieldStyle: any = {};
+                                                      if (rawFieldStyle) {
+                                                        if ((rawFieldStyle as any).desktop === undefined && (rawFieldStyle as any).mobile === undefined) {
+                                                          currentFieldStyle = rawFieldStyle;
+                                                        } else {
+                                                          currentFieldStyle = (rawFieldStyle as any)[previewDevice] || (rawFieldStyle as any).desktop || {};
+                                                        }
+                                                      }
 
                                                       return (
                                                         <div className="space-y-1">
@@ -2512,9 +2746,24 @@ export default function LandingEditor() {
                                                     return (
                                                       <>
                                                         <div className="flex items-center justify-between gap-2 mb-1">
-                                                          <span className="text-[11px] font-semibold text-slate-500">
+                                                          <button
+                                                            type="button"
+                                                            className="text-[11px] font-semibold text-slate-500 text-left"
+                                                            onClick={() =>
+                                                              setActiveHeroIndex((prev) => {
+                                                                const cur = prev[section.id];
+                                                                const copy = { ...prev };
+                                                                if (cur === itemIndex) {
+                                                                  // deselect
+                                                                  delete copy[section.id];
+                                                                  return copy;
+                                                                }
+                                                                return { ...prev, [section.id]: itemIndex };
+                                                              })
+                                                            }
+                                                          >
                                                             Hero {itemIndex + 1}
-                                                          </span>
+                                                          </button>
                                                           <button
                                                             type="button"
                                                             className="text-[10px] px-2 py-0.5 rounded bg-red-600 text-white hover:bg-red-700"
@@ -2735,6 +2984,90 @@ export default function LandingEditor() {
                                     dispositivo, animaciones, etc.
                                   </div>
                                 )}
+
+                                {/* Posiciones (para hero y banner) */}
+                                {currentTab === "positioning" && (section.type === "hero" || section.type === "banner") && (
+                                  <div className="space-y-3 -mx-4 -my-2">
+                                    <div className="text-xs text-slate-600 dark:text-slate-300 mb-2 px-4 pt-3">
+                                      Arrastra y redimensiona los elementos para posicionarlos. Las posiciones se aplican de forma independiente en desktop y mobile.
+                                    </div>
+
+                                    {/* Selector de device */}
+                                    <div className="flex gap-2 px-4">
+                                      <button
+                                        type="button"
+                                        className={`px-3 py-1.5 rounded-full border text-xs font-medium transition-all ${
+                                          previewDevice === "desktop"
+                                            ? "bg-purple-100 text-purple-700 border-purple-300 shadow-sm"
+                                            : "bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200"
+                                        }`}
+                                        onClick={() => setPreviewDevice("desktop")}
+                                      >
+                                        <span className="material-icons-round inline text-[14px] mr-1">laptop_windows</span>
+                                        Desktop
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className={`px-3 py-1.5 rounded-full border text-xs font-medium transition-all ${
+                                          previewDevice === "mobile"
+                                            ? "bg-purple-100 text-purple-700 border-purple-300 shadow-sm"
+                                            : "bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200"
+                                        }`}
+                                        onClick={() => setPreviewDevice("mobile")}
+                                      >
+                                        <span className="material-icons-round inline text-[14px] mr-1">smartphone</span>
+                                        Mobile
+                                      </button>
+                                    </div>
+
+                                    {/* DraggablePreviewEditor - con padding para scrollear si es muy grande */}
+                                    <div className="bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 py-6 px-4 overflow-x-auto min-h-fit">
+                                      {(() => {
+                                        const heroItems = (section.props?.items as any[]) || [];
+                                        const activeIdx = activeHeroIndex[section.id];
+                                        const positionsToPass =
+                                          section.type === "hero"
+                                            ? typeof activeIdx === "number"
+                                              ? heroItems[activeIdx]?.fieldPositions || {}
+                                              : (section.fieldPositions || {})
+                                            : (section.fieldPositions || {});
+
+                                        return (
+                                          <DraggablePreviewEditor
+                                            key={`${section.id}-${String(activeIdx)}-${previewDevice}`}
+                                            sectionType={section.type as "hero" | "banner"}
+                                            device={previewDevice}
+                                            positions={positionsToPass}
+                                            values={
+                                              section.type === "hero" && typeof activeIdx === "number" && heroItems[activeIdx]
+                                                ? heroItems[activeIdx]
+                                                : ((section.props as any) || {})
+                                            }
+                                            onPositionChange={createPositionChangeHandler(
+                                              idx,
+                                              section.type === "hero" && typeof activeIdx === "number" ? activeIdx : undefined
+                                            )}
+                                            image={(section.props as any)?.image || (section.props as any)?.backgroundImage}
+                                          />
+                                        );
+                                      })()}
+                                    </div>
+
+                                    {/* Botón guardar posiciones */}
+                                    <button
+                                      type="button"
+                                      className="w-full mx-4 px-3 py-2 rounded bg-purple-600 text-white text-xs font-medium hover:bg-purple-700 transition-colors"
+                                      onClick={async () => {
+                                        setSaving(true);
+                                        await saveLandingSections(sections);
+                                        setSaving(false);
+                                      }}
+                                      disabled={saving}
+                                    >
+                                      {saving ? "Guardando..." : "Guardar posiciones"}
+                                    </button>
+                                  </div>
+                                )}
                               </div>
                             );
                           })()}
@@ -2856,13 +3189,12 @@ export default function LandingEditor() {
               </button>
             </div>
           </div>
-          <p className="text-xs text-slate-500 mb-3">
-            Usa los controles de arriba para previsualizar la landing en un
-            marco similar a laptop o a un teléfono móvil. El layout real
-            depende del ancho de la ventana del navegador.
+          <p className="text-sm text-slate-500 mb-3">
+            Para ver exactamente lo que se vera en la pagina principal, da click en el icono del ojo
           </p>
           <div className="flex justify-center">
             <div
+              key={previewDevice}
               className={
                 previewDevice === "mobile"
                   ? "w-[390px] max-w-full border border-slate-300 dark:border-slate-700 rounded-[2.5rem] p-4 bg-slate-100 dark:bg-slate-900 shadow-inner"
@@ -2883,7 +3215,9 @@ export default function LandingEditor() {
                           buttonText: hero.buttonText,
                           buttonLink: hero.buttonLink,
                           image: hero.image,
+                          device: previewDevice,
                         },
+                        fieldPositions: (hero as any).fieldPositions || {},
                         styles: {},
                         order: 0,
                         hidden: false,
@@ -2894,28 +3228,34 @@ export default function LandingEditor() {
                   {sections
                     .slice()
                     .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-                    .map((section) => (
-                      <SectionRenderer
-                        key={section.id}
-                        section={{
-                          ...section,
-                          // Secciones con datos dinámicos
-                          props:
-                            section.type === "featuredProducts"
-                              ? {
-                                  ...(section.props || {}),
-                                  products: featuredProducts,
-                                  device: previewDevice,
-                                }
-                              : section.type === "featuredCategories"
-                              ? {
-                                  ...(section.props || {}),
-                                  device: previewDevice,
-                                }
-                              : section.props,
-                        }}
-                      />
-                    ))}
+                    .map((section) => {
+                      // Build preview section; if hero and an item is active, render that item only
+                      let previewSection = { ...section } as any;
+                      if (section.type === "featuredProducts") {
+                        previewSection.props = { ...(section.props || {}), products: featuredProducts, device: previewDevice };
+                      } else if (section.type === "featuredCategories") {
+                        previewSection.props = { ...(section.props || {}), device: previewDevice };
+                      } else if (section.type === "hero") {
+                        const items = (section.props?.items as any[]) || [];
+                        const activeIdx = activeHeroIndex[section.id];
+                        if (typeof activeIdx === "number" && items[activeIdx]) {
+                          const item = items[activeIdx];
+                          // Pass the active item inside `props.items` so HeroSection treats
+                          // it as an item and preserves its internal `fieldStyles`/`fieldPositions`.
+                          previewSection.props = { ...(section.props || {}), items: [{ ...(section.props || {}), ...(item || {}) }], device: previewDevice };
+                          previewSection.fieldPositions = item.fieldPositions || {};
+                          previewSection.fieldStyles = item.fieldStyles || previewSection.fieldStyles || {};
+                        } else {
+                          previewSection.props = { ...(section.props || {}), device: previewDevice };
+                          previewSection.fieldPositions = section.fieldPositions || {};
+                          previewSection.fieldStyles = previewSection.fieldStyles || section.fieldStyles || {};
+                        }
+                      } else {
+                        previewSection.props = { ...(section.props || {}), device: previewDevice };
+                      }
+
+                      return <SectionRenderer key={section.id} section={previewSection} />;
+                    })}
                       {/* Botón para abrir modal de selección de comentarios Google Maps */}
                       <div className="my-6">
                         <button
@@ -2968,6 +3308,7 @@ export default function LandingEditor() {
             </button>
 
             <div
+              key={previewDevice + "-modal"}
               className={
                 previewDevice === "mobile"
                   ? "w-103.5 max-w-full max-h-[85vh] overflow-y-auto rounded-4xl border border-slate-300 bg-slate-100 dark:bg-slate-900 shadow-xl"
@@ -2987,9 +3328,11 @@ export default function LandingEditor() {
                             badge: (hero as any).badge,
                             buttonText: hero.buttonText,
                             buttonLink: hero.buttonLink,
-                            image: hero.image,
+                              image: hero.image,
+                              device: previewDevice,
                           },
-                          styles: {},
+                            fieldPositions: (hero as any).fieldPositions || {},
+                            styles: {},
                           order: 0,
                           hidden: false,
                         }}
@@ -2999,27 +3342,33 @@ export default function LandingEditor() {
                     {sections
                       .slice()
                       .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-                      .map((section) => (
-                        <SectionRenderer
-                          key={section.id}
-                          section={{
-                            ...section,
-                            props:
-                              section.type === "featuredProducts"
-                                ? {
-                                    ...(section.props || {}),
-                                    products: featuredProducts,
-                                    device: previewDevice,
-                                  }
-                                : section.type === "featuredCategories"
-                                ? {
-                                    ...(section.props || {}),
-                                    device: previewDevice,
-                                  }
-                                : section.props,
-                          }}
-                        />
-                      ))}
+                      .map((section) => {
+                        let previewSection = { ...section } as any;
+                        if (section.type === "featuredProducts") {
+                          previewSection.props = { ...(section.props || {}), products: featuredProducts, device: previewDevice };
+                        } else if (section.type === "featuredCategories") {
+                          previewSection.props = { ...(section.props || {}), device: previewDevice };
+                        } else if (section.type === "hero") {
+                          const items = (section.props?.items as any[]) || [];
+                          const activeIdx = activeHeroIndex[section.id];
+                            if (typeof activeIdx === "number" && items[activeIdx]) {
+                              const item = items[activeIdx];
+                              previewSection.props = { ...(section.props || {}), items: [{ ...(section.props || {}), ...(item || {}) }], device: previewDevice };
+                              previewSection.fieldPositions = item.fieldPositions || {};
+                              previewSection.fieldStyles = item.fieldStyles || previewSection.fieldStyles || {};
+                            } else {
+                              previewSection.props = { ...(section.props || {}), device: previewDevice };
+                              previewSection.fieldPositions = section.fieldPositions || {};
+                              previewSection.fieldStyles = previewSection.fieldStyles || section.fieldStyles || {};
+                            }
+                        } else {
+                          previewSection.props = { ...(section.props || {}), device: previewDevice };
+                        }
+
+                        // debug logs removed
+
+                        return <SectionRenderer key={section.id} section={previewSection} />;
+                      })}
                   </main>
               </div>
             </div>

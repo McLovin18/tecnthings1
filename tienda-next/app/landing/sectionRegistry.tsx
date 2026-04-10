@@ -52,7 +52,7 @@ export function SectionRenderer({ section }: { section: LandingSection }) {
     );
   }
 
-  const { props = {}, styles, fieldStyles } = section;
+  const { props = {}, styles, fieldStyles, fieldPositions } = section;
   // Si es googleComments, parsear comments si es string
   let parsedProps = { ...props };
   if (section.type === "googleComments" && typeof props.comments === "string") {
@@ -62,5 +62,7 @@ export function SectionRenderer({ section }: { section: LandingSection }) {
       parsedProps.comments = [];
     }
   }
-  return <Component {...parsedProps} styles={styles} fieldStyles={fieldStyles} />;
+  
+
+  return <Component {...parsedProps} styles={styles} fieldStyles={fieldStyles} fieldPositions={fieldPositions} />;
 }

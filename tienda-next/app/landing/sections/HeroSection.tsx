@@ -4,6 +4,7 @@ import React from "react";
 import type {
   LandingSectionStyles,
   LandingFieldStyle,
+  FieldPosition,
 } from "../../lib/landing-types";
 
 // ── Hook ────────────────────────────────────────────────────────────────────
@@ -51,12 +52,17 @@ type HeroItem = {
   ratingCount?: number;
   generalMessage?: string;
   fieldStyles?: Record<string, LandingFieldStyle>;
+  fieldPositions?: Record<string, { desktop?: FieldPosition; mobile?: FieldPosition }>;
 };
 
 export type HeroSectionProps = {
   title?: string;
   subtitle?: string;
   badge?: string;
+  titleMobileFontSize?: string | number;
+  subtitleMobileFontSize?: string | number;
+  badgeMobileFontSize?: string | number;
+  buttonTextMobileFontSize?: string | number;
   googleMaps?: boolean;
   rating?: number;
   ratingCount?: number;
@@ -66,7 +72,10 @@ export type HeroSectionProps = {
   image?: string | null;
   styles?: LandingSectionStyles;
   fieldStyles?: Record<string, LandingFieldStyle>;
+  fieldPositions?: Record<string, { desktop?: FieldPosition; mobile?: FieldPosition }>;
   items?: HeroItem[];
+  // When provided by an editor/preview, forces rendering for that device
+  device?: "desktop" | "mobile";
 };
 
 // ── Componente de estrellas ──────────────────────────────────────────────────
@@ -109,19 +118,77 @@ export default function HeroSection({
   title,
   subtitle,
   badge,
+  titleMobileFontSize,
+  subtitleMobileFontSize,
+  badgeMobileFontSize,
+  buttonTextMobileFontSize,
   buttonText,
   buttonLink,
   image,
   styles,
   fieldStyles,
+  fieldPositions,
   items,
   googleMaps,
   generalMessage,
+  device,
 }: HeroSectionProps) {
+  
   const bg = styles?.backgroundColor;
   const color = styles?.textColor;
   const textAlign: React.CSSProperties["textAlign"] = styles?.textAlign || "center";
   const borderRadius = styles?.borderRadius || "1.5rem";
+
+  // Dimensiones base de la imagen en píxeles
+  const BASE_IMAGE_WIDTH = 2400;
+  const BASE_IMAGE_HEIGHT = 1000;
+  const BASE_ASPECT_RATIO = BASE_IMAGE_WIDTH / BASE_IMAGE_HEIGHT; // 2.4
+
+  // ── Helper para convertir posiciones de píxeles a porcentajes
+  // positionsSource: se puede pasar `current.fieldPositions` para priorizar posiciones por item
+  const getPositioningStyle = (
+    fieldName: string,
+    isDesktop: boolean,
+    positionsSource?: Record<string, { desktop?: FieldPosition; mobile?: FieldPosition }>
+  ): React.CSSProperties => {
+    const src = positionsSource || fieldPositions;
+    if (!src?.[fieldName]) return {};
+
+    const position = isDesktop ? src[fieldName].desktop : src[fieldName].mobile;
+    if (!position) return {};
+
+    // Convertir píxeles a porcentajes relativos a las dimensiones base
+    const style = {
+      ...(position.left !== undefined && { left: `${(position.left / BASE_IMAGE_WIDTH) * 100}%` }),
+      ...(position.top !== undefined && { top: `${(position.top / BASE_IMAGE_HEIGHT) * 100}%` }),
+      // Para badge y buttonText dejamos que el contenido determine el tamaño
+      ...((fieldName !== "badge" && fieldName !== "buttonText" && position.width !== undefined) && { width: `${(position.width / BASE_IMAGE_WIDTH) * 50}%` }),
+      ...((fieldName !== "badge" && fieldName !== "buttonText" && position.height !== undefined) && { height: `${(position.height / BASE_IMAGE_HEIGHT) * 50}%` }),
+      ...(position.zIndex !== undefined && { zIndex: position.zIndex }),
+    };
+
+    // (no debug logs in production)
+
+    return style;
+  };
+
+  // ── Device detection: prefer explicit `device` prop from editor/preview when provided
+  const [isDesktop, setIsDesktop] = React.useState<boolean>(() => {
+    if (typeof device !== "undefined") return device === "desktop";
+    return typeof window !== "undefined" ? window.innerWidth >= 768 : true;
+  });
+
+  React.useEffect(() => {
+    if (typeof device !== "undefined") {
+      setIsDesktop(device === "desktop");
+      return;
+    }
+
+    const checkDesktop = () => setIsDesktop(window.innerWidth >= 768); // md breakpoint
+    checkDesktop();
+    window.addEventListener("resize", checkDesktop);
+    return () => window.removeEventListener("resize", checkDesktop);
+  }, [device]);
 
   const placeId = process.env.NEXT_PUBLIC_GOOGLE_MAPS_PLACE_ID;
   const hasGoogleMaps =
@@ -130,7 +197,6 @@ export default function HeroSection({
 
   // ── TODOS los hooks antes de cualquier return condicional ────────────────
   const [currentIndex, setCurrentIndex] = React.useState(0);
-  const [imageLoaded, setImageLoaded] = React.useState(false);
 
   const heroItems: HeroItem[] = (
     items && items.length
@@ -159,6 +225,8 @@ export default function HeroSection({
         ]
   ).filter((h) => h && (h.title || h.subtitle || h.image));
 
+  // debug logs removed
+
   const goToNext = React.useCallback(() => {
     setCurrentIndex((prev) => (prev + 1) % heroItems.length);
   }, [heroItems.length]);
@@ -176,74 +244,113 @@ export default function HeroSection({
     return () => clearInterval(id);
   }, [heroItems.length, goToNext]);
 
-  // Reset imageLoaded al cambiar de slide para aplicar fade-in en cada imagen
-  React.useEffect(() => {
-    setImageLoaded(false);
-  }, [currentIndex]);
+  // No image preloading state — images render immediately
 
   // ── Return condicional DESPUÉS de todos los hooks ────────────────────────
   if (!heroItems.length) return null;
 
   const current = heroItems[Math.min(currentIndex, heroItems.length - 1)];
   const currentFieldStyles = current.fieldStyles || {};
+  const currentFieldPositions = current.fieldPositions || fieldPositions || {};
 
-  const badgeStyle: React.CSSProperties = {
-    ...(fieldStyles?.badge || {}),
-    ...(currentFieldStyles.badge || {}),
+  // debug logs removed
+
+  // Helper para resolver estilos por campo considerando legacy y device-aware shape
+  const resolveFieldStyle = (fieldName: string): React.CSSProperties => {
+    const top = (fieldStyles as any)?.[fieldName] || {};
+    const item = (currentFieldStyles as any)[fieldName] || {};
+
+    const pickFor = (value: any) => {
+      if (!value) return {};
+      if (value.desktop !== undefined || value.mobile !== undefined) {
+        return isDesktop ? value.desktop || {} : value.mobile || {};
+      }
+      return value;
+    };
+
+    const topPicked = pickFor(top);
+    const itemPicked = pickFor(item);
+
+    return {
+      ...topPicked,
+      ...itemPicked,
+      ...getPositioningStyle(fieldName, isDesktop, currentFieldPositions),
+    } as React.CSSProperties;
   };
-  const titleStyle: React.CSSProperties = {
-    ...(fieldStyles?.title || {}),
-    ...(currentFieldStyles.title || {}),
+
+  const badgeStyle: React.CSSProperties = resolveFieldStyle("badge");
+  const titleStyle: React.CSSProperties = resolveFieldStyle("title");
+  const subtitleStyle: React.CSSProperties = resolveFieldStyle("subtitle");
+  const buttonTextStyle: React.CSSProperties = resolveFieldStyle("buttonText");
+
+  // Aplicar tamaños de fuente móvil si están definidos (priorizar item > props)
+  const getMobileFontSizeFor = (fieldName: string): string | undefined => {
+    // Priorizar valor por item (current)
+    const itemVal = (current as any)?.[`${fieldName}MobileFontSize`];
+    if (itemVal !== undefined && itemVal !== null) return typeof itemVal === "number" ? `${itemVal}px` : String(itemVal);
+
+    // Luego props a nivel de sección (destructurados arriba)
+    const topMap: Record<string, any> = {
+      title: titleMobileFontSize,
+      subtitle: subtitleMobileFontSize,
+      badge: badgeMobileFontSize,
+      buttonText: buttonTextMobileFontSize,
+    };
+    const topVal = topMap[fieldName];
+    if (topVal !== undefined && topVal !== null) return typeof topVal === "number" ? `${topVal}px` : String(topVal);
+
+    return undefined;
   };
-  const subtitleStyle: React.CSSProperties = {
-    ...(fieldStyles?.subtitle || {}),
-    ...(currentFieldStyles.subtitle || {}),
+
+  // Añadir fontSize a estilos si estamos en mobile y existe valor
+  if (!isDesktop) {
+    const tfs = getMobileFontSizeFor("title");
+    if (tfs) titleStyle.fontSize = tfs;
+    const sfs = getMobileFontSizeFor("subtitle");
+    if (sfs) subtitleStyle.fontSize = sfs;
+    const bfs = getMobileFontSizeFor("badge");
+    if (bfs) badgeStyle.fontSize = bfs;
+    const btnfs = getMobileFontSizeFor("buttonText");
+    if (btnfs) buttonTextStyle.fontSize = btnfs;
+  }
+
+  // Estilos inline para la variante por defecto (cuando no hay posicionamiento)
+  const defaultBadgeInlineStyle: React.CSSProperties = !isDesktop && getMobileFontSizeFor("badge") ? { fontSize: getMobileFontSizeFor("badge") } : {};
+  const defaultTitleInlineStyle: React.CSSProperties = !isDesktop && getMobileFontSizeFor("title") ? { fontSize: getMobileFontSizeFor("title") } : {};
+  const defaultSubtitleInlineStyle: React.CSSProperties = !isDesktop && getMobileFontSizeFor("subtitle") ? { fontSize: getMobileFontSizeFor("subtitle") } : {};
+  const defaultButtonInlineStyle: React.CSSProperties = !isDesktop && getMobileFontSizeFor("buttonText") ? { fontSize: getMobileFontSizeFor("buttonText") } : {};
+
+  
+
+  // Container style: include background image as fallback so hero shows image
+  const containerStyle: React.CSSProperties = {
+    ...(bg ? { backgroundColor: bg } : {}),
+    ...(color ? { color } : {}),
+    paddingTop: 0,
+    paddingBottom: 0,
+    textAlign,
   };
-  const buttonTextStyle: React.CSSProperties = {
-    ...(fieldStyles?.buttonText || {}),
-    ...(currentFieldStyles.buttonText || {}),
-  };
+
+  const innerStyle: React.CSSProperties = { borderRadius };
 
   return (
-    <section
-      style={{
-        ...(bg ? { backgroundColor: bg } : {}),
-        ...(color ? { color } : {}),
-        paddingTop: 0,
-        paddingBottom: 0,
-        textAlign,
-      }}
-      className=""
-    >
+    <section style={containerStyle} className="">
       <div
-        className="relative overflow-hidden w-full max-w-full aspect-[16/9] sm:aspect-[16/7] min-h-0 sm:min-h-[300px]"
-        style={{ borderRadius }}
+        className="relative overflow-hidden w-full max-w-full min-h-0"
+        style={innerStyle}
       >
-        {/* Placeholder/skeleton mientras la imagen carga */}
-        {current.image && !imageLoaded && (
-          <div
-            className="absolute inset-0 bg-slate-200 dark:bg-slate-800 animate-pulse"
-            style={{ borderRadius }}
-          />
-        )}
-
-        {/* Imagen de fondo con fade-in suave */}
         {current.image && (
           <img
+            key={currentIndex}
             src={current.image}
             alt={current.title || "Hero"}
             width={1920}
             height={840}
-            loading="lazy" // <--- AÑADE ESTO
-            decoding="async" // <--- AYUDA AL RENDIMIENTO
-            className="absolute inset-0 w-full h-full object-contain sm:object-cover"
-            style={{
-              borderRadius,
-              opacity: imageLoaded ? 1 : 0,
-              transition: "opacity 0.35s ease",
-            }}
+            loading="eager"
+            decoding="async"
+            className="w-full h-auto block"
+            style={{ borderRadius, display: "block" }}
             draggable={false}
-            onLoad={() => setImageLoaded(true)}
           />
         )}
 
@@ -274,6 +381,59 @@ export default function HeroSection({
           </div>
         )}
 
+        {/* Elementos posicionados personalizados (solo si tienen positioning) */}
+        {fieldPositions?.badge && current.badge && (
+          <span
+            className="absolute inline-block px-2 py-0.5 text-[6px] sm:px-3 sm:py-1 sm:text-xs font-bold tracking-widest uppercase bg-white/90 text-black dark:bg-slate-900/90 dark:text-white rounded-full shadow"
+            style={{
+              position: "absolute",
+              ...badgeStyle,
+            }}
+          >
+            {current.badge}
+          </span>
+        )}
+
+        {fieldPositions?.title && current.title && (
+          <h2
+            className="absolute text-xl sm:text-5xl lg:text-5xl font-extrabold text-white leading-tight drop-shadow-lg"
+            style={{
+              position: "absolute",
+              ...titleStyle,
+              maxWidth: "90%",
+            }}
+          >
+            {current.title}
+          </h2>
+        )}
+
+        {fieldPositions?.subtitle && current.subtitle && (
+          <p
+            className="absolute text-white/80 text-[9px] sm:text-sm drop-shadow"
+            style={{
+              position: "absolute",
+              ...subtitleStyle,
+              maxWidth: "90%",
+            }}
+          >
+            {current.subtitle}
+          </p>
+        )}
+
+        {fieldPositions?.buttonText && current.buttonText && (
+          <a
+            href={current.buttonLink || "/products-by-category"}
+            className="absolute inline-flex items-center gap-1 sm:gap-2 bg-white/95 hover:bg-white text-black font-bold text-[9px] sm:text-2xl px- py-1.5 sm:px-1 sm:py-4 rounded-2xl shadow-lg transition-all hover:scale-105 active:scale-95"
+            style={{
+              position: "absolute",
+              ...buttonTextStyle,
+            }}
+          >
+            <span>{current.buttonText}</span>
+            <span className="material-icons-round text-xs sm:text-sm">arrow_forward</span>
+          </a>
+        )}
+
         {/* Flechas de navegación */}
         {heroItems.length > 1 && (
           <>
@@ -296,49 +456,50 @@ export default function HeroSection({
           </>
         )}
 
-        {/* Contenido textual */}
-        <div className="absolute  left-0 right-0 bottom-7 z-20 flex flex-col items-start text-left gap-0 sm:gap-0 pb-1 px-2 sm:pb-4 sm:px-8 w-full max-w-full">
-          <div className="absolute sm:bottom-50 bottom-15">
-            {current.badge && (
-              <span
-                className="inline-block  px-2 py-0.5 text-[6px] sm:px-3 sm:py-1 sm:text-xs font-bold tracking-widest uppercase bg-white/90 text-black dark:bg-slate-900/90 dark:text-white rounded-full shadow"
-                style={badgeStyle}
-              >
-                {current.badge}
-              </span>
-            )}
-            {current.title && (
-              <h2
-                className="text-xl sm:text-5xl lg:text-5xl font-extrabold text-white leading-tight max-w-[90vw] sm:max-w-2xl drop-shadow-lg"
-                style={titleStyle}
-              >
-                {current.title}
-              </h2>
-            )}
-            {current.subtitle && (
-              <p
-                className="text-white/80 text-[9px] sm:text-sm max-w-[90vw] sm:max-w-2xl drop-shadow "
-                style={subtitleStyle}
-              >
-                {current.subtitle}
-              </p>
-            )}
-            
-          </div>
-
-          {current.buttonText && (
-            <div className="w-full flex justify-center sm:py-3 pb-5">
-              <a
-                href={current.buttonLink || "/products-by-category"}
-                className="inline-flex items-center gap-1 sm:gap-2 bg-white/95 hover:bg-white text-black font-bold text-[9px] sm:text-2xl px-3 py-1.5 sm:px-13 sm:py-4 rounded-2xl shadow-lg transition-all hover:scale-105 active:scale-95"
-                style={buttonTextStyle}
-              >
-                <span>{current.buttonText}</span>
-                <span className="material-icons-round text-xs sm:text-sm">arrow_forward</span>
-              </a>
+        {/* Contenido textual por defecto (sin posicionamiento personalizado) */}
+        {!fieldPositions?.badge && !fieldPositions?.title && !fieldPositions?.subtitle && (
+          <div className="absolute left-0 right-0 bottom-7 z-20 flex flex-col items-start text-left gap-0 sm:gap-0 pb-1 px-2 sm:pb-4 sm:px-8 w-full max-w-full">
+            <div className="absolute sm:bottom-50 bottom-15">
+                {current.badge && (
+                  <span
+                    className="inline-block px-2 py-0.5 text-[6px] sm:px-3 sm:py-1 sm:text-xs font-bold tracking-widest uppercase bg-white/90 text-black dark:bg-slate-900/90 dark:text-white rounded-full shadow"
+                    style={{ ...defaultBadgeInlineStyle, ...badgeStyle }}
+                  >
+                    {current.badge}
+                  </span>
+                )}
+                {current.title && (
+                  <h2
+                    className="text-xl sm:text-5xl lg:text-5xl font-extrabold text-white leading-tight max-w-[90vw] sm:max-w-2xl drop-shadow-lg"
+                    style={{ ...defaultTitleInlineStyle, ...titleStyle }}
+                  >
+                    {current.title}
+                  </h2>
+                )}
+                {current.subtitle && (
+                  <p
+                    className="text-white/80 text-[9px] sm:text-sm max-w-[90vw] sm:max-w-2xl drop-shadow"
+                    style={{ ...defaultSubtitleInlineStyle, ...subtitleStyle }}
+                  >
+                    {current.subtitle}
+                  </p>
+                )}
             </div>
-          )}
-        </div>
+
+            {current.buttonText && (
+              <div className="w-full flex justify-center sm:py-3 pb-5">
+                <a
+                  href={current.buttonLink || "/products-by-category"}
+                  className="inline-flex items-centersm:gap-2 bg-white/95 hover:bg-white text-black font-bold text-[9px] sm:text-2xl px-3 py-1.5 sm:px-4 sm:py-3 rounded-2xl shadow-lg transition-all hover:scale-105 active:scale-95"
+                  style={{ ...defaultButtonInlineStyle, ...buttonTextStyle }}
+                >
+                  <span>{current.buttonText}</span>
+                  <span className="material-icons-round text-xs sm:text-sm">arrow_forward</span>
+                </a>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Dots indicadores */}
         {heroItems.length > 1 && (

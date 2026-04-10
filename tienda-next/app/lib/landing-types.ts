@@ -23,6 +23,14 @@ export type HeroGoogleReview = {
   generalMessage?: string; // Mensaje general
 };
 
+export type FieldPosition = {
+  left?: number;
+  top?: number;
+  width?: number;
+  height?: number;
+  zIndex?: number;
+};
+
 export type LandingFieldStyle = {
   color?: string;
   fontWeight?: "normal" | "bold";
@@ -41,6 +49,7 @@ export type LandingSection = {
   props: Record<string, any>;
   styles?: LandingSectionStyles;
   fieldStyles?: Record<string, LandingFieldStyle>;
+  fieldPositions?: Record<string, { desktop?: FieldPosition; mobile?: FieldPosition }>;
   order: number;
   hidden?: boolean;
 };

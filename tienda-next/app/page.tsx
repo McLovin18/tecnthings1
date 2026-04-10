@@ -86,7 +86,7 @@ export default function Home() {
     <>
       {/* Botón flotante de WhatsApp aún más arriba */}
       <WhatsAppFloatingButton />
-      <div className="bg-white dark:bg-black text-slate-900 dark:text-white min-h-screen flex flex-col p-1">
+      <div className="bg-white dark:bg-black text-slate-900 dark:text-white py-2 min-h-screen flex flex-col">
         <main className="flex-1 pb-10 ">
           {/* Todas las secciones se renderizan de forma dinámica desde Firestore */}
           {sections

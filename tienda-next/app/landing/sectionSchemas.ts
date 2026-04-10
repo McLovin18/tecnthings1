@@ -7,9 +7,13 @@ export const sectionSchemas: { [key: string]: { type: string; label: string; ico
     fields: [
       { name: "googleMaps", type: "boolean", label: "¿Hero de Google Maps?", group: "content" },
       { name: "title", type: "text", label: "Título", group: "content", stylable: true },
+      { name: "titleMobileFontSize", type: "text", label: "Tamaño móvil (px) para Título", group: "styles", stylable: true },
       { name: "subtitle", type: "text", label: "Subtítulo", group: "content", stylable: true },
+      { name: "subtitleMobileFontSize", type: "text", label: "Tamaño móvil (px) para Subtítulo", group: "styles", stylable: true },
       { name: "badge", type: "text", label: "Badge", group: "content", stylable: true },
+      { name: "badgeMobileFontSize", type: "text", label: "Tamaño móvil (px) para Badge", group: "styles", stylable: true },
       { name: "buttonText", type: "text", label: "Texto del botón", group: "content", stylable: true },
+      { name: "buttonTextMobileFontSize", type: "text", label: "Tamaño móvil (px) para Botón", group: "styles", stylable: true },
       { name: "buttonLink", type: "text", label: "Enlace del botón", group: "content" },
       { name: "image", type: "image", label: "Imagen principal", group: "content" },
       // Campos especiales para Google Maps
@@ -43,6 +47,7 @@ export const sectionSchemas: { [key: string]: { type: string; label: string; ico
     icon: "star",
     fields: [
       { name: "title", type: "text", label: "Título", group: "content", stylable: true },
+      { name: "titleMobileFontSize", type: "text", label: "Tamaño móvil (px) para Título", group: "styles", stylable: true },
       { name: "subtitle", type: "text", label: "Subtítulo", group: "content", stylable: true },
       { name: "badge", type: "text", label: "Badge", group: "content", stylable: true },
       { name: "buttonText", type: "text", label: "Texto del botón", group: "content", stylable: true },
@@ -66,8 +71,11 @@ export const sectionSchemas: { [key: string]: { type: string; label: string; ico
     fields: [
       { name: "title", type: "text", label: "Título", group: "content", stylable: true },
       { name: "subtitle", type: "text", label: "Subtítulo 1", group: "content", stylable: true },
+      { name: "subtitleMobileFontSize", type: "text", label: "Tamaño móvil (px) para Subtítulo 1", group: "styles", stylable: true },
       { name: "subtitle2", type: "text", label: "Subtítulo 2 (opcional)", group: "content", stylable: true },
+      { name: "subtitle2MobileFontSize", type: "text", label: "Tamaño móvil (px) para Subtítulo 2", group: "styles", stylable: true },
       { name: "subtitle3", type: "text", label: "Subtítulo 3 (opcional)", group: "content", stylable: true },
+      { name: "subtitle3MobileFontSize", type: "text", label: "Tamaño móvil (px) para Subtítulo 3", group: "styles", stylable: true },
       { name: "backgroundImage", type: "image", label: "Imagen de fondo", group: "content" },
       { name: "backgroundColor", type: "color", label: "Color de fondo", group: "styles" },
       { name: "textColor", type: "color", label: "Color de texto", group: "styles" },
