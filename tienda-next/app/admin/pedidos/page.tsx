@@ -2,7 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { obtenerTodasOrdenes, actualizarOrden } from "../../lib/ordenes-db";
-import { obtenerProductoPorId } from "../../lib/productos-db";
+
+function getTodayYMD() {
+	const now = new Date();
+	return now.toISOString().slice(0, 10);
+}
 
 export default function PedidosAdminPage() {
 	const [ordenes, setOrdenes] = useState<any[]>([]);
@@ -10,6 +14,8 @@ export default function PedidosAdminPage() {
 	const [tab, setTab] = useState<"pendientes" | "aprobadas">("pendientes");
 	const [filtro, setFiltro] = useState("");
 	const [clientesMap, setClientesMap] = useState<Record<string, { displayName: string | null; email: string | null }>>({});
+	const [fechaDesde, setFechaDesde] = useState<string>(getTodayYMD());
+	const [fechaHasta, setFechaHasta] = useState<string>(getTodayYMD());
 
 	useEffect(() => {
 		async function load() {
@@ -31,9 +37,7 @@ export default function PedidosAdminPage() {
 
 	const calcularSubtotalProducto = (p: any) => {
 		const cantidad = Number(p.cantidad || 0);
-		if (p.subtotal !== undefined) {
-			return Number(p.subtotal || 0);
-		}
+		if (p.subtotal !== undefined) return Number(p.subtotal || 0);
 		const basePrice = p.precioBase !== undefined ? Number(p.precioBase || 0) : Number(p.precio || 0);
 		const discount = Number(p.descuento || 0);
 		const hasDiscount = !isNaN(discount) && discount > 0 && discount < 100;
@@ -48,9 +52,26 @@ export default function PedidosAdminPage() {
 		return (orden.productos || []).reduce((sum: number, p: any) => sum + calcularSubtotalProducto(p), 0);
 	};
 
-	const ordenesFiltradas = ordenes.filter((o) => {
-		if (tab === "pendientes" && o.estado !== "generada" && o.estado !== "pendiente_pago" && o.estado !== "pago_fallido") return false;
-		if (tab === "aprobadas" && o.estado !== "aprobada") return false;
+	const aprobarOrden = async (orden: any) => {
+		await actualizarOrden(orden.id, { estado: "aprobada" });
+		setOrdenes((prev) => prev.map((o) => o.id === orden.id ? { ...o, estado: "aprobada" } : o));
+	};
+
+	const rechazarOrden = async (orden: any) => {
+		const motivo = prompt("Motivo de rechazo (opcional):");
+		await actualizarOrden(orden.id, { estado: "rechazada", motivoRechazo: motivo || "" });
+		setOrdenes((prev) => prev.map((o) => o.id === orden.id ? { ...o, estado: "rechazada", motivoRechazo: motivo || "" } : o));
+	};
+
+	// Filtro por rango de fechas de visita
+	const estaEnRango = (visitaFecha: string | undefined) => {
+		if (!visitaFecha) return false;
+		if (fechaDesde && visitaFecha < fechaDesde) return false;
+		if (fechaHasta && visitaFecha > fechaHasta) return false;
+		return true;
+	};
+
+	const matchesBusqueda = (o: any) => {
 		if (!filtro.trim()) return true;
 		const term = filtro.trim().toLowerCase();
 		const clientInfo = o.userId ? clientesMap[o.userId] : null;
@@ -62,172 +83,253 @@ export default function PedidosAdminPage() {
 			(clientInfo?.displayName || "").toLowerCase().includes(term) ||
 			(clientInfo?.email || "").toLowerCase().includes(term)
 		);
-	});
-
-	const aprobarOrden = async (orden: any) => {
-		if (orden.estado !== "generada") return;
-		// Para pagos con Stripe, asegurarse de que el webhook haya marcado la orden como pagada
-		if (orden.metodoPago === "stripe" && orden.paymentStatus !== "paid") {
-			alert("La orden no está marcada como pagada aún. Espera a que llegue la confirmación del pago antes de aprobar.");
-			return;
-		}
-		if (!confirm(`Aprobar la orden ${orden.orderId || orden.id}?`)) return;
-		try {
-			// Actualizar stock de cada producto al aprobar
-			for (const p of orden.productos || []) {
-				const prod = await obtenerProductoPorId(p.id);
-				if (!prod) continue;
-				const stockActual = typeof prod.stock === "string" ? parseInt(prod.stock) : prod.stock || 0;
-				const cantidad = typeof p.cantidad === "string" ? parseInt(p.cantidad) : p.cantidad || 1;
-				const nuevoStock = stockActual - cantidad;
-				try {
-					await fetch("/api/admin/update-stock", {
-						method: "POST",
-						headers: { "Content-Type": "application/json" },
-						body: JSON.stringify({ id: p.id, stock: nuevoStock }),
-					});
-				} catch (e) {
-					console.error("Error al actualizar stock para producto", p.id, e);
-				}
-			}
-			await actualizarOrden(orden.id, { estado: "aprobada" });
-			setOrdenes((prev) => prev.map((o) => (o.id === orden.id ? { ...o, estado: "aprobada" } : o)));
-		} catch (e) {
-			console.error("Error al aprobar orden", e);
-		}
 	};
 
-	const rechazarOrden = async (orden: any) => {
-		if (orden.estado !== "generada") return;
-		const motivo = window.prompt(`Motivo del rechazo para ${orden.orderId || orden.id}:`);
-		if (!motivo) return;
-		try {
-			await actualizarOrden(orden.id, { estado: "rechazada", motivoRechazo: motivo });
-			setOrdenes((prev) => prev.map((o) => (o.id === orden.id ? { ...o, estado: "rechazada", motivoRechazo: motivo } : o)));
-		} catch (e) {
-			console.error("Error al rechazar orden", e);
-		}
+	const ordenesPendientes = ordenes.filter((o) =>
+		(o.estado === "generada" || o.estado === "pendiente_pago" || o.estado === "pago_fallido") &&
+		estaEnRango(o.visitaFecha) &&
+		matchesBusqueda(o)
+	);
+
+	const ordenesAprobadas = ordenes.filter((o) =>
+		o.estado === "aprobada" &&
+		estaEnRango(o.visitaFecha) &&
+		matchesBusqueda(o)
+	);
+
+	const ordenesMostradas = tab === "pendientes" ? ordenesPendientes : ordenesAprobadas;
+
+	const estadoBadge = (estado: string) => {
+		const map: Record<string, { label: string; className: string }> = {
+			generada:       { label: "✔ Generada",        className: "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300" },
+			aprobada:       { label: "✅ Aprobada",        className: "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300" },
+			pendiente_pago: { label: "⏳ Pago pendiente",  className: "bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300" },
+			pago_fallido:   { label: "❌ Pago fallido",    className: "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300" },
+			rechazada:      { label: "🚫 Rechazada",       className: "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300" },
+		};
+		const config = map[estado] || { label: estado, className: "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300" };
+		return (
+			<span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${config.className}`}>
+				{config.label}
+			</span>
+		);
 	};
+
+	const clienteBadge = (orden: any) => {
+		if (orden.userId) {
+			const info = clientesMap[orden.userId];
+			const label = info?.displayName || info?.email || orden.userEmail || orden.guestEmail || orden.userId;
+			const badgeClass = orden.claimedFromGuest
+				? "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300"
+				: "bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300";
+			return (
+				<span className="inline-flex items-center gap-1.5">
+					<span className={`px-2 py-0.5 rounded-full text-xs font-bold ${badgeClass}`}>
+						{orden.claimedFromGuest ? "Registrado" : "Cliente"}
+					</span>
+					<span className="font-semibold">{label}</span>
+				</span>
+			);
+		}
+		if (orden.guestEmail) {
+			return (
+				<span className="inline-flex items-center gap-1.5">
+					<span className="px-2 py-0.5 rounded-full bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-400 text-xs font-bold">Invitado</span>
+					<span className="font-semibold">{orden.guestEmail}</span>
+				</span>
+			);
+		}
+		return <span className="text-xs text-slate-400">Cliente invitado</span>;
+	};
+
+	const OrdenCard = ({ orden }: { orden: any }) => (
+		<div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-5 hover:shadow-md transition-shadow">
+			{/* Header */}
+			<div className="flex justify-between items-start mb-3 flex-wrap gap-2">
+				<div className="flex items-center gap-2">
+					<span className="font-bold text-lg text-slate-800 dark:text-slate-100">
+						{orden.orderId || `#${orden.id.slice(-6)}`}
+					</span>
+					{orden.metodoPago === "stripe" && (
+						<span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-700">
+							💳 Stripe
+						</span>
+					)}
+				</div>
+				{estadoBadge(orden.estado)}
+			</div>
+
+			{/* Info */}
+			<div className="space-y-1 mb-3 text-sm text-slate-600 dark:text-slate-300">
+				<div>
+					{clienteBadge(orden)}
+				</div>
+				<div className="text-xs text-slate-400 dark:text-slate-500">
+					Creada: {orden.createdAt?.toDate
+						? orden.createdAt.toDate().toLocaleString()
+						: (orden.createdAt ? String(orden.createdAt) : "—")}
+				</div>
+				{orden.visitaFecha && (
+					<div className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+						📅 Visita: <span className="font-semibold">{orden.visitaFecha}</span>
+						{orden.visitaHora && <span>{orden.visitaHora}</span>}
+					</div>
+				)}
+			</div>
+
+			{/* Productos */}
+			<ul className="border-t border-slate-100 dark:border-slate-700 pt-3 mb-3 space-y-1">
+				{(orden.productos || []).map((p: any, idx: number) => (
+					<li key={idx} className="flex justify-between text-sm">
+						<span className="text-slate-700 dark:text-slate-300">
+							{p.nombre} <span className="text-slate-400">×{p.cantidad}</span>
+						</span>
+						<span className="font-medium text-slate-800 dark:text-slate-100">
+							${calcularSubtotalProducto(p).toFixed(2)}
+						</span>
+					</li>
+				))}
+			</ul>
+
+			<div className="flex items-center justify-between">
+				<div className="font-bold text-base text-slate-800 dark:text-slate-100">
+					Total: <span className="text-purple-700 dark:text-purple-300">${calcularTotalOrden(orden).toFixed(2)}</span>
+				</div>
+
+				{/* Acciones */}
+				{orden.estado === "generada" && (
+					<div className="flex gap-2">
+						<button
+							onClick={() => rechazarOrden(orden)}
+							className="px-3 py-1.5 rounded-lg border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 text-sm font-medium transition-colors"
+						>
+							Rechazar
+						</button>
+						{orden.metodoPago === "stripe" && orden.paymentStatus !== "paid" ? (
+							<button disabled className="px-3 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500 text-sm font-medium cursor-not-allowed">
+								Esperando pago
+							</button>
+						) : (
+							<button
+								onClick={() => aprobarOrden(orden)}
+								className="px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 text-white text-sm font-medium transition-colors"
+							>
+								Aprobar
+							</button>
+						)}
+					</div>
+				)}
+			</div>
+
+			{orden.motivoRechazo && orden.estado === "rechazada" && (
+				<div className="mt-3 text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded-lg border border-red-100 dark:border-red-900/40">
+					Motivo rechazo: {orden.motivoRechazo}
+				</div>
+			)}
+		</div>
+	);
 
 	return (
-		<div className="min-h-screen py-6 sm:py-12 flex flex-col bg-white dark:bg-[#3a1859] text-slate-900 dark:text-white px-6">
-			<h1 className="text-3xl font-bold mb-6">Gestión de órdenes</h1>
-			<div className="flex flex-wrap items-center gap-4 mb-4">
-				<div className="inline-flex rounded-lg border border-slate-300 dark:border-slate-700 overflow-hidden">
-					<button
-						className={`px-4 py-2 text-sm font-semibold ${tab === "pendientes" ? "bg-purple-600 text-white" : "bg-transparent"}`}
-						onClick={() => setTab("pendientes")}
-					>
-						Órdenes en aprobación
-					</button>
-					<button
-						className={`px-4 py-2 text-sm font-semibold ${tab === "aprobadas" ? "bg-purple-600 text-white" : "bg-transparent"}`}
-						onClick={() => setTab("aprobadas")}
-					>
-						Órdenes aprobadas
-					</button>
+		<div className="max-w-3xl mx-auto px-4 py-8">
+			<h1 className="text-3xl font-bold mb-6 text-slate-800 dark:text-slate-100">Pedidos</h1>
+
+			{/* Filtros */}
+			<div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 mb-6 space-y-4">
+				{/* Rango de fechas */}
+				<div className="flex flex-wrap items-center gap-3">
+					<span className="text-sm font-medium text-slate-600 dark:text-slate-300 whitespace-nowrap">
+						Fecha de visita:
+					</span>
+					<div className="flex items-center gap-2 flex-wrap">
+						<div className="flex items-center gap-1.5">
+							<label className="text-xs text-slate-500 dark:text-slate-400">Desde</label>
+							<input
+								type="date"
+								value={fechaDesde}
+								onChange={(e) => setFechaDesde(e.target.value)}
+								className="border border-slate-300 dark:border-slate-600 rounded-lg px-2.5 py-1.5 text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
+							/>
+						</div>
+						<span className="text-slate-400">→</span>
+						<div className="flex items-center gap-1.5">
+							<label className="text-xs text-slate-500 dark:text-slate-400">Hasta</label>
+							<input
+								type="date"
+								value={fechaHasta}
+								onChange={(e) => setFechaHasta(e.target.value)}
+								className="border border-slate-300 dark:border-slate-600 rounded-lg px-2.5 py-1.5 text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
+							/>
+						</div>
+						<button
+							onClick={() => { setFechaDesde(getTodayYMD()); setFechaHasta(getTodayYMD()); }}
+							className="text-xs px-2.5 py-1.5 rounded-lg bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-900/60 font-medium transition-colors"
+						>
+							Hoy
+						</button>
+						<button
+							onClick={() => { setFechaDesde(""); setFechaHasta(""); }}
+							className="text-xs px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 font-medium transition-colors"
+						>
+							Ver todas
+						</button>
+					</div>
 				</div>
-				<input
-					type="text"
-				placeholder="Buscar por ID de orden, userId o correo..."
-					value={filtro}
-					onChange={(e) => setFiltro(e.target.value)}
-					className="px-3 py-2 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm"
-				/>
+
+				{/* Buscador */}
+				<div className="relative">
+					<span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">🔍</span>
+					<input
+						type="text"
+						placeholder="Buscar por cliente, email, ID de orden..."
+						value={filtro}
+						onChange={(e) => setFiltro(e.target.value)}
+						className="w-full border border-slate-300 dark:border-slate-600 rounded-lg pl-9 pr-4 py-2 text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+					/>
+				</div>
 			</div>
+
+			{/* Tabs */}
+			<div className="flex gap-1 mb-5 bg-slate-100 dark:bg-slate-800 rounded-xl p-1 border border-slate-200 dark:border-slate-700">
+				{(["pendientes", "aprobadas"] as const).map((t) => {
+					const count = t === "pendientes" ? ordenesPendientes.length : ordenesAprobadas.length;
+					return (
+						<button
+							key={t}
+							onClick={() => setTab(t)}
+							className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
+								tab === t
+									? "bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-sm"
+									: "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
+							}`}
+						>
+							{t === "pendientes" ? "Pendientes" : "Aprobadas"}
+							<span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${
+								tab === t
+									? (t === "pendientes" ? "bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300" : "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300")
+									: "bg-slate-200 dark:bg-slate-600 text-slate-500 dark:text-slate-400"
+							}`}>
+								{count}
+							</span>
+						</button>
+					);
+				})}
+			</div>
+
+			{/* Contenido */}
 			{loading ? (
-				<div>Cargando órdenes...</div>
-			) : ordenesFiltradas.length === 0 ? (
-				<div>No hay órdenes para este filtro.</div>
+				<div className="text-center py-16 text-slate-400 dark:text-slate-500">
+					<div className="text-4xl mb-3">⏳</div>
+					<p className="text-sm">Cargando órdenes...</p>
+				</div>
+			) : ordenesMostradas.length === 0 ? (
+				<div className="text-center py-16 text-slate-400 dark:text-slate-500">
+					<div className="text-4xl mb-3">📭</div>
+					<p className="text-sm">No hay órdenes para mostrar en este rango de fechas.</p>
+				</div>
 			) : (
 				<div className="space-y-4">
-					{ordenesFiltradas.map((orden) => (
-						<div key={orden.id} className="bg-white dark:bg-slate-800 rounded-xl shadow p-4 border">
-						<div className="flex justify-between items-center mb-2 flex-wrap gap-2">
-							<div className="font-bold text-lg flex items-center gap-2">
-								{orden.orderId || `#${orden.id.slice(-6)}`}
-								{orden.metodoPago === "stripe" && (
-									<span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-700 flex items-center gap-0.5">
-										💳 Stripe
-									</span>
-								)}
-							</div>
-							<span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
-								orden.estado === "generada" ? "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300" :
-								orden.estado === "aprobada" ? "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300" :
-								orden.estado === "pendiente_pago" ? "bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300" :
-								orden.estado === "pago_fallido" ? "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300" :
-								"bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
-							}`}>
-								{orden.estado === "pendiente_pago" ? "⏳ Pago pendiente" :
-								 orden.estado === "pago_fallido" ? "❌ Pago fallido" :
-								 orden.estado === "generada" ? "✔ Generada" :
-								 orden.estado === "aprobada" ? "✅ Aprobada" :
-								 orden.estado}
-								</span>
-							</div>
-							<div className="text-sm text-slate-600 dark:text-slate-300 mb-1">
-								Creada: {orden.createdAt?.toDate ? orden.createdAt.toDate().toLocaleString() : ""}
-							</div>
-							<div className="text-sm text-slate-600 dark:text-slate-300 mb-1">
-								{orden.userId
-									? (() => {
-											const info = clientesMap[orden.userId];
-											const label = info?.displayName || info?.email || orden.userEmail || orden.guestEmail || orden.userId;
-											const badge = orden.claimedFromGuest
-												? <span className="px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 text-xs font-bold">Cliente registrado</span>
-												: <span className="px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 text-xs font-bold">Cliente</span>;
-											return <span className="inline-flex items-center gap-1">{badge}<span className="font-semibold">{label}</span></span>;
-										})()
-									: orden.guestEmail
-										? <span className="inline-flex items-center gap-1">
-												<span className="px-2 py-0.5 rounded-full bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-400 text-xs font-bold">Invitado</span>
-												<span className="font-semibold">{orden.guestEmail}</span>
-											</span>
-										: <span className="text-xs text-slate-400">Cliente invitado</span>}
-							</div>
-							{orden.visitaFecha && (
-								<div className="text-sm text-slate-600 dark:text-slate-300 mb-1">
-									Visita: {orden.visitaFecha} {orden.visitaHora || ""}
-								</div>
-							)}
-							<ul className="mt-2 text-sm mb-2">
-								{(orden.productos || []).map((p: any, idx: number) => (
-									<li key={idx} className="flex justify-between">
-										<span>{p.nombre} x{p.cantidad}</span>
-										<span>${calcularSubtotalProducto(p).toFixed(2)}</span>
-									</li>
-								))}
-							</ul>
-							<div className="font-bold text-right mb-2">Total: ${calcularTotalOrden(orden).toFixed(2)}</div>
-							{orden.motivoRechazo && orden.estado === "rechazada" && (
-								<div className="text-sm text-red-600 dark:text-red-400 mb-2">
-									Motivo rechazo: {orden.motivoRechazo}
-								</div>
-							)}
-							{orden.estado === "generada" && (
-								<div className="mt-2 flex gap-3 justify-end">
-									<button
-										onClick={() => rechazarOrden(orden)}
-										className="px-3 py-1 rounded border border-red-500 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 text-sm"
-									>
-										Rechazar
-									</button>
-									{orden.metodoPago === "stripe" && orden.paymentStatus !== "paid" ? (
-										<button className="px-3 py-1 rounded bg-slate-300 text-slate-700 text-sm cursor-not-allowed" title="Esperando confirmación de pago">
-											Esperando pago
-										</button>
-									) : (
-										<button
-											onClick={() => aprobarOrden(orden)}
-											className="px-3 py-1 rounded bg-green-600 text-white hover:bg-green-700 text-sm"
-										>
-											Aprobar
-										</button>
-									)}
-								</div>
-							)}
-						</div>
+					{ordenesMostradas.map((orden) => (
+						<OrdenCard key={orden.id} orden={orden} />
 					))}
 				</div>
 			)}

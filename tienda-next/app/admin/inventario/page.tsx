@@ -12,6 +12,8 @@ import {
   eliminarProducto
 } from "../../lib/productos-db";
 
+type FiltroStock = "todos" | "con-stock" | "poco-stock" | "sin-stock";
+
 export default function AdminInventario() {
 
   const [showForm, setShowForm] = useState(false);
@@ -21,6 +23,7 @@ export default function AdminInventario() {
   const [search, setSearch] = useState("");
   const [orden, setOrden] = useState("newest");
   const [vista, setVista] = useState("productos");
+  const [filtroStock, setFiltroStock] = useState<FiltroStock>("todos");
 
   // 📊 Resumen de inventario
   const resumen = React.useMemo(() => {
@@ -54,7 +57,11 @@ export default function AdminInventario() {
       const texto = search.trim().toLowerCase();
       const nombre = p.nombre?.toLowerCase() || "";
       const desc = p.descripcion?.toLowerCase() || "";
-      return !texto || nombre.includes(texto) || desc.includes(texto);
+      if (texto && !nombre.includes(texto) && !desc.includes(texto)) return false;
+      if (filtroStock === "sin-stock") return p.stock === 0;
+      if (filtroStock === "poco-stock") return typeof p.stock === "number" && p.stock > 0 && p.stock <= 5;
+      if (filtroStock === "con-stock") return typeof p.stock === "number" && p.stock > 5;
+      return true;
     })
     .sort((a, b) => {
       if (orden === "price-low") return a.precio - b.precio;
@@ -112,6 +119,50 @@ export default function AdminInventario() {
               <div>Stock: <b>{resumen.conStock}</b></div>
               <div>Poco: <b>{resumen.pocoStock}</b></div>
               <div>Sin stock: <b>{resumen.sinStock}</b></div>
+            </div>
+
+            {/* FILTRO STOCK */}
+            <div className="flex gap-2 mb-4 flex-wrap">
+              <button
+                onClick={() => setFiltroStock("todos")}
+                className={`px-3 py-1.5 rounded-lg text-sm font-semibold border transition-all ${
+                  filtroStock === "todos"
+                    ? "bg-slate-700 text-white border-slate-700"
+                    : "bg-white text-slate-700 border-slate-400 hover:bg-slate-100"
+                }`}
+              >
+                Todos ({resumen.total})
+              </button>
+              <button
+                onClick={() => setFiltroStock("con-stock")}
+                className={`px-3 py-1.5 rounded-lg text-sm font-semibold border transition-all ${
+                  filtroStock === "con-stock"
+                    ? "bg-green-600 text-white border-green-600"
+                    : "bg-white text-green-700 border-green-500 hover:bg-green-50"
+                }`}
+              >
+                Con stock ({resumen.conStock})
+              </button>
+              <button
+                onClick={() => setFiltroStock("poco-stock")}
+                className={`px-3 py-1.5 rounded-lg text-sm font-semibold border transition-all ${
+                  filtroStock === "poco-stock"
+                    ? "bg-amber-500 text-white border-amber-500"
+                    : "bg-white text-amber-700 border-amber-500 hover:bg-amber-50"
+                }`}
+              >
+                Poco stock ({resumen.pocoStock})
+              </button>
+              <button
+                onClick={() => setFiltroStock("sin-stock")}
+                className={`px-3 py-1.5 rounded-lg text-sm font-semibold border transition-all ${
+                  filtroStock === "sin-stock"
+                    ? "bg-red-600 text-white border-red-600"
+                    : "bg-white text-red-700 border-red-500 hover:bg-red-50"
+                }`}
+              >
+                Sin stock ({resumen.sinStock})
+              </button>
             </div>
 
             {/* BOTONES */}
