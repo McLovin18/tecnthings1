@@ -78,6 +78,8 @@ function getDefaultSection(type: SectionType): Section {
 export default function LandingEditor() {
     // Estado para error de comentarios de Google Maps
     const [googleCommentsError, setGoogleCommentsError] = useState("");
+    // Estado para detectar cambios pendientes (activar botón guardar)
+    const [hasChanges, setHasChanges] = useState(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [productos, setProductos] = useState<any[]>([]);
   const [hero, setHero] = useState<any>(null);
@@ -481,9 +483,7 @@ export default function LandingEditor() {
       },
     };
     setSections(updated);
-    setSaving(true);
-    await saveLandingSections(updated);
-    setSaving(false);
+    setHasChanges(true); // Marca que hay cambios pendientes para activar el botón de guardar
   };
 
   const updateHeroItems = async (
@@ -2148,24 +2148,26 @@ export default function LandingEditor() {
                                                 </span>
                                               </div>
                                               {(() => {
-                                                const currentFieldStyle =
-                                                  (section.fieldStyles &&
-                                                    (section.fieldStyles as any)
-                                                      .itemTitle) || {};
+                                                // Asegura que currentFieldStyle sea plano (no responsive)
+                                                let currentFieldStyle = (section.fieldStyles && (section.fieldStyles as any).itemTitle) || {};
+                                                if (currentFieldStyle && (currentFieldStyle.desktop !== undefined)) {
+                                                  currentFieldStyle = currentFieldStyle[previewDevice] || currentFieldStyle.desktop || {};
+                                                }
+                                                // Normaliza valores
+                                                const fontWeightActive = currentFieldStyle.fontWeight === "bold";
+                                                const fontStyleActive = currentFieldStyle.fontStyle === "italic";
+                                                const textDecorationActive = currentFieldStyle.textDecoration === "underline";
+                                                const colorValue = currentFieldStyle.color || "#000000";
+                                                const fontSizeValue = typeof currentFieldStyle.fontSize === "string" ? currentFieldStyle.fontSize : "";
                                                 return (
                                                   <div className="flex flex-wrap items-center gap-2">
                                                     <div className="flex items-center gap-1">
-                                                      <span className="text-slate-600">
-                                                        Color
-                                                      </span>
+                                                      <span className="text-slate-600">Color</span>
                                                       <input
                                                         type="color"
                                                         className="h-6 w-8 border rounded"
-                                                        value={
-                                                          currentFieldStyle.color ||
-                                                          "#000000"
-                                                        }
-                                                        onChange={(e) =>
+                                                        value={colorValue}
+                                                        onChange={e =>
                                                           handleFieldStyleChange(
                                                             idx,
                                                             "itemTitle",
@@ -2173,100 +2175,83 @@ export default function LandingEditor() {
                                                             e.target.value
                                                           )
                                                         }
+                                                        style={{ background: colorValue }}
                                                       />
                                                     </div>
                                                     <button
                                                       type="button"
-                                                      className={`px-2 py-1 rounded border flex items-center gap-1 ${
-                                                        currentFieldStyle.fontWeight ===
-                                                        "bold"
-                                                          ? "bg-slate-800 text-white border-slate-800"
-                                                          : "bg-white text-slate-700 border-slate-300"
-                                                      }`}
+                                                      className={`px-2 py-1 rounded border flex items-center gap-1 ${fontWeightActive ? "bg-slate-800 text-white border-slate-800" : "bg-white text-slate-700 border-slate-300"}`}
                                                       onClick={() =>
                                                         handleFieldStyleChange(
                                                           idx,
                                                           "itemTitle",
                                                           "fontWeight",
-                                                          currentFieldStyle.fontWeight ===
-                                                            "bold"
-                                                            ? "normal"
-                                                            : "bold"
+                                                          fontWeightActive ? "normal" : "bold"
                                                         )
                                                       }
+                                                      aria-pressed={fontWeightActive}
                                                     >
-                                                      <span className="material-icons-round text-[14px]">
-                                                        format_bold
-                                                      </span>
+                                                      <span className="material-icons-round text-[14px]">format_bold</span>
                                                     </button>
                                                     <button
                                                       type="button"
-                                                      className={`px-2 py-1 rounded border flex items-center gap-1 ${
-                                                        currentFieldStyle.fontStyle ===
-                                                        "italic"
-                                                          ? "bg-slate-800 text-white border-slate-800"
-                                                          : "bg-white text-slate-700 border-slate-300"
-                                                      }`}
+                                                      className={`px-2 py-1 rounded border flex items-center gap-1 ${fontStyleActive ? "bg-slate-800 text-white border-slate-800" : "bg-white text-slate-700 border-slate-300"}`}
                                                       onClick={() =>
                                                         handleFieldStyleChange(
                                                           idx,
                                                           "itemTitle",
                                                           "fontStyle",
-                                                          currentFieldStyle.fontStyle ===
-                                                            "italic"
-                                                            ? "normal"
-                                                            : "italic"
+                                                          fontStyleActive ? "normal" : "italic"
                                                         )
                                                       }
+                                                      aria-pressed={fontStyleActive}
                                                     >
-                                                      <span className="material-icons-round text-[14px]">
-                                                        format_italic
-                                                      </span>
+                                                      <span className="material-icons-round text-[14px]">format_italic</span>
                                                     </button>
                                                     <button
                                                       type="button"
-                                                      className={`px-2 py-1 rounded border flex items-center gap-1 ${
-                                                        currentFieldStyle.textDecoration ===
-                                                        "underline"
-                                                          ? "bg-slate-800 text-white border-slate-800"
-                                                          : "bg-white text-slate-700 border-slate-300"
-                                                      }`}
+                                                      className={`px-2 py-1 rounded border flex items-center gap-1 ${textDecorationActive ? "bg-slate-800 text-white border-slate-800" : "bg-white text-slate-700 border-slate-300"}`}
                                                       onClick={() =>
                                                         handleFieldStyleChange(
                                                           idx,
                                                           "itemTitle",
                                                           "textDecoration",
-                                                          currentFieldStyle.textDecoration ===
-                                                            "underline"
-                                                            ? "none"
-                                                            : "underline"
+                                                          textDecorationActive ? "none" : "underline"
                                                         )
                                                       }
+                                                      aria-pressed={textDecorationActive}
                                                     >
-                                                      <span className="material-icons-round text-[14px]">
-                                                        format_underlined
-                                                      </span>
+                                                      <span className="material-icons-round text-[14px]">format_underlined</span>
                                                     </button>
                                                     <div className="flex items-center gap-1">
-                                                      <span className="text-slate-600">
-                                                        Tamaño
-                                                      </span>
+                                                      <span className="text-slate-600">Tamaño</span>
                                                       <input
                                                         type="text"
                                                         className="w-16 border rounded px-1 py-0.5 text-[11px]"
                                                         placeholder="16px"
-                                                        value={
-                                                          currentFieldStyle
-                                                            .fontSize || ""
-                                                        }
-                                                        onChange={(e) =>
+                                                        value={fontSizeValue}
+                                                        onChange={e => {
+                                                          // Permitir edición libre
                                                           handleFieldStyleChange(
                                                             idx,
                                                             "itemTitle",
                                                             "fontSize",
                                                             e.target.value
-                                                          )
-                                                        }
+                                                          );
+                                                        }}
+                                                        onBlur={e => {
+                                                          let value = e.target.value;
+                                                          // Si es un número, agrega px al salir del input
+                                                          if (/^\d+$/.test(value)) {
+                                                            value = value + "px";
+                                                          }
+                                                          handleFieldStyleChange(
+                                                            idx,
+                                                            "itemTitle",
+                                                            "fontSize",
+                                                            value
+                                                          );
+                                                        }}
                                                       />
                                                     </div>
                                                   </div>
@@ -3238,7 +3223,7 @@ export default function LandingEditor() {
                     .slice()
                     .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
                     .map((section) => {
-                      // Build preview section; if hero and an item is active, render that item only
+                      // Build preview section; aplanar fieldStyles responsive
                       let previewSection = { ...section } as any;
                       if (section.type === "featuredProducts") {
                         previewSection.props = { ...(section.props || {}), products: featuredProducts, device: previewDevice };
@@ -3249,8 +3234,6 @@ export default function LandingEditor() {
                         const activeIdx = activeHeroIndex[section.id];
                         if (typeof activeIdx === "number" && items[activeIdx]) {
                           const item = items[activeIdx];
-                          // Pass the active item inside `props.items` so HeroSection treats
-                          // it as an item and preserves its internal `fieldStyles`/`fieldPositions`.
                           previewSection.props = { ...(section.props || {}), items: [{ ...(section.props || {}), ...(item || {}) }], device: previewDevice };
                           previewSection.fieldPositions = item.fieldPositions || {};
                           previewSection.fieldStyles = item.fieldStyles || previewSection.fieldStyles || {};
@@ -3262,7 +3245,17 @@ export default function LandingEditor() {
                       } else {
                         previewSection.props = { ...(section.props || {}), device: previewDevice };
                       }
-
+                      // Aplanar fieldStyles responsive para la preview
+                      if (previewSection.fieldStyles) {
+                        previewSection.fieldStyles = Object.fromEntries(
+                          Object.entries(previewSection.fieldStyles).map(([k, v]) => {
+                            if (v && (v as any).desktop !== undefined) {
+                              return [k, (v as any)[previewDevice] || (v as any).desktop || {}];
+                            }
+                            return [k, v || {}];
+                          })
+                        );
+                      }
                       return <SectionRenderer key={section.id} section={previewSection} />;
                     })}
                       {/* Botón para abrir modal de selección de comentarios Google Maps */}

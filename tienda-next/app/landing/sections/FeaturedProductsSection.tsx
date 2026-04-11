@@ -103,8 +103,8 @@ const gridCols =
       {/* Título */}
       {title && (
         <h2
-          className="text-3xl font-extrabold mb-8 text-center text-slate-900 dark:text-white tracking-tight"
-          style={fieldStyles?.title}
+          className="text-3xl font-extrabold mb-8 text-center tracking-tight"
+          style={fieldStyles?.title || { color: "var(--text)", fontSize: "40px" }}
         >
           {title}
         </h2>

@@ -106,7 +106,7 @@ export default function FeaturedCategoriesSection({
         {title && (
           <h2
             className="text-lg md:text-xl font-semibold mb-4 text-center"
-            style={fieldStyles?.title}
+            style={fieldStyles?.title || { color: "var(--text)", fontSize: "32px" }}
           >
             {title}
           </h2>
@@ -158,7 +158,7 @@ export default function FeaturedCategoriesSection({
               {cat.title && (
                 <h3
                   className="text-sm md:text-base font-semibold text-center md:text-left"
-                  style={fieldStyles?.itemTitle}
+                  style={fieldStyles?.itemTitle || { color: "var(--text, #1e293b)" }}
                 >
                   {cat.title}
                 </h3>

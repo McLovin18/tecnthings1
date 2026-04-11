@@ -105,7 +105,7 @@ export default function GallerySection({
         <div className="mb-10 text-center">
           <h2
             className="text-3xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight"
-            style={{ color: "var(--text)", fontSize: "40px" }}
+            style={fieldStyles?.title || { color: "var(--text)", fontSize: "40px" }}
           >
             {title}
           </h2>
@@ -184,6 +184,7 @@ export default function GallerySection({
               item={item}
               index={idx}
               titleStyle={itemTitleStyle}
+              fieldStyles={fieldStyles}
             />
           ))}
         </div>
@@ -304,7 +305,7 @@ function GalleryCard({
           className="mt-3 text-center text-xs sm:text-sm font-semibold leading-tight transition-colors duration-200 px-1"
           style={{
             ...(titleStyle || {}),
-            color: hovered ? "var(--accent, #7c3aed)" : "var(--text, #1e293b)",
+            color: hovered ? "var(--accent, #7c3aed)" : (titleStyle?.color || "var(--text, #1e293b)"),
           }}
         >
           {item.title}

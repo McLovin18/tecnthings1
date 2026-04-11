@@ -198,32 +198,34 @@ export default function HeroSection({
   // ── TODOS los hooks antes de cualquier return condicional ────────────────
   const [currentIndex, setCurrentIndex] = React.useState(0);
 
-  const heroItems: HeroItem[] = (
-    items && items.length
-      ? items.map((item) =>
-          item.googleMaps && googleMapsData
-            ? {
-                ...item,
-                rating: googleMapsData.rating,
-                ratingCount: googleMapsData.user_ratings_total,
-              }
-            : item
-        )
-      : [
-          {
-            title,
-            subtitle,
-            badge,
-            buttonText,
-            buttonLink,
-            image,
-            googleMaps,
-            rating: googleMapsData?.rating,
-            ratingCount: googleMapsData?.user_ratings_total,
-            generalMessage,
-          },
-        ]
-  ).filter((h) => h && (h.title || h.subtitle || h.image));
+  const heroItems: HeroItem[] = React.useMemo(() => {
+    return (
+      items && items.length
+        ? items.map((item) =>
+            item.googleMaps && googleMapsData
+              ? {
+                  ...item,
+                  rating: googleMapsData.rating,
+                  ratingCount: googleMapsData.user_ratings_total,
+                }
+              : item
+          )
+        : [
+            {
+              title,
+              subtitle,
+              badge,
+              buttonText,
+              buttonLink,
+              image,
+              googleMaps,
+              rating: googleMapsData?.rating,
+              ratingCount: googleMapsData?.user_ratings_total,
+              generalMessage,
+            },
+          ]
+    ).filter((h) => h && (h.title || h.subtitle || h.image));
+  }, [items, googleMapsData, title, subtitle, badge, buttonText, buttonLink, image, googleMaps, generalMessage]);
 
   // debug logs removed
 
@@ -244,29 +246,19 @@ export default function HeroSection({
     return () => clearInterval(id);
   }, [heroItems.length, goToNext]);
 
-  // One-time preload for the very first hero image to avoid initial layout jump
-  const [initialImagePreloaded, setInitialImagePreloaded] = React.useState(false);
+  // Precargar la siguiente imagen en paralelo para transición suave sin parpadeo
   React.useEffect(() => {
-    const firstImage = heroItems?.[0]?.image;
-    if (!firstImage) {
-      setInitialImagePreloaded(true);
-      return;
+    if (heroItems.length <= 1) return;
+    
+    // Precargar la siguiente imagen
+    const nextIndex = (currentIndex + 1) % heroItems.length;
+    const nextImage = heroItems[nextIndex]?.image;
+    
+    if (nextImage) {
+      const img = new window.Image();
+      img.src = nextImage;
     }
-
-    let canceled = false;
-    const img = new Image();
-    img.onload = () => {
-      if (!canceled) setInitialImagePreloaded(true);
-    };
-    img.onerror = () => {
-      if (!canceled) setInitialImagePreloaded(true);
-    };
-    img.src = firstImage;
-
-    return () => {
-      canceled = true;
-    };
-  }, []);
+  }, [currentIndex, heroItems]);
 
   // ── Return condicional DESPUÉS de todos los hooks ────────────────────────
   if (!heroItems.length) return null;
@@ -353,37 +345,34 @@ export default function HeroSection({
     textAlign,
   };
 
-  const innerStyle: React.CSSProperties = { borderRadius };
+  const innerStyle: React.CSSProperties = { 
+    borderRadius,
+    aspectRatio: "2400 / 1000", // Mantiene el aspect ratio sin saltos
+    overflow: "hidden",
+  };
 
   return (
     <section style={containerStyle} className="">
       <div
         className="relative overflow-hidden w-full max-w-full min-h-0"
-        style={innerStyle}
+        style={{
+          ...innerStyle,
+          backgroundImage: `url(${current.image})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
       >
-        {!initialImagePreloaded && heroItems[0]?.image ? (
-          <div
-            style={{
-              width: "100%",
-              paddingTop: `${(BASE_IMAGE_HEIGHT / BASE_IMAGE_WIDTH) * 100}%`,
-              backgroundColor: "#f8fafc",
-              borderRadius,
-            }}
-          />
-        ) : current.image ? (
-          <img
-            key={currentIndex}
-            src={current.image}
-            alt={current.title || "Hero"}
-            width={1920}
-            height={840}
-            loading="eager"
-            decoding="async"
-            className="w-full h-auto block"
-            style={{ borderRadius, display: "block" }}
-            draggable={false}
-          />
-        ) : null}
+        <img
+          src={current.image}
+          alt={current.title || "Hero"}
+          width={1920}
+          height={840}
+          loading="eager"
+          decoding="async"
+          className="w-full h-full object-cover block"
+          style={{ borderRadius, display: "block" }}
+          draggable={false}
+        />
 
         {/* Badge de Google Maps */}
         {current.googleMaps && (current.rating || current.ratingCount) && (

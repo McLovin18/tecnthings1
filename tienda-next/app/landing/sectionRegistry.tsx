@@ -62,7 +62,24 @@ export function SectionRenderer({ section }: { section: LandingSection }) {
       parsedProps.comments = [];
     }
   }
-  
 
-  return <Component {...parsedProps} styles={styles} fieldStyles={fieldStyles} fieldPositions={fieldPositions} />;
+  // Detectar device (desktop/mobile) para estilos responsive
+  let device: "desktop" | "mobile" = "desktop";
+  if (typeof window !== "undefined") {
+    device = window.innerWidth < 768 ? "mobile" : "desktop";
+  }
+  // Aplanar fieldStyles responsive
+  let flatFieldStyles = fieldStyles;
+  if (fieldStyles) {
+    flatFieldStyles = Object.fromEntries(
+      Object.entries(fieldStyles).map(([k, v]) => {
+        if (v && (v as any).desktop !== undefined) {
+          return [k, (v as any)[device] || (v as any).desktop || {}];
+        }
+        return [k, v || {}];
+      })
+    );
+  }
+
+  return <Component {...parsedProps} styles={styles} fieldStyles={flatFieldStyles} fieldPositions={fieldPositions} />;
 }
