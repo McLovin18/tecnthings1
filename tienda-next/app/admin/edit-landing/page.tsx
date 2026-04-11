@@ -1175,25 +1175,34 @@ export default function LandingEditor() {
                         <div
                           ref={provided.innerRef}
                           {...provided.draggableProps}
-                          {...provided.dragHandleProps}
                           className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white p-4 mb-4 rounded shadow border border-slate-200 dark:border-slate-700"
                         >
                           <div className="flex items-start justify-between mb-3 gap-3">
-                            <div>
-                              <h3 className="font-bold text-sm mb-1 flex items-center gap-2">
-                                {section.type
-                                  ? String(section.type).toUpperCase()
-                                  : "(Sin tipo)"}
-                                {/* Eliminado texto de medida recomendada arriba */}
-                              </h3>
-                              {section.hidden && (
-                                <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
-                                  <span className="material-icons-round text-[14px]">
-                                    visibility_off
+                            <div className="flex items-center gap-2">
+                              {/* Drag handle icon for section reordering */}
+                              <span
+                                {...provided.dragHandleProps}
+                                className="material-icons-round cursor-move select-none text-slate-400 text-lg mr-2"
+                                title="Arrastrar para reordenar sección"
+                              >
+                                drag_indicator
+                              </span>
+                              <div>
+                                <h3 className="font-bold text-sm mb-1 flex items-center gap-2">
+                                  {section.type
+                                    ? String(section.type).toUpperCase()
+                                    : "(Sin tipo)"}
+                                  {/* Eliminado texto de medida recomendada arriba */}
+                                </h3>
+                                {section.hidden && (
+                                  <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                                    <span className="material-icons-round text-[14px]">
+                                      visibility_off
+                                    </span>
+                                    Oculta en landing
                                   </span>
-                                  Oculta en landing
-                                </span>
-                              )}
+                                )}
+                              </div>
                             </div>
                             <div className="flex items-center gap-2 text-[11px]">
                               <button
@@ -3021,7 +3030,7 @@ export default function LandingEditor() {
                                     </div>
 
                                     {/* DraggablePreviewEditor - con padding para scrollear si es muy grande */}
-                                    <div className="bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 py-6 px-4 overflow-x-auto min-h-fit">
+                                    <div className="bg-linear-to-b from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 py-6 px-4 overflow-x-auto min-h-fit">
                                       {(() => {
                                         const heroItems = (section.props?.items as any[]) || [];
                                         const activeIdx = activeHeroIndex[section.id];
@@ -3197,7 +3206,7 @@ export default function LandingEditor() {
               key={previewDevice}
               className={
                 previewDevice === "mobile"
-                  ? "w-[390px] max-w-full border border-slate-300 dark:border-slate-700 rounded-[2.5rem] p-4 bg-slate-100 dark:bg-slate-900 shadow-inner"
+                  ? "w-97.5 max-w-full border border-slate-300 dark:border-slate-700 rounded-[2.5rem] p-4 bg-slate-100 dark:bg-slate-900 shadow-inner"
                   : "w-full max-w-5xl border border-slate-300 dark:border-slate-700 rounded-xl bg-slate-100 dark:bg-slate-900 shadow-inner"
               }
             >
