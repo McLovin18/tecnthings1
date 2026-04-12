@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
+import Link from "next/link";
 import type {
   LandingSectionStyles,
   LandingFieldStyle,
@@ -29,9 +30,14 @@ export default function FeaturedProductsSection({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
   const [itemsPerView, setItemsPerView] = useState(4);
+  const [animDir, setAnimDir] = useState<"left" | "right">("right");
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (device === "mobile") {
+      // show 2 on mobile if desired elsewhere; here keep 1 for compatibility
       setItemsPerView(1);
       return;
     }
@@ -47,14 +53,31 @@ export default function FeaturedProductsSection({
     return () => window.removeEventListener("resize", updateItemsPerView);
   }, [device]);
 
+  // IntersectionObserver: track if section is visible in viewport so autoplay restarts when user returns
+  useEffect(() => {
+    if (typeof window === "undefined" || !containerRef.current) return;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        const e = entries[0];
+        setIsVisible(e.isIntersecting);
+      },
+      { threshold: 0.25 }
+    );
+    obs.observe(containerRef.current);
+    return () => obs.disconnect();
+  }, [containerRef.current]);
+
   const effectiveItemsPerView = Math.min(itemsPerView, products.length);
   const hasCarousel = products.length > effectiveItemsPerView;
 
   useEffect(() => {
-    if (!hasCarousel || isHovered) return;
+    if (!hasCarousel || isHovered || !isVisible) return;
     const id = setInterval(() => {
+      setAnimDir("right");
+      setIsAnimating(true);
       setCurrentIndex((prev) => (prev + 1) % products.length);
-    }, 3000);
+      setTimeout(() => setIsAnimating(false), 300);
+    }, 4000);
     return () => clearInterval(id);
   }, [hasCarousel, isHovered, products.length]);
 
@@ -75,25 +98,30 @@ export default function FeaturedProductsSection({
   const isSingleVisible = effectiveItemsPerView === 1;
 
   const handlePrev = () => {
-    if (!hasCarousel) return;
+    if (!hasCarousel || isAnimating) return;
+    setAnimDir("left");
+    setIsAnimating(true);
     setCurrentIndex((prev) => (prev - 1 + products.length) % products.length);
+    setTimeout(() => setIsAnimating(false), 300);
   };
 
   const handleNext = () => {
-    if (!hasCarousel) return;
+    if (!hasCarousel || isAnimating) return;
+    setAnimDir("right");
+    setIsAnimating(true);
     setCurrentIndex((prev) => (prev + 1) % products.length);
+    setTimeout(() => setIsAnimating(false), 300);
   };
 
-// Forzar 4 columnas en desktop para ocupar casi todo el ancho
-// Forzar 4 columnas en desktop para que solo se vean 4 productos por vista
-const gridCols =
-  effectiveItemsPerView === 1
-    ? "grid-cols-1"
-    : effectiveItemsPerView === 2
-    ? "grid-cols-2"
-    : effectiveItemsPerView === 3
-    ? "grid-cols-3"
-    : "grid-cols-4";
+  // Forzar 4 columnas en desktop para que solo se vean 4 productos por vista
+  const gridCols =
+    effectiveItemsPerView === 1
+      ? "grid-cols-1"
+      : effectiveItemsPerView === 2
+      ? "grid-cols-2"
+      : effectiveItemsPerView === 3
+      ? "grid-cols-3"
+      : "grid-cols-4";
 
   return (
     <section
@@ -147,7 +175,13 @@ const gridCols =
               ? "flex justify-center w-full max-w-xl mx-auto"
               : `grid gap-6 place-items-center w-full ${gridCols}`
           }
-          style={{ minWidth: 0, overflowX: 'hidden' }}
+          style={{
+            minWidth: 0,
+            overflowX: "hidden",
+            animation: isAnimating
+              ? `slideIn${animDir === "right" ? "Right" : "Left"} 0.28s ease`
+              : undefined,
+          }}
         >
           {visibleProducts.map((prod: any, idx: number) => (
             <div
@@ -155,7 +189,7 @@ const gridCols =
               className={`transition-all duration-300 flex flex-col items-stretch justify-stretch ${
                 isSingleVisible ? "w-full" : "w-full max-w-[320px] min-h-[420px] h-[420px]"
               }`}
-              style={{ width: '100%', minWidth: 0 }}
+              style={{ width: "100%", minWidth: 0 }}
             >
               <ProductoCard producto={prod} />
             </div>
@@ -179,7 +213,29 @@ const gridCols =
             ))}
           </div>
         )}
+
+        {/* Botón Ver todos los productos */}
+        <div className="flex justify-center mt-8">
+          <Link
+            href="/productos"
+            className="px-8 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 dark:from-purple-500 dark:to-purple-600 dark:hover:from-purple-600 dark:hover:to-purple-700"
+          >
+            Ver todos los productos
+          </Link>
+        </div>
       </div>
+
+      {/* Keyframes for slide animation */}
+      <style>{`
+        @keyframes slideInRight {
+          from { opacity: 0; transform: translateX(24px); }
+          to   { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes slideInLeft {
+          from { opacity: 0; transform: translateX(-24px); }
+          to   { opacity: 1; transform: translateX(0); }
+        }
+      `}</style>
     </section>
   );
 }

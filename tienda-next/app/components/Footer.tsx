@@ -38,10 +38,9 @@ const IconLinkedIn = () => (
 
 const socialLinks = [
   { href: "https://www.instagram.com/tecnothings_ec/?hl=es", label: "Instagram", Icon: IconInstagram },
-  { href: "https://www.facebook.com/search/top?q=tecnothingsec", label: "Facebook", Icon: IconFacebook },
+  { href: "https://www.facebook.com/TecnothingsEc/", label: "Facebook", Icon: IconFacebook },
   { href: "https://www.tiktok.com/@tecnothings_ec", label: "TikTok", Icon: IconTikTok },
-  { href: "https://www.youtube.com/", label: "YouTube", Icon: IconYouTube },
-  { href: "https://www.linkedin.com/", label: "LinkedIn", Icon: IconLinkedIn },
+
 ];
 
 const Footer: React.FC = () => {
@@ -50,6 +49,9 @@ const Footer: React.FC = () => {
 
   const showWhatsAppFloating =
     pathname && !pathname.startsWith("/home") && !pathname.startsWith("/admin");
+
+  // Si el usuario está logueado, no mostrar el footer
+  if (isLogged) return null;
 
   return (
     <>
@@ -394,12 +396,7 @@ const Footer: React.FC = () => {
                     Políticas de privacidad
                   </Link>
                 </li>
-                <li>
-                  <Link href="/politicas/devolucion">
-                    <span className="ft-dot" />
-                    Políticas de devolución
-                  </Link>
-                </li>
+
               </ul>
             </div>
           )}

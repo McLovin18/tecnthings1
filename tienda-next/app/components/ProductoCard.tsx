@@ -80,6 +80,8 @@ export default function ProductoCard({
         hover:border-[#7b68ee] dark:hover:border-[#7b68ee]
         transition-all duration-300
 
+        h-full
+
         /* ── MÓVIL: horizontal (imagen izq + info der) ── */
         flex flex-row items-stretch
 
@@ -169,6 +171,7 @@ export default function ProductoCard({
         flex flex-col flex-1 min-w-0
         p-3 sm:p-4
         justify-between
+        h-full
       ">
         {/* Nombre */}
         <p className="

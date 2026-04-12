@@ -10,7 +10,7 @@ import { OnboardingProvider } from "./context/OnboardingContext";
 import LayoutContentClient from "./components/LayoutContentClient";
 
 export const metadata = {
-  title: "TechnoThings",
+  title: "TecnoThings",
   description: "Tienda online"
 };
 

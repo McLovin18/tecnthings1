@@ -66,16 +66,20 @@ export function SectionRenderer({ section }: { section: LandingSection }) {
   // Detectar device (desktop/mobile) para estilos responsive
   let device: "desktop" | "mobile" = "desktop";
   if (typeof window !== "undefined") {
-    device = window.innerWidth < 768 ? "mobile" : "desktop";
+    device = window.innerWidth < 640 ? "mobile" : "desktop";
   }
   // Aplanar fieldStyles responsive
   let flatFieldStyles = fieldStyles;
   if (fieldStyles) {
     flatFieldStyles = Object.fromEntries(
       Object.entries(fieldStyles).map(([k, v]) => {
-        if (v && (v as any).desktop !== undefined) {
+        // Detectar si hay estructura responsive (desktop o mobile definidos)
+        const hasResponsiveStructure = v && ((v as any).desktop !== undefined || (v as any).mobile !== undefined);
+        if (hasResponsiveStructure) {
+          // Return el valor para el device actual, fallback a desktop, luego a empty object
           return [k, (v as any)[device] || (v as any).desktop || {}];
         }
+        // Si no hay estructura responsive, devolver como está
         return [k, v || {}];
       })
     );

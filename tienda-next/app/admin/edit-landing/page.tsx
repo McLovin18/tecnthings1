@@ -483,7 +483,9 @@ export default function LandingEditor() {
       },
     };
     setSections(updated);
-    setHasChanges(true); // Marca que hay cambios pendientes para activar el botón de guardar
+    setSaving(true);
+    await saveLandingSections(updated);
+    setSaving(false);
   };
 
   const updateHeroItems = async (
@@ -3249,7 +3251,9 @@ export default function LandingEditor() {
                       if (previewSection.fieldStyles) {
                         previewSection.fieldStyles = Object.fromEntries(
                           Object.entries(previewSection.fieldStyles).map(([k, v]) => {
-                            if (v && (v as any).desktop !== undefined) {
+                            // Detectar si hay estructura responsive (desktop o mobile definidos)
+                            const hasResponsiveStructure = v && ((v as any).desktop !== undefined || (v as any).mobile !== undefined);
+                            if (hasResponsiveStructure) {
                               return [k, (v as any)[previewDevice] || (v as any).desktop || {}];
                             }
                             return [k, v || {}];
