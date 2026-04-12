@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { themeManager } from "./themeManager";
 import ThemeToggle from "./ThemeToggle";
-import { collection, onSnapshot } from "firebase/firestore";
+import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { obtenerProductos } from "../lib/productos-db";
 import { useUser } from "../context/UserContext";
@@ -17,10 +17,24 @@ function MobileCategoriesAccordion({ basePath }: { basePath: string }) {
   const [openCat, setOpenCat] = React.useState<string | null>(null);
   const [openSub, setOpenSub] = React.useState<string | null>(null);
 
+  // Ordenar categorías recursivamente por el campo 'orden'
+  const sortByOrder = (items: any[]): any[] => {
+    return items
+      .sort((a, b) => (a.orden ?? 999) - (b.orden ?? 999))
+      .map(item => ({
+        ...item,
+        subcategorias: item.subcategorias ? sortByOrder(item.subcategorias) : undefined
+      }));
+  };
+
   React.useEffect(() => {
-    const unsub = onSnapshot(collection(db, "categorias"), (snap) => {
-      setCategorias(snap.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
-    });
+    const unsub = onSnapshot(
+      collection(db, "categorias"),
+      (snap) => {
+        const cats = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        setCategorias(sortByOrder(cats));
+      }
+    );
     return () => unsub();
   }, []);
 
@@ -164,9 +178,22 @@ export const Navbar = () => {
 
   // Escuchar categorías desde Firestore
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, "categorias"), (snap) => {
-      setCategorias(snap.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
-    });
+    const sortByOrder = (items: any[]): any[] => {
+      return items
+        .sort((a, b) => (a.orden ?? 999) - (b.orden ?? 999))
+        .map(item => ({
+          ...item,
+          subcategorias: item.subcategorias ? sortByOrder(item.subcategorias) : undefined
+        }));
+    };
+
+    const unsub = onSnapshot(
+      collection(db, "categorias"),
+      (snap) => {
+        const cats = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        setCategorias(sortByOrder(cats));
+      }
+    );
     return () => unsub();
   }, []);
 

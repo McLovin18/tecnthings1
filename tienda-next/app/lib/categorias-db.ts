@@ -5,14 +5,26 @@ import {
   setDoc,
   doc,
   updateDoc,
-  deleteDoc
+  deleteDoc,
+  query,
+  orderBy
 } from "firebase/firestore";
 
 const COLLECTION = "categorias";
 
+function sortCategoriasByOrder(categorias: any[]): any[] {
+  return categorias
+    .sort((a, b) => (a.orden ?? 999) - (b.orden ?? 999))
+    .map(cat => ({
+      ...cat,
+      subcategorias: cat.subcategorias ? sortCategoriasByOrder(cat.subcategorias) : undefined
+    }));
+}
+
 export async function obtenerCategorias() {
   const snapshot = await getDocs(collection(db, COLLECTION));
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  const categorias = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  return sortCategoriasByOrder(categorias);
 }
 
 
