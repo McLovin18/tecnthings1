@@ -126,7 +126,7 @@ export default function FeaturedProductsSection({
   return (
     <section
       style={{ paddingTop, paddingBottom }}
-      className="w-full max-w-full px-2 flex flex-col items-center m-0"
+      className="w-full max-w-full px-2 flex flex-col items-center m-0 overflow-x-hidden"
     >
       {/* Título */}
       {title && (
@@ -140,7 +140,7 @@ export default function FeaturedProductsSection({
 
       {/* Contenedor carrusel */}
       <div
-        className={`w-full mx-auto relative ${itemsPerView === 1 ? "max-w-full px-0" : "max-w-7xl"}`}
+        className="w-full max-w-7xl mx-auto relative px-12"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
@@ -150,7 +150,7 @@ export default function FeaturedProductsSection({
             type="button"
             onClick={handlePrev}
             aria-label="Anterior"
-            className="absolute -left-4 md:-left-6 top-1/2 -translate-y-1/2 z-20 h-10 w-10 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-200 shadow-md hover:bg-purple-50 dark:hover:bg-purple-900/40 hover:border-purple-300 hover:scale-105 transition-all"
+            className="absolute left-2 top-1/2 -translate-y-1/2 z-20 h-10 w-10 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-200 shadow-md hover:bg-purple-50 dark:hover:bg-purple-900/40 hover:border-purple-300 hover:scale-105 transition-all"
           >
             <span className="material-icons-round text-[20px]">chevron_left</span>
           </button>
@@ -162,7 +162,7 @@ export default function FeaturedProductsSection({
             type="button"
             onClick={handleNext}
             aria-label="Siguiente"
-            className="absolute -right-4 md:-right-6 top-1/2 -translate-y-1/2 z-20 h-10 w-10 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-200 shadow-md hover:bg-purple-50 dark:hover:bg-purple-900/40 hover:border-purple-300 hover:scale-105 transition-all"
+            className="absolute right-2 top-1/2 -translate-y-1/2 z-20 h-10 w-10 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-200 shadow-md hover:bg-purple-50 dark:hover:bg-purple-900/40 hover:border-purple-300 hover:scale-105 transition-all"
           >
             <span className="material-icons-round text-[20px]">chevron_right</span>
           </button>
