@@ -36,7 +36,7 @@ export default function ProductoCard({
   const fakeOldPrice = hasDiscount
     ? Math.ceil(basePrice / (1 - discount / 100))
     : basePrice;
-  const finalPrice = basePrice;
+  const finalPrice = hasDiscount ? basePrice * (1 - discount / 100) : basePrice;
 
   const goToDetail = (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();

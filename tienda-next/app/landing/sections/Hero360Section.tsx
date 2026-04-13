@@ -17,6 +17,7 @@ export type Hero360SectionProps = {
   images?: string[];
   autoPlay?: boolean;
   interval?: number;
+  onPrimaryButtonClick?: () => void;
 };
 
 export default function Hero360Section({
@@ -36,6 +37,7 @@ export default function Hero360Section({
   ],
   autoPlay = true,
   interval = 2000,
+  onPrimaryButtonClick,
 }: Hero360SectionProps) {
   const [isDark, setIsDark] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -221,8 +223,14 @@ export default function Hero360Section({
               }}
             >
               {/* Botón Primario - ENSAMBLES */}
-              <a
-                href={primaryButtonLink || "/products-by-category?cat=1775935501638&sub=1775935523162"}
+              <button
+                onClick={() => {
+                  if (onPrimaryButtonClick) {
+                    onPrimaryButtonClick();
+                  } else {
+                    window.location.href = primaryButtonLink || "/products-by-category?cat=1775935501638&sub=1775935523162";
+                  }
+                }}
                 className="inline-flex items-center justify-center px-8 py-4 rounded-lg font-bold text-base md:text-lg transition-all duration-300 transform hover:scale-105 active:scale-95"
                 style={{
                   background: isDark
@@ -241,7 +249,7 @@ export default function Hero360Section({
                 }}
               >
                 {primaryButtonText}
-              </a>
+              </button>
 
               {/* Botón Secundario - ASESORAMIENTO */}
               <a

@@ -5,11 +5,12 @@ import BottomBarPublic from "./components/BottomBarPublic";
 import WhatsAppFloatingButton from "./components/WhatsAppFloatingButton";
 import { useUser } from "./context/UserContext";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { getLandingPage } from "./lib/landing-db";
 import ProductoCard from "./components/ProductoCard";
 import { SectionRenderer } from "./landing/sectionRegistry";
 import Hero360Section from "./landing/sections/Hero360Section";
+import PlansSection from "./landing/sections/PlansSection";
 import type { LandingSection } from "./lib/landing-types";
 import { obtenerProductos } from "./lib/productos-db";
 import { Loading3DIcon } from "./components/Loading3DIcon";
@@ -19,6 +20,8 @@ export default function Home() {
   const [landing, setLanding] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [productos, setProductos] = useState<any[]>([]);
+  const [showPlans, setShowPlans] = useState(false);
+  const plansRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -101,6 +104,15 @@ export default function Home() {
       images: ["/img_1.png", "/img_2.png", "/img_3.png", "/img_4.png"],
       autoPlay: true,
       interval: 2000,
+      onPrimaryButtonClick: () => {
+        setShowPlans(!showPlans);
+        // Hacer scroll hacia PlansSection después de mostrar
+        setTimeout(() => {
+          if (plansRef.current) {
+            plansRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }, 100);
+      },
     },
     styles: {},
     hidden: false,
@@ -120,7 +132,15 @@ export default function Home() {
             .slice()
             .sort((a, b) => (a.order || 0) - (b.order || 0))
             .map((section) => (
-              <SectionRenderer key={section.id} section={section} />
+              <div key={section.id}>
+                <SectionRenderer section={section} />
+                {/* Mostrar PlansSection después de Hero360 */}
+                {section.id === "hero360-static" && showPlans && (
+                  <div ref={plansRef}>
+                    <PlansSection />
+                  </div>
+                )}
+              </div>
             ))}
         </main>
       </div>

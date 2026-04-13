@@ -50,7 +50,7 @@ export default function ProductsByCategoryPage() {
 
   // ── Filtrado y orden ─────────────────────────────
   const productosFiltrados = useMemo(() => {
-    return productos
+    const filtered = productos
       .filter((p: any) => {
         // Validación estricta de jerarquía
         if (subsubcategoria && subcategoria && categoria) {
@@ -102,6 +102,8 @@ export default function ProductsByCategoryPage() {
         if (a.createdAt && b.createdAt) return b.createdAt - a.createdAt;
         return 0;
       });
+    
+    return filtered;
   }, [productos, categoria, subcategoria, subsubcategoria, search, precioMin, precioMax, orden]);
 
 
@@ -238,7 +240,6 @@ export default function ProductsByCategoryPage() {
 
         {/* ── Filtros horizontales ─────────────────────────────── */}
         <div className="bg-white dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl px-4 py-6 sm:py-15 mb-5 space-y-3">
-
           {/* Fila 1: buscador + precio + limpiar */}
           <div className="flex flex-wrap gap-2 items-center">
             {/* Search */}

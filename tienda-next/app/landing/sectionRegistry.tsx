@@ -13,6 +13,7 @@ import GallerySection, { GallerySectionProps } from "./sections/GallerySection";
 import FeaturedProductsSection, { FeaturedProductsSectionProps } from "./sections/FeaturedProductsSection";
 import FeaturedCategoriesSection, { FeaturedCategoriesSectionProps } from "./sections/FeaturedCategoriesSection";
 import Hero360Section, { Hero360SectionProps } from "./sections/Hero360Section";
+import PlansSection from "./sections/PlansSection";
 import GoogleCommentsSection, { GoogleCommentsSectionProps } from "./sections/GoogleCommentsSection";
 
 // Definición de props para cada sección
@@ -28,6 +29,7 @@ export type SectionComponentProps = {
 export const sectionRegistry: Record<string, ComponentType<any>> = {
   hero: HeroSection,
   hero360: Hero360Section,
+  plans: PlansSection,
   // heroGoogleReview: HeroGoogleReviewSection, // Eliminado de la landing
   googleComments: GoogleCommentsSection,
   banner: BannerSection,

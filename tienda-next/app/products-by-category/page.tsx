@@ -64,12 +64,15 @@ export default function ProductsByCategoryPage() {
   const categoriaId = (searchParams?.get("cat") || searchParams?.get("category") || "").trim();
   const subcategoriaId = (searchParams?.get("subcat") || searchParams?.get("subcategory") || searchParams?.get("sub") || "").trim();
   const subsubcategoriaId = (searchParams?.get("subsubcat") || searchParams?.get("subsubcategory") || searchParams?.get("subsub") || "").trim();
-
+  
+  // Leer parámetros de precio DIRECTAMENTE desde URL
+  const urlMinPrice = searchParams?.get("minPrice") || "";
+  const urlMaxPrice = searchParams?.get("maxPrice") || "";
 
   // --- Estados de datos ---
   const [productos, setProductos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isMounted, setIsMounted] = useState(false); // <--- NUEVO: Para evitar parpadeo de hidratación
+  const [isMounted, setIsMounted] = useState(false);
 
   // --- Estados de filtros ---
   const [search, setSearch] = useState("");
@@ -79,12 +82,23 @@ export default function ProductsByCategoryPage() {
   const [showPrecio, setShowPrecio] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // 1. Control de Montaje (Evita saltos de Dark Mode e Iconos iniciales)
+  // 1. Control de Montaje - Inicializa filtros desde URL
   useEffect(() => {
     setIsMounted(true);
     const loggedIn = Boolean(localStorage.getItem("token"));
     setIsAuthenticated(loggedIn);
-  }, []);
+    
+    // Sincronizar filtros de precio desde URL params después del montaje
+    const minPrice = searchParams?.get("minPrice") || "";
+    const maxPrice = searchParams?.get("maxPrice") || "";
+    if (minPrice) setPrecioMin(minPrice);
+    if (maxPrice) setPrecioMax(maxPrice);
+    
+    // Mostrar los inputs de precio si hay parámetros en la URL
+    if (minPrice || maxPrice) {
+      setShowPrecio(true);
+    }
+  }, [searchParams]);
 
   // 2. Fetch productos
 useEffect(() => {
@@ -115,7 +129,14 @@ useEffect(() => {
 
   // 3. Filtrado y orden (Memoizado)
   const productosFiltrados = useMemo(() => {
-    return productos
+    // Usar URL params primero, luego estado local como fallback
+    const effectiveMin = urlMinPrice || precioMin;
+    const effectiveMax = urlMaxPrice || precioMax;
+    
+    const minNum = effectiveMin && effectiveMin !== "" ? parseFloat(effectiveMin) : null;
+    const maxNum = effectiveMax && effectiveMax !== "" ? parseFloat(effectiveMax) : null;
+    
+    const filtered = productos
       .filter((p: any) => {
         // Filtrado estricto por ID
         if (subsubcategoriaId && subcategoriaId && categoriaId) {
@@ -149,10 +170,9 @@ useEffect(() => {
         const base = Number(p.precio || 0);
         const disc = Number(p.descuento || 0);
         const finalPrice = disc > 0 && disc < 100 ? base * (1 - disc / 100) : base;
-        const min = precioMin ? parseFloat(precioMin) : null;
-        const max = precioMax ? parseFloat(precioMax) : null;
-        const matchMin = min === null || finalPrice >= min;
-        const matchMax = max === null || finalPrice <= max;
+        
+        const matchMin = minNum === null || finalPrice >= minNum;
+        const matchMax = maxNum === null || finalPrice <= maxNum;
 
         return matchTexto && matchMin && matchMax;
       })
@@ -166,7 +186,8 @@ useEffect(() => {
         if (orden === "price-high") return fp(b) - fp(a);
         return (new Date(b.createdAt).getTime() || 0) - (new Date(a.createdAt).getTime() || 0);
       });
-  }, [productos, categoriaId, subcategoriaId, subsubcategoriaId, search, precioMin, precioMax, orden]);
+    return filtered;
+  }, [productos, categoriaId, subcategoriaId, subsubcategoriaId, search, precioMin, precioMax, orden, urlMinPrice, urlMaxPrice]);
 
   const hasFilters = !!(search || precioMin || precioMax || orden !== "newest");
 
@@ -194,8 +215,17 @@ useEffect(() => {
       handleResize();
       return () => window.removeEventListener('resize', handleResize);
     }, []);
+    
     const totalPages = Math.ceil(productosFiltrados.length / productsPerPage);
-    const paginatedProducts = productosFiltrados.slice((currentPage - 1) * productsPerPage, currentPage * productsPerPage);
+    
+    // Resetear a página 1 cuando cambia el filtro
+    useEffect(() => {
+      setCurrentPage(1);
+    }, [productosFiltrados.length, urlMinPrice, urlMaxPrice, search]);
+    
+    const paginatedProducts = useMemo(() => {
+      return productosFiltrados.slice((currentPage - 1) * productsPerPage, currentPage * productsPerPage);
+    }, [productosFiltrados, currentPage, productsPerPage]);
 
 
   const clearFilters = useCallback(() => {
