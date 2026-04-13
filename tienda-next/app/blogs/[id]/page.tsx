@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import CategoriesBar from "../../components/CategoriesBar";
 import { redirectIfLoggedIn } from "../../lib/firebase-auth";
 import { getBlogById } from "../../lib/blogs-db";
 import type { Blog } from "../../lib/blog-types";
@@ -34,7 +33,6 @@ export default function BlogDetailPage() {
       }}
       className="min-h-screen flex flex-col"
     >
-      <CategoriesBar />
       <main className="max-w-3xl mx-auto px-4 py-8 lg:px-6 flex-1 w-full">
         {loading ? (
           <div className="text-center py-16">

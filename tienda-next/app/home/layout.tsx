@@ -1,7 +1,6 @@
 
 import Sidebar from "../components/Sidebar";
 import BottomBar from "../components/BottomBar";
-import CategoriesBar from "../components/CategoriesBar";
 
 import { ReactNode } from "react";
 

@@ -1,8 +1,6 @@
 import "./globals.css";
 
 import Footer from "./components/Footer";
-import CategoriesBar from "./components/CategoriesBar";
-import CategoriesBarMobile from "./components/CategoriesBarMobile";
 import { cookies } from "next/headers";
 import Navbar from "./components/Navbar";
 import { UserProvider } from "./context/UserContext";
