@@ -83,10 +83,10 @@ const DEFAULT_PLANS: Plan[] = [
       "32GB RAM DDR5",
       "SSD 1TB NVMe",
     ],
-    categoryLink: "/products-by-category?cat=1775935501638&sub=1775935523162&minPrice=600&maxPrice=1000",
+    categoryLink: "/products-by-category?cat=1775935501638&sub=1775935523162&minPrice=800&maxPrice=2000",
     categoryName: "Ensambles Gaming",
     color: "from-purple-600 to-purple-800",
-    priceRange: { min: 600, max: 1000 },
+    priceRange: { min: 800, max: 2000 },
   },
 
 ];
