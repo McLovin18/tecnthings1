@@ -32,8 +32,8 @@ export default function BannerSection({
 }: BannerSectionProps) {
   const bg = styles?.backgroundColor;
   const color = styles?.textColor;
-  const paddingTop = styles?.paddingTop || "2rem";
-  const paddingBottom = styles?.paddingBottom || "2rem";
+  const paddingTop = styles?.paddingTop || (typeof window !== "undefined" && window.innerWidth < 768 ? "1rem" : "2rem");
+  const paddingBottom = styles?.paddingBottom || (typeof window !== "undefined" && window.innerWidth < 768 ? "1rem" : "2rem");
   const borderRadius = styles?.borderRadius || "1rem";
 
   const finalBackgroundImage = backgroundImage || image || null;
@@ -74,7 +74,7 @@ export default function BannerSection({
         paddingTop,
         paddingBottom,
       }}
-      className="py-20 overflow-hidden"
+      className="py-20 overflow-hidden m-0"
     >
       <div
         className="overflow-hidden bg-slate-900/40 flex flex-col justify-center items-center"

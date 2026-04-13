@@ -80,7 +80,7 @@ export default function ProductoCard({
         hover:border-[#7b68ee] dark:hover:border-[#7b68ee]
         transition-all duration-300
 
-        h-full
+        sm:h-full
 
         /* ── MÓVIL: horizontal (imagen izq + info der) ── */
         flex flex-row items-stretch
@@ -169,13 +169,13 @@ export default function ProductoCard({
       {/* ══ INFO ════════════════════════════════════════════════ */}
       <div className="
         flex flex-col flex-1 min-w-0
-        p-3 sm:p-4
+        p-2 sm:p-4
         justify-between
-        h-full
+        sm:h-full
       ">
         {/* Nombre */}
         <p className="
-          font-semibold leading-snug
+          font-semibold leading-tight
           text-slate-800 dark:text-white
 
           /* móvil: más grande para aprovechar el espacio horizontal */
@@ -191,7 +191,7 @@ export default function ProductoCard({
         {/* Descripción corta — solo en móvil donde hay más espacio */}
         {producto.descripcion && (
           <p className="
-            mt-1 text-xs text-slate-400 dark:text-white/35
+            mt-0.5 text-xs text-slate-400 dark:text-white/35
             line-clamp-2
             sm:hidden
           ">
@@ -200,7 +200,7 @@ export default function ProductoCard({
         )}
 
         {/* Precios */}
-        <div className="mt-2 sm:mt-3 flex items-baseline gap-2 flex-wrap">
+        <div className="mt-1 sm:mt-3 flex items-baseline gap-2 flex-wrap">
           {hasDiscount && (
             <span className="text-xs sm:text-sm text-[#7b68ee] dark:text-white/30 line-through">
               ${fakeOldPrice.toFixed(2)}
@@ -216,7 +216,7 @@ export default function ProductoCard({
 
         {/* Acciones */}
         {(showCart || showEye) && (
-          <div className="mt-3 flex gap-2">
+          <div className="mt-2 sm:mt-3 flex gap-2">
             {showCart && (
               <button
                 onClick={handleCart}

@@ -34,6 +34,7 @@ export interface Blog {
   blocks: BlogBlock[];
   featured?: boolean;
   status: "draft" | "published";
+  position?: number;
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
 }

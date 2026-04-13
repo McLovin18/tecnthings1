@@ -352,7 +352,7 @@ export default function HeroSection({
   };
 
   return (
-    <section style={containerStyle} className="">
+    <section style={containerStyle} className="m-0">
       <div
         className="relative overflow-hidden w-full max-w-full min-h-0"
         style={{

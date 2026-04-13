@@ -12,6 +12,7 @@ import {
 	saveBlog,
 	deleteBlog,
 	setFeaturedBlog,
+	updateBlogPositions,
 } from "../../lib/blogs-db";
 import { uploadImageAndGetUrl } from "../../lib/upload-image";
 import BlogPreview from "../../blogs/BlogPreview";
@@ -54,6 +55,8 @@ export default function AdminEditBlogsPage() {
 	);
 	const [showPreviewModal, setShowPreviewModal] = useState(false);
 	const [uploadingBlockId, setUploadingBlockId] = useState<string | null>(null);
+	const [draggedBlockIndex, setDraggedBlockIndex] = useState<number | null>(null);
+	const [draggedBlogIndex, setDraggedBlogIndex] = useState<number | null>(null);
 
 	useEffect(() => {
 		async function load() {
@@ -149,6 +152,85 @@ export default function AdminEditBlogsPage() {
 			updated[newIndex] = temp;
 			return { ...prev, blocks: updated };
 		});
+	};
+
+	const handleBlockDragStart = (e: React.DragEvent, index: number) => {
+		e.dataTransfer.effectAllowed = "move";
+		e.dataTransfer.setData("text/plain", String(index));
+		setDraggedBlockIndex(index);
+	};
+
+	const handleBlockDragOver = (e: React.DragEvent) => {
+		e.preventDefault();
+		e.dataTransfer.dropEffect = "move";
+	};
+
+	const handleBlockDrop = (e: React.DragEvent, targetIndex: number) => {
+		e.preventDefault();
+		e.stopPropagation();
+		if (draggedBlockIndex === null || draggedBlockIndex === targetIndex) {
+			setDraggedBlockIndex(null);
+			return;
+		}
+
+		setEditingBlog((prev) => {
+			if (!prev) return prev;
+			const blocks = (prev.blocks as BlogBlock[]) || [];
+			const updated = [...blocks];
+			const draggedBlock = updated[draggedBlockIndex];
+			
+			// Remover bloque arrastrado
+			updated.splice(draggedBlockIndex, 1);
+			
+			// Ajustar índice destino después de remover
+			const adjustedTargetIndex = draggedBlockIndex < targetIndex ? targetIndex - 1 : targetIndex;
+			
+			// Insertar en nueva posición
+			updated.splice(adjustedTargetIndex, 0, draggedBlock);
+			
+			return { ...prev, blocks: updated };
+		});
+		
+		setDraggedBlockIndex(null);
+	};
+
+	const handleBlogDragStart = (e: React.DragEvent, index: number) => {
+		e.dataTransfer.effectAllowed = "move";
+		e.dataTransfer.setData("text/plain", String(index));
+		setDraggedBlogIndex(index);
+	};
+
+	const handleBlogDragOver = (e: React.DragEvent) => {
+		e.preventDefault();
+		e.dataTransfer.dropEffect = "move";
+	};
+
+	const handleBlogDrop = async (e: React.DragEvent, targetIndex: number) => {
+		e.preventDefault();
+		e.stopPropagation();
+		if (draggedBlogIndex === null || draggedBlogIndex === targetIndex) {
+			setDraggedBlogIndex(null);
+			return;
+		}
+
+		const updated = [...blogs];
+		const draggedBlog = updated[draggedBlogIndex];
+		
+		// Remover blog arrastrado
+		updated.splice(draggedBlogIndex, 1);
+		
+		// Ajustar índice destino después de remover
+		const adjustedTargetIndex = draggedBlogIndex < targetIndex ? targetIndex - 1 : targetIndex;
+		
+		// Insertar en nueva posición
+		updated.splice(adjustedTargetIndex, 0, draggedBlog);
+		
+		// Guardar nuevo orden en la BD
+		await updateBlogPositions(updated.map(b => b.id));
+		
+		// Actualizar estado local
+		setBlogs(updated);
+		setDraggedBlogIndex(null);
 	};
 
 	const updateBlockStyle = (
@@ -288,13 +370,22 @@ export default function AdminEditBlogsPage() {
 										No hay blogs aún. Crea el primero.
 									</div>
 								) : (
-									blogs.map((b) => (
+									blogs.map((b, blogIndex) => (
 										<div
 											key={b.id}
-											className={`flex items-center justify-between px-4 py-3 text-sm cursor-pointer transition-colors ${
+											draggable
+											onDragStart={(e) => handleBlogDragStart(e, blogIndex)}
+											onDragOver={handleBlogDragOver}
+											onDrop={(e) => handleBlogDrop(e, blogIndex)}
+											onDragEnd={() => setDraggedBlogIndex(null)}
+											className={`flex items-center justify-between px-4 py-3 text-sm cursor-pointer transition-all ${
 												selectedId === b.id
 													? "bg-purple-50 dark:bg-purple-900/30"
 													: "hover:bg-slate-50 dark:hover:bg-slate-800/60"
+											} ${
+												draggedBlogIndex === blogIndex
+													? "opacity-50 scale-95 ring-2 ring-purple-500"
+													: ""
 											}`}
 											onClick={() => handleSelectBlog(b)}
 										>
@@ -424,10 +515,21 @@ export default function AdminEditBlogsPage() {
 											(editingBlog.blocks as BlogBlock[]).map((block, index) => (
 												<div
 													key={block.id || index}
-													className="border border-slate-200 dark:border-slate-700 rounded-xl p-3 bg-slate-50/60 dark:bg-slate-900/60"
+													className={`border border-slate-200 dark:border-slate-700 rounded-xl p-3 bg-slate-50/60 dark:bg-slate-900/60 transition-all ${
+														draggedBlockIndex === index
+															? "opacity-50 scale-95 ring-2 ring-purple-500"
+															: "hover:border-purple-300 dark:hover:border-purple-700"
+													}`}
 												>
 													<div className="flex items-center justify-between mb-2">
-														<div className="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300">
+														<div 
+															draggable
+															onDragStart={(e) => handleBlockDragStart(e, index)}
+															onDragOver={handleBlockDragOver}
+															onDrop={(e) => handleBlockDrop(e, index)}
+															onDragEnd={() => setDraggedBlockIndex(null)}
+															className="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300 cursor-move"
+														>
 															<span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-slate-200 dark:bg-slate-800 text-[11px]">
 																{index + 1}
 															</span>

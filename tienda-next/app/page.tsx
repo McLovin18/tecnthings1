@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import { getLandingPage } from "./lib/landing-db";
 import ProductoCard from "./components/ProductoCard";
 import { SectionRenderer } from "./landing/sectionRegistry";
+import Hero360Section from "./landing/sections/Hero360Section";
 import type { LandingSection } from "./lib/landing-types";
 import { obtenerProductos } from "./lib/productos-db";
 import { Loading3DIcon } from "./components/Loading3DIcon";
@@ -82,14 +83,40 @@ export default function Home() {
     return base;
   });
 
+  // Agregar Hero360 como sección estática ANTES de la última sección dinámica
+  const maxOrder = Math.max(...sections.map((s) => s.order || 0), 0);
+  const hero360Section: LandingSection = {
+    id: "hero360-static",
+    type: "hero360",
+    order: maxOrder - 0.5, // Justo antes de la última sección dinámica
+    props: {
+      heading: "CONSTRUYE TU",
+      subheading: "NUEVO EQUIPO",
+      description: "Arma tu PC soñada. Nosotros te asesoramos para que juegues sin límites.",
+      primaryButtonText: "ENSAMBLES",
+      primaryButtonLink: "/products-by-category?cat=1775935501638&sub=1775935523162",
+      secondaryButtonText: "ASESORAMIENTO",
+      secondaryButtonLink: "https://wa.me/593962873167?text=Hola%20quiero%20asesoramiento%20para%20mi%20PC",
+      backgroundImage: "/banner_img.jpeg",
+      images: ["/img_1.png", "/img_2.png", "/img_3.png", "/img_4.png"],
+      autoPlay: true,
+      interval: 2000,
+    },
+    styles: {},
+    hidden: false,
+  };
+
+  // Insertar Hero360 en el array
+  const allSections = [...sections, hero360Section];
+
   return (
     <>
       {/* Botón flotante de WhatsApp aún más arriba */}
       <WhatsAppFloatingButton />
-      <div className="bg-white dark:bg-black text-slate-900 dark:text-white py-2 min-h-screen flex flex-col">
-        <main className="flex-1 pb-10 ">
-          {/* Todas las secciones se renderizan de forma dinámica desde Firestore */}
-          {sections
+      <div className="bg-white dark:bg-black text-slate-900 dark:text-white py-2 min-h-screen flex flex-col w-full">
+        <main className="flex-1 w-full flex flex-col pb-4 md:pb-10 gap-6">
+          {/* Todas las secciones incluyendo Hero360 renderizadas por orden */}
+          {allSections
             .slice()
             .sort((a, b) => (a.order || 0) - (b.order || 0))
             .map((section) => (

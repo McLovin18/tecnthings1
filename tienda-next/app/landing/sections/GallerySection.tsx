@@ -28,8 +28,8 @@ export default function GallerySection({
   styles,
   fieldStyles,
 }: GallerySectionProps) {
-  const paddingTop = styles?.paddingTop || "3.5rem";
-  const paddingBottom = styles?.paddingBottom || "3.5rem";
+  const paddingTop = styles?.paddingTop || (typeof window !== "undefined" && window.innerWidth < 768 ? "1rem" : "3.5rem");
+  const paddingBottom = styles?.paddingBottom || (typeof window !== "undefined" && window.innerWidth < 768 ? "1rem" : "3.5rem");
 
   const galleryItems = (
     items && items.length
@@ -98,7 +98,7 @@ export default function GallerySection({
   return (
     <section
       style={{ paddingTop, paddingBottom }}
-      className="w-full px-4 sm:px-6 lg:px-8 flex flex-col items-center"
+      className="w-full px-4 sm:px-6 lg:px-8 flex flex-col items-center m-0"
     >
       {/* ── Título ── */}
       {title && (
@@ -110,10 +110,7 @@ export default function GallerySection({
             {title}
           </h2>
           {/* Línea decorativa bajo el título */}
-          <div
-            className="mx-auto mt-3 h-1 w-16 rounded-full"
-            style={{ background: "var(--accent, #7c3aed)" }}
-          />
+
         </div>
       )}
 

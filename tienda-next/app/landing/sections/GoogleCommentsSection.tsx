@@ -43,8 +43,8 @@ export default function GoogleCommentsSection({
   console.log("[GoogleCommentsSection] comments prop:", comments);
   const bg = styles?.backgroundColor;
   const color = styles?.textColor;
-  const paddingTop = styles?.paddingTop || "2rem";
-  const paddingBottom = styles?.paddingBottom || "2rem";
+  const paddingTop = styles?.paddingTop || (typeof window !== "undefined" && window.innerWidth < 768 ? "1rem" : "2rem");
+  const paddingBottom = styles?.paddingBottom || (typeof window !== "undefined" && window.innerWidth < 768 ? "1rem" : "2rem");
   const borderRadius = styles?.borderRadius || "1.5rem";
 
   // Show loading icon if comments is undefined (loading state)
@@ -64,7 +64,7 @@ export default function GoogleCommentsSection({
         paddingTop,
         paddingBottom,
       }}
-      className="px-4 lg:px-6"
+      className="px-4 lg:px-6 m-0"
     >
       <div className="max-w-4xl mx-auto" style={{ borderRadius }}>
         {title && (

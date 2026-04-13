@@ -18,7 +18,8 @@ const COLLECTION = "blogs";
 
 export async function getAllBlogsAdmin(): Promise<Blog[]> {
   const snap = await getDocs(collection(db, COLLECTION));
-  return snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as Blog[];
+  const blogs = snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as Blog[];
+  return blogs.sort((a, b) => (a.position ?? 999) - (b.position ?? 999));
 }
 
 export async function getPublishedBlogs(): Promise<Blog[]> {
@@ -27,7 +28,8 @@ export async function getPublishedBlogs(): Promise<Blog[]> {
     where("status", "==", "published")
   );
   const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as Blog[];
+  const blogs = snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as Blog[];
+  return blogs.sort((a, b) => (a.position ?? 999) - (b.position ?? 999));
 }
 
 export async function getBlogById(id: string): Promise<Blog | null> {
@@ -73,6 +75,15 @@ export async function setFeaturedBlog(blogId: string): Promise<void> {
   const batch = writeBatch(db);
   snap.docs.forEach((d) => {
     batch.update(d.ref, { featured: d.id === blogId });
+  });
+  await batch.commit();
+}
+
+export async function updateBlogPositions(blogIds: string[]): Promise<void> {
+  const batch = writeBatch(db);
+  blogIds.forEach((id, index) => {
+    const ref = doc(db, COLLECTION, id);
+    batch.update(ref, { position: index });
   });
   await batch.commit();
 }

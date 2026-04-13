@@ -23,8 +23,8 @@ export default function FeaturedProductsSection({
   fieldStyles,
   device,
 }: FeaturedProductsSectionProps) {
-  const paddingTop = styles?.paddingTop || "3rem";
-  const paddingBottom = styles?.paddingBottom || "3rem";
+  const paddingTop = styles?.paddingTop || (typeof window !== "undefined" && window.innerWidth < 768 ? "1rem" : "3rem");
+  const paddingBottom = styles?.paddingBottom || (typeof window !== "undefined" && window.innerWidth < 768 ? "1rem" : "3rem");
 
   // ── Todos los hooks ANTES de cualquier return condicional ──
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -126,7 +126,7 @@ export default function FeaturedProductsSection({
   return (
     <section
       style={{ paddingTop, paddingBottom }}
-      className="w-full max-w-full px-2 flex flex-col items-center overflow-x-hidden"
+      className="w-full max-w-full px-2 flex flex-col items-center overflow-x-hidden m-0"
     >
       {/* Título */}
       {title && (
@@ -140,7 +140,7 @@ export default function FeaturedProductsSection({
 
       {/* Contenedor carrusel */}
       <div
-        className="w-full max-w-7xl mx-auto relative"
+        className={`w-full mx-auto relative ${itemsPerView === 1 ? "max-w-full px-0" : "max-w-7xl"}`}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
@@ -173,7 +173,7 @@ export default function FeaturedProductsSection({
           className={
             isSingleVisible
               ? "flex justify-center w-full max-w-xl mx-auto"
-              : `grid gap-6 place-items-center w-full ${gridCols}`
+              : `grid w-full ${itemsPerView === 1 ? "place-items-start gap-0" : "place-items-center gap-6"} ${gridCols}`
           }
           style={{
             minWidth: 0,

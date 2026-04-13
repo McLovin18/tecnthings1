@@ -112,4 +112,21 @@ export const sectionSchemas: { [key: string]: { type: string; label: string; ico
       // Las categorías individuales se gestionan desde el editor específico de la sección
     ],
   },
+  hero360: {
+    type: "hero360",
+    label: "Hero 360 (PC Builder)",
+    icon: "360",
+    fields: [
+      { name: "heading", type: "text", label: "Título principal", group: "content", stylable: true },
+      { name: "subheading", type: "text", label: "Subtítulo (resaltado)", group: "content", stylable: true },
+      { name: "description", type: "textarea", label: "Descripción", group: "content" },
+      { name: "primaryButtonText", type: "text", label: "Texto botón primario", group: "content" },
+      { name: "primaryButtonLink", type: "text", label: "Enlace botón primario", group: "content" },
+      { name: "secondaryButtonText", type: "text", label: "Texto botón secundario", group: "content" },
+      { name: "secondaryButtonLink", type: "text", label: "Enlace botón secundario", group: "content" },
+      { name: "images", type: "textarea", label: "URLs de imágenes (una por línea)", group: "content" },
+      { name: "autoPlay", type: "boolean", label: "Auto-play activado", group: "content" },
+      { name: "interval", type: "number", label: "Intervalo auto-play (ms)", group: "content" },
+    ],
+  },
 };
