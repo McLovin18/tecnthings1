@@ -102,10 +102,10 @@ export default function FeaturedCategoriesSection({
       }}
       className="px-4 lg:px-6 m-0"
     >
-      <div className="max-w-6xl mx-auto text-slate-900 dark:text-white relative pt-6">
+      <div className="max-w-6xl mx-auto text-slate-900 dark:text-white relative ">
         {title && (
           <h2
-            className="text-4xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-center"
+            className="text-4xl py-3 sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-center"
             style={fieldStyles?.title || { color: "var(--text)" }}
           >
             {title}
@@ -144,7 +144,7 @@ export default function FeaturedCategoriesSection({
             <a
               key={idx}
               href={cat.link || "#"}
-              className="group block w-full max-w-md md:max-w-2xl mx-auto rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-2 md:p-1 hover:border-purple-500 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              className="group block w-full max-w-md md:max-w-2xl mx-auto rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 md:p-1 hover:border-purple-500 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
             >
               {cat.image && (
                 <div className="aspect-square w-full h-80 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 mb-3">
