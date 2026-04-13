@@ -28,10 +28,10 @@ const DEFAULT_PLANS: Plan[] = [
     name: "PC Base",
     description: "Accesible y funcional",
     features: [
-      "Procesador económico",
-      "8GB RAM DDR4",
-      "SSD 256GB",
-      "Ideal para básico",
+      "Procesador Core i5 / Ryzen 5",
+      "16GB RAM DDR4/DDR5",
+      "SSD 512GB / 1TB",
+      "Gráficos integrados",
     ],
     categoryLink: "/products-by-category?cat=1775935501638&sub=1775935523162&minPrice=400&maxPrice=1000",
     categoryName: "PCs Económicas",
@@ -45,9 +45,9 @@ const DEFAULT_PLANS: Plan[] = [
     description: "Para juegos y productividad",
     features: [
       "Procesador Core i5/Ryzen 5",
-      "16GB RAM DDR4",
-      "SSD 512GB",
-      "Gráficos integrados",
+      "16GB RAM DDR4 / DDR5",
+      "SSD NVME 1TB",
+      "Tarjeta de video dedicada",
     ],
     categoryLink: "/products-by-category?cat=1775935501638&sub=1775935523162&minPrice=1000&maxPrice=1800",
     categoryName: "PCs Oficina",
@@ -57,13 +57,13 @@ const DEFAULT_PLANS: Plan[] = [
 
   {
     id: "workstation",
-    name: "PC Pro",
-    description: "Para trabajo y juegos AAA",
+    name: "PC Pro Elite",
+    description: "Para trabajo pesado y juegos AAA",
     features: [
-      "CPU Threadripper/Ryzen Pro",
-      "64GB RAM mínimo",
-      "GPU profesional",
-      "Storage RAID",
+      "Procesador Ultra-7 / Ryzen 7 AM5",
+      "32GB RAM DDR5",
+      "SSD NVME 1TB",
+      "Tarjeta de video RTX Serie 50",
     ],
     categoryLink: "/products-by-category?cat=1775935501638&sub=1775935523162&minPrice=1800&maxPrice=3000",
     categoryName: "Estaciones de Trabajo",
@@ -76,12 +76,12 @@ const DEFAULT_PLANS: Plan[] = [
   {
     id: "gamer",
     name: "PC Ultra instinto",
-    description: "Para entusiastas y creadores profesionales",
+    description: "Para Entusiastas, Profesionales y Creadores de contenido",
     features: [
-      "Procesador de alto rendimiento",
-      "Tarjeta gráfica RTX 4080+",
-      "32GB RAM DDR5",
-      "SSD 1TB NVMe",
+      "Procesadores Ultra 9 / Ryzen 9 AM5",
+      "32/64GB RAM DDR5",
+      "SSD NVME 1 / 2TB",
+      "Tarjetas de video topes de Gama ",
     ],
     categoryLink: "/products-by-category?cat=1775935501638&sub=1775935523162&minPrice=3000&maxPrice=6000",
     categoryName: "Ensambles Gaming",
@@ -93,7 +93,7 @@ const DEFAULT_PLANS: Plan[] = [
 
 export default function PlansSection({
   plans = DEFAULT_PLANS,
-  title = "Elige tu Plan",
+  title = "Elige tu equipo ideal",
   subtitle = "Selecciona el ensamble que mejor se adapta a tus necesidades",
 }: PlansSectionProps) {
   return (
@@ -141,7 +141,7 @@ export default function PlansSection({
                   <h3 className="text-2xl font-bold mb-1">{plan.name}</h3>
                   <p className="text-sm opacity-90">{plan.description}</p>
                   {plan.priceRange && (
-                    <p className="text-xs opacity-75 mt-2">Rango: ${plan.priceRange.min} - ${plan.priceRange.max}</p>
+                    <p className="text-xs opacity-75 mt-2">Desde: ${plan.priceRange.min} - ${plan.priceRange.max}</p>
                   )}
                   {plan.price && (
                     <p className="text-3xl font-extrabold mt-4">{plan.price}</p>
