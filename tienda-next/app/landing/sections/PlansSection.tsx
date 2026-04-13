@@ -35,7 +35,7 @@ const DEFAULT_PLANS: Plan[] = [
     ],
     categoryLink: "/products-by-category?cat=1775935501638&sub=1775935523162&minPrice=100&maxPrice=450",
     categoryName: "PCs Económicas",
-    color: "from-orange-600 to-orange-800",
+    color: "black",
     priceRange: { min: 100, max: 450 },
   },
 
@@ -98,6 +98,15 @@ export default function PlansSection({
 }: PlansSectionProps) {
   return (
     <section className="w-full px-4 py-12 md:py-16 bg-slate-50 dark:bg-slate-900 m-0">
+      <style>{`
+        @keyframes planGlow {
+          0%, 100% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.3), inset 0 0 20px rgba(59, 130, 246, 0.1); }
+          50% { box-shadow: 0 0 30px rgba(59, 130, 246, 0.5), inset 0 0 20px rgba(59, 130, 246, 0.15); }
+        }
+        .plan-header-workstation {
+          animation: planGlow 3s ease-in-out infinite;
+        }
+      `}</style>
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12">
@@ -111,25 +120,33 @@ export default function PlansSection({
 
         {/* Plans Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {plans.map((plan, idx) => (
+          {plans.map((plan, idx) => {
+            const isHighlightedPlan = plan.id === "workstation";
+            return (
             <div
               key={plan.id}
-              className="flex flex-col h-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-md hover:shadow-lg transition-all overflow-hidden group"
+              className="flex flex-col h-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-md hover:shadow-lg hover:scale-y-105 transition-all overflow-hidden group"
             >
               {/* Header del Plan */}
               <div
-                className={`bg-linear-to-br ${
-                  plan.color || "from-purple-600 to-purple-800"
-                } px-6 py-8 text-white`}
+                className={`bg-black px-6 py-8 text-white relative overflow-hidden transition-all duration-300 ${
+                  isHighlightedPlan ? "plan-header-workstation shadow-2xl" : "shadow-lg hover:shadow-xl"
+                }`}
               >
-                <h3 className="text-2xl font-bold mb-1">{plan.name}</h3>
-                <p className="text-sm opacity-90">{plan.description}</p>
-                {plan.priceRange && (
-                  <p className="text-xs opacity-75 mt-2">Rango: ${plan.priceRange.min} - ${plan.priceRange.max}</p>
+                {/* Efecto de brillo sutil en plans destacados */}
+                {isHighlightedPlan && (
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-blue-500/20 to-transparent rounded-full blur-3xl opacity-60"></div>
                 )}
-                {plan.price && (
-                  <p className="text-3xl font-extrabold mt-4">{plan.price}</p>
-                )}
+                <div className="relative z-10">
+                  <h3 className="text-2xl font-bold mb-1">{plan.name}</h3>
+                  <p className="text-sm opacity-90">{plan.description}</p>
+                  {plan.priceRange && (
+                    <p className="text-xs opacity-75 mt-2">Rango: ${plan.priceRange.min} - ${plan.priceRange.max}</p>
+                  )}
+                  {plan.price && (
+                    <p className="text-3xl font-extrabold mt-4">{plan.price}</p>
+                  )}
+                </div>
               </div>
 
               {/* Features */}
@@ -168,7 +185,8 @@ export default function PlansSection({
                 </Link>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>
