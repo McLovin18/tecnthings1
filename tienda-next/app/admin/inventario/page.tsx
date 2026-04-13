@@ -66,8 +66,10 @@ export default function AdminInventario() {
     .sort((a, b) => {
       if (orden === "price-low") return a.precio - b.precio;
       if (orden === "price-high") return b.precio - a.precio;
-      if (a.createdAt && b.createdAt) return b.createdAt - a.createdAt;
-      return 0;
+      // Por defecto: ordenar por más nuevos (createdAt descendente)
+      const aCreated = a.createdAt || 0;
+      const bCreated = b.createdAt || 0;
+      return bCreated - aCreated;
     });
 
   return (

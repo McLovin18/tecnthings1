@@ -26,7 +26,24 @@ export async function obtenerProductosPorSubcategoria(subcategoria, categoria, e
     where("categoria", "==", categoria)
   );
   const snapshot = await getDocs(q);
-  let productos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  let productos = snapshot.docs.map(doc => {
+    const data = doc.data();
+    const producto = { id: doc.id, ...data };
+    
+    // Normalizar createdAt
+    if (!producto.createdAt) {
+      if (data.fechaCreacion && typeof data.fechaCreacion.toMillis === 'function') {
+        producto.createdAt = data.fechaCreacion.toMillis();
+      } else if (data.fechaCreacion && typeof data.fechaCreacion === 'number') {
+        producto.createdAt = data.fechaCreacion;
+      } else {
+        producto.createdAt = 0;
+      }
+    }
+    
+    return producto;
+  });
+  
   if (!opts.incluirSinStock) {
     productos = productos.filter(p => typeof p.stock !== "number" || p.stock > 0);
   }
@@ -44,7 +61,24 @@ export async function obtenerProductosPorSubsubcategoria(subsubcategoria, subcat
     where("categoria", "==", categoria)
   );
   const snapshot = await getDocs(q);
-  let productos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  let productos = snapshot.docs.map(doc => {
+    const data = doc.data();
+    const producto = { id: doc.id, ...data };
+    
+    // Normalizar createdAt
+    if (!producto.createdAt) {
+      if (data.fechaCreacion && typeof data.fechaCreacion.toMillis === 'function') {
+        producto.createdAt = data.fechaCreacion.toMillis();
+      } else if (data.fechaCreacion && typeof data.fechaCreacion === 'number') {
+        producto.createdAt = data.fechaCreacion;
+      } else {
+        producto.createdAt = 0;
+      }
+    }
+    
+    return producto;
+  });
+  
   if (!opts.incluirSinStock) {
     productos = productos.filter(p => typeof p.stock !== "number" || p.stock > 0);
   }
@@ -85,20 +119,40 @@ import { serverTimestamp } from "firebase/firestore";
 
 export async function crearProducto(producto: Producto): Promise<Producto> {
   const cleanProducto = cleanUndefinedDeep(producto);
-  // Agregar campo de fecha de creación
+  // Agregar campo de fecha de creación (timestamp en ms para ordenamiento)
   const productoConFecha = {
     ...cleanProducto,
+    createdAt: Date.now(),
     fechaCreacion: serverTimestamp(),
   };
   const docRef = await addDoc(collection(db, COLLECTION), productoConFecha);
-  return { ...cleanProducto, id: docRef.id };
+  return { ...cleanProducto, id: docRef.id, createdAt: Date.now() };
 }
 
 // Obtener todos los productos
 // Si opts.incluirSinStock es true, no filtra por stock (solo para admin/inventario)
 export async function obtenerProductos(opts = {}) {
   const snapshot = await getDocs(collection(db, COLLECTION));
-  let productos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  let productos = snapshot.docs.map(doc => {
+    const data = doc.data();
+    const producto = { id: doc.id, ...data };
+    
+    // Normalizar createdAt: si no existe, intentar usar fechaCreacion o asignar 0
+    if (!producto.createdAt) {
+      if (data.fechaCreacion && typeof data.fechaCreacion.toMillis === 'function') {
+        // Si fechaCreacion es un Timestamp de Firebase, convertir a ms
+        producto.createdAt = data.fechaCreacion.toMillis();
+      } else if (data.fechaCreacion && typeof data.fechaCreacion === 'number') {
+        producto.createdAt = data.fechaCreacion;
+      } else {
+        // Si no hay fecha, asignar 0 (aparecerá al final)
+        producto.createdAt = 0;
+      }
+    }
+    
+    return producto;
+  });
+  
   if (!opts.incluirSinStock) {
     productos = productos.filter(p => typeof p.stock !== "number" || p.stock > 0);
   }
@@ -110,7 +164,26 @@ export async function obtenerProductos(opts = {}) {
 export async function obtenerProductosPorCategoria(categoria, excludeId = null, opts = {}) {
   const q = query(collection(db, COLLECTION), where("categoria", "==", categoria));
   const snapshot = await getDocs(q);
-  let productos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  let productos = snapshot.docs.map(doc => {
+    const data = doc.data();
+    const producto = { id: doc.id, ...data };
+    
+    // Normalizar createdAt: si no existe, intentar usar fechaCreacion o asignar 0
+    if (!producto.createdAt) {
+      if (data.fechaCreacion && typeof data.fechaCreacion.toMillis === 'function') {
+        // Si fechaCreacion es un Timestamp de Firebase, convertir a ms
+        producto.createdAt = data.fechaCreacion.toMillis();
+      } else if (data.fechaCreacion && typeof data.fechaCreacion === 'number') {
+        producto.createdAt = data.fechaCreacion;
+      } else {
+        // Si no hay fecha, asignar 0 (aparecerá al final)
+        producto.createdAt = 0;
+      }
+    }
+    
+    return producto;
+  });
+  
   if (!opts.incluirSinStock) {
     productos = productos.filter(p => typeof p.stock !== "number" || p.stock > 0);
   }
