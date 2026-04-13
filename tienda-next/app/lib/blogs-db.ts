@@ -79,6 +79,15 @@ export async function setFeaturedBlog(blogId: string): Promise<void> {
   await batch.commit();
 }
 
+export async function removeFeaturedBlog(): Promise<void> {
+  const snap = await getDocs(collection(db, COLLECTION));
+  const batch = writeBatch(db);
+  snap.docs.forEach((d) => {
+    batch.update(d.ref, { featured: false });
+  });
+  await batch.commit();
+}
+
 export async function updateBlogPositions(blogIds: string[]): Promise<void> {
   const batch = writeBatch(db);
   blogIds.forEach((id, index) => {

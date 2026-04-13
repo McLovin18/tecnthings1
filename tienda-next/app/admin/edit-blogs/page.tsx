@@ -12,6 +12,7 @@ import {
 	saveBlog,
 	deleteBlog,
 	setFeaturedBlog,
+	removeFeaturedBlog,
 	updateBlogPositions,
 } from "../../lib/blogs-db";
 import { uploadImageAndGetUrl } from "../../lib/upload-image";
@@ -318,12 +319,29 @@ export default function AdminEditBlogsPage() {
 			return;
 		}
 		setSaving(true);
-		await setFeaturedBlog(editingBlog.id);
-		setBlogs((prev) =>
-			prev.map((b) => ({ ...b, featured: b.id === editingBlog.id }))
-		);
-		setEditingBlog((prev) => (prev ? { ...prev, featured: true } : prev));
-		setSaving(false);
+		
+		try {
+			if (editingBlog.featured) {
+				// Quitar destacado
+				await removeFeaturedBlog();
+				setBlogs((prev) =>
+					prev.map((b) => ({ ...b, featured: false }))
+				);
+				setEditingBlog((prev) => (prev ? { ...prev, featured: false } : prev));
+			} else {
+				// Marcar como destacado
+				await setFeaturedBlog(editingBlog.id);
+				setBlogs((prev) =>
+					prev.map((b) => ({ ...b, featured: b.id === editingBlog.id }))
+				);
+				setEditingBlog((prev) => (prev ? { ...prev, featured: true } : prev));
+			}
+		} catch (error) {
+			console.error("Error al cambiar destacado:", error);
+			alert("Error al cambiar el estado destacado del blog.");
+		} finally {
+			setSaving(false);
+		}
 	};
 
 	const previewBlog = editingBlog ? toPreviewBlog(editingBlog) : null;
@@ -462,10 +480,14 @@ export default function AdminEditBlogsPage() {
 												type="button"
 												onClick={handleMakeFeatured}
 												disabled={!editingBlog.id || saving}
-												className="inline-flex items-center gap-1 rounded-full border border-amber-500 text-amber-700 dark:text-amber-300 px-3 py-1.5 text-[11px] font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+												className={`inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-[11px] font-semibold disabled:opacity-50 disabled:cursor-not-allowed ${
+													editingBlog.featured
+														? "border-red-500 text-red-700 dark:text-red-300"
+														: "border-amber-500 text-amber-700 dark:text-amber-300"
+												}`}
 											>
-												<span className="material-icons-round text-sm">star</span>
-												Marcar como destacado
+												<span className="material-icons-round text-sm">{editingBlog.featured ? "star_off" : "star"}</span>
+												{editingBlog.featured ? "Quitar destacado" : "Marcar como destacado"}
 											</button>
 										</div>
 									</div>
