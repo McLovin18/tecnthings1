@@ -210,7 +210,7 @@ export default function ProductoCard({
             text-xl sm:text-lg font-extrabold
             text-[#7b68ee] dark:text-purple-300
           ">
-            ${finalPrice.toFixed(2)}
+            ${basePrice.toFixed(2)}
           </span>
         </div>
 
