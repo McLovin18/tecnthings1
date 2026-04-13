@@ -144,10 +144,10 @@ export default function FeaturedCategoriesSection({
             <a
               key={idx}
               href={cat.link || "#"}
-              className="group block w-full max-w-sm md:max-w-md mx-auto rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-2 md:p-2 hover:border-purple-500 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              className="group block w-full max-w-md md:max-w-2xl mx-auto rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 md:p-5 hover:border-purple-500 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
             >
               {cat.image && (
-                <div className="aspect-square rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 mb-2">
+                <div className="aspect-square w-full h-80 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 mb-3">
                   <img
                     src={cat.image}
                     alt={cat.title || "Categoría"}
@@ -157,7 +157,7 @@ export default function FeaturedCategoriesSection({
               )}
               {cat.title && (
                 <h3
-                  className="text-sm md:text-base font-semibold text-center md:text-left"
+                  className="text-base md:text-lg font-semibold text-center md:text-left"
                   style={fieldStyles?.itemTitle || { color: "var(--text, #1e293b)" }}
                 >
                   {cat.title}

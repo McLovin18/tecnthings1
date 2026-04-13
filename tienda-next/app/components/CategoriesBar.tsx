@@ -85,7 +85,7 @@ const CategoriesBar = () => {
                         <span className="material-icons-round text-base">
                           category
                         </span>
-                        <span className="text-[#7b68ee] dark:text-white">{sub.nombre}</span>
+                        <span className="!text-black group-hover/submenu:!text-[#7b68ee] transition-colors">{sub.nombre}</span>
 
                         {/* Subsubcategorías */}
                         {sub.subcategorias &&

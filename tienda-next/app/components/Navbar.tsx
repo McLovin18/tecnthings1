@@ -83,7 +83,7 @@ function MobileCategoriesAccordion({ basePath }: { basePath: string }) {
                   {sub.subcategorias?.length > 0 ? (
                     <>
                       <button
-                        className="w-full flex items-center justify-between px-3 py-2 text-sm transition-colors"
+                        className="w-full flex items-center justify-between px-3 py-2 text-sm transition-shadow hover:shadow-sm rounded-md"
                         style={{ color: "var(--text)" }}
                         onClick={() =>
                           setOpenSub(openSub === sub.id ? null : sub.id)
@@ -122,7 +122,7 @@ function MobileCategoriesAccordion({ basePath }: { basePath: string }) {
                   ) : (
                     <a
                       href={`${basePath}?cat=${cat.id}&sub=${sub.id}`}
-                      className="block px-3 py-2 text-sm transition-colors"
+                      className="block px-3 py-2 text-sm transition-shadow hover:shadow-sm rounded-md"
                       style={{ color: "var(--text)" }}
                     >
                       {sub.nombre}
@@ -583,7 +583,7 @@ export const Navbar = () => {
             <a
               key={link.href}
               href={link.href}
-              className="px-3 py-2.5 text-sm font-medium whitespace-nowrap transition-colors rounded-xl hover:opacity-80"
+              className="px-3 py-2.5 text-sm font-medium whitespace-nowrap transition-shadow rounded-xl hover:shadow-sm"
               style={{ color: "var(--text)" }}
             >
               {link.label}
@@ -603,7 +603,7 @@ export const Navbar = () => {
             <div key={cat.id} className="relative group  shrink-0">
               {cat.subcategorias?.length > 0 ? (
                 <button
-                  className="flex items-center gap-1 px-3 py-2.5 text-sm font-medium whitespace-nowrap transition-colors rounded-xl hover:opacity-80 text-black dark:text-white"
+                  className="flex items-center gap-1 px-3 py-2.5 text-sm font-medium whitespace-nowrap transition-shadow rounded-xl hover:shadow-sm text-black dark:text-white"
                 >
                   {cat.icono && (
                     <span className="material-icons-round dark:text-white" style={{ fontSize: 15 }}>{cat.icono}</span>
@@ -619,7 +619,7 @@ export const Navbar = () => {
               ) : (
                 <Link
                   href={`${basePath}?cat=${cat.id}`}
-                  className="flex items-center gap-1 px-3 py-2.5 text-sm font-medium whitespace-nowrap transition-colors rounded-xl hover:opacity-80 text-black dark:text-white"
+                  className="flex items-center gap-1 px-3 py-2.5 text-sm font-medium whitespace-nowrap transition-shadow rounded-xl hover:shadow-sm text-black dark:text-white"
                 >
                   {cat.icono && (
                     <span className="material-icons-round dark:text-white" style={{ fontSize: 15 }}>{cat.icono}</span>
@@ -631,7 +631,7 @@ export const Navbar = () => {
               {/* Dropdown nivel 1 */}
               {cat.subcategorias?.length > 0 && (
                 <div
-                  className="absolute left-0 top-full min-w-52 rounded-2xl border shadow-xl py-1.5 z-50
+                  className="absolute left-0 top-full min-w-52 rounded-2xl border hover:text-[#7b68ee] shadow-xl py-1.5 z-50
                              opacity-0 pointer-events-none translate-y-1
                              group-hover:opacity-100 group-hover:pointer-events-auto group-hover:translate-y-0
                              transition-all duration-150 bg-white dark:bg-[#181028]"
@@ -641,10 +641,10 @@ export const Navbar = () => {
                     <div key={sub.id} className="relative group/sub">
                       {sub.subcategorias?.length > 0 ? (
                         <button
-                          className="w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors text-[#7b68ee] dark:text-white"
+                          className="w-full flex items-center justify-between px-4 py-2.5 text-sm transition-shadow !text-black dark:!text-white hover:shadow-sm rounded-md"
                         >
-                          <span className="text-[#7b68ee] dark:text-white">{sub.nombre}</span>
-                          <span className="material-icons-round text-sm dark:text-white">
+                          <span className="!text-black dark:!text-white group-hover/sub:!text-[#7b68ee] dark:group-hover/sub:!text-[#7b68ee] transition-colors">{sub.nombre}</span>
+                          <span className="material-icons-round text-sm dark:text-white hover:text-[#7b68ee]">
                             chevron_right
                           </span>
 
@@ -653,16 +653,16 @@ export const Navbar = () => {
                             className="absolute left-full top-0 ml-1 min-w-44 rounded-2xl border shadow-xl py-1.5 z-60
                                        opacity-0 pointer-events-none translate-x-1
                                        group-hover/sub:opacity-100 group-hover/sub:pointer-events-auto group-hover/sub:translate-x-0
-                                       transition-all duration-150 bg-white dark:bg-[#181028]"
+                                       transition-all duration-150 bg-white dark:bg-[#181028] hover:text-[#7b68ee]"
                             style={{ borderColor: "var(--border)" }}
                           >
                             {sub.subcategorias.map((subsub: any) => (
                               <Link
                                 key={subsub.id}
                                 href={`${basePath}?cat=${cat.id}&sub=${sub.id}&subsub=${subsub.id}`}
-                                className="block px-4 py-2.5 text-sm transition-colors text-black dark:text-white"
+                                className="block px-4 py-2.5 text-sm hover:text-[#7b68ee] transition-colors text-black dark:text-white"
                               >
-                                <span className="dark:text-white">{subsub.nombre}</span>
+                                <span className="dark:text-white hover:text-[#7b68ee]">{subsub.nombre}</span>
                               </Link>
                             ))}
                           </div>
@@ -670,9 +670,9 @@ export const Navbar = () => {
                       ) : (
                         <Link
                           href={`${basePath}?cat=${cat.id}&sub=${sub.id}`}
-                          className="block px-4 py-2.5 text-sm transition-colors text-[#7b68ee] dark:text-white"
+                          className="block px-4 py-2.5 text-sm transition-shadow !text-black dark:!text-white hover:shadow-sm rounded-md"
                         >
-                          <span className="text-[#7b68ee] dark:text-white">{sub.nombre}</span>
+                          <span className="!text-black dark:!text-white group-hover/sub:!text-[#7b68ee] dark:group-hover/sub:!text-[#7b68ee] transition-colors">{sub.nombre}</span>
                         </Link>
                       )}
                     </div>
