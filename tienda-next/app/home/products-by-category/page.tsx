@@ -81,24 +81,18 @@ export default function ProductsByCategoryPage() {
           (p.nombre?.toLowerCase() || "").includes(texto) ||
           (p.descripcion?.toLowerCase() || "").includes(texto);
 
-        const base = Number(p.precio || 0);
-        const disc = Number(p.descuento || 0);
-        const finalPrice = disc > 0 && disc < 100 ? base * (1 - disc / 100) : base;
+        const basePrice = Number(p.precio || 0);
         const min = precioMin ? parseFloat(precioMin) : null;
         const max = precioMax ? parseFloat(precioMax) : null;
-        const matchMin = min === null || finalPrice >= min;
-        const matchMax = max === null || finalPrice <= max;
+        const matchMin = min === null || basePrice >= min;
+        const matchMax = max === null || basePrice <= max;
 
         return matchTexto && matchMin && matchMax;
       })
       .sort((a: any, b: any) => {
-        const fp = (p: any) => {
-          const base = Number(p.precio || 0);
-          const d = Number(p.descuento || 0);
-          return d > 0 && d < 100 ? base * (1 - d / 100) : base;
-        };
-        if (orden === "price-low") return fp(a) - fp(b);
-        if (orden === "price-high") return fp(b) - fp(a);
+        const basePrice = (p: any) => Number(p.precio || 0);
+        if (orden === "price-low") return basePrice(a) - basePrice(b);
+        if (orden === "price-high") return basePrice(b) - basePrice(a);
         if (a.createdAt && b.createdAt) return b.createdAt - a.createdAt;
         return 0;
       });

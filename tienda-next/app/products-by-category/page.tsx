@@ -167,23 +167,17 @@ useEffect(() => {
           (p.nombre?.toLowerCase() || "").includes(texto) ||
           (p.descripcion?.toLowerCase() || "").includes(texto);
 
-        const base = Number(p.precio || 0);
-        const disc = Number(p.descuento || 0);
-        const finalPrice = disc > 0 && disc < 100 ? base * (1 - disc / 100) : base;
+        const basePrice = Number(p.precio || 0);
         
-        const matchMin = minNum === null || finalPrice >= minNum;
-        const matchMax = maxNum === null || finalPrice <= maxNum;
+        const matchMin = minNum === null || basePrice >= minNum;
+        const matchMax = maxNum === null || basePrice <= maxNum;
 
         return matchTexto && matchMin && matchMax;
       })
       .sort((a: any, b: any) => {
-        const fp = (p: any) => {
-          const base = Number(p.precio || 0);
-          const d = Number(p.descuento || 0);
-          return d > 0 && d < 100 ? base * (1 - d / 100) : base;
-        };
-        if (orden === "price-low") return fp(a) - fp(b);
-        if (orden === "price-high") return fp(b) - fp(a);
+        const basePrice = (p: any) => Number(p.precio || 0);
+        if (orden === "price-low") return basePrice(a) - basePrice(b);
+        if (orden === "price-high") return basePrice(b) - basePrice(a);
         return (new Date(b.createdAt).getTime() || 0) - (new Date(a.createdAt).getTime() || 0);
       });
     return filtered;
