@@ -109,7 +109,13 @@ export default function Home() {
         // Hacer scroll hacia PlansSection después de mostrar
         setTimeout(() => {
           if (plansRef.current) {
-            plansRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            const elementPosition = plansRef.current.getBoundingClientRect().top + window.scrollY;
+            // Restar 120px para dejar espacio del navbar y un margen adicional
+            const offsetPosition = elementPosition - 120;
+            window.scrollTo({
+              top: offsetPosition,
+              behavior: 'smooth'
+            });
           }
         }, 100);
       },

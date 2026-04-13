@@ -93,7 +93,7 @@ const DEFAULT_PLANS: Plan[] = [
 
 export default function PlansSection({
   plans = DEFAULT_PLANS,
-  title = "Elige tu equipo ideal",
+  title = "Elige tu Equipo Ideal",
   subtitle = "Selecciona el ensamble que mejor se adapta a tus necesidades",
 }: PlansSectionProps) {
   return (
