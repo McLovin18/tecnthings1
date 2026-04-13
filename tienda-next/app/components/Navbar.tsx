@@ -641,9 +641,9 @@ export const Navbar = () => {
                     <div key={sub.id} className="relative group/sub">
                       {sub.subcategorias?.length > 0 ? (
                         <button
-                          className="w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors text-black dark:text-white"
+                          className="w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors text-[#7b68ee] dark:text-white"
                         >
-                          <span className="dark:text-white">{sub.nombre}</span>
+                          <span className="text-[#7b68ee] dark:text-white">{sub.nombre}</span>
                           <span className="material-icons-round text-sm dark:text-white">
                             chevron_right
                           </span>
@@ -670,9 +670,9 @@ export const Navbar = () => {
                       ) : (
                         <Link
                           href={`${basePath}?cat=${cat.id}&sub=${sub.id}`}
-                          className="block px-4 py-2.5 text-sm transition-colors text-black dark:text-white"
+                          className="block px-4 py-2.5 text-sm transition-colors text-[#7b68ee] dark:text-white"
                         >
-                          <span className="dark:text-white">{sub.nombre}</span>
+                          <span className="text-[#7b68ee] dark:text-white">{sub.nombre}</span>
                         </Link>
                       )}
                     </div>

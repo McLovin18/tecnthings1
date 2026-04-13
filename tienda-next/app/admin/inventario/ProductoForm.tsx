@@ -51,6 +51,7 @@ export default function ProductoForm({ initialData = null, onSave, onCancel }: P
   const [marca, setMarca] = useState<string>(initialData?.marca || "");
   const [marcas, setMarcas] = useState<{id: string, nombre: string}[]>([]);
   const [categoryPathChanged, setCategoryPathChanged] = useState(false);
+  const [draggedImageIdx, setDraggedImageIdx] = useState<number | null>(null);
 
   useEffect(() => {
     obtenerMarcas().then(setMarcas);
@@ -89,6 +90,27 @@ export default function ProductoForm({ initialData = null, onSave, onCancel }: P
   }
   function handleRemoveImagen(idx: number) {
     setImagenes(imagenes.filter((_, i) => i !== idx));
+  }
+
+  // ── Manejo de drag & drop para reordenar imágenes ──
+  function handleImagenDragStart(idx: number) {
+    setDraggedImageIdx(idx);
+  }
+
+  function handleImagenDragOver(e: React.DragEvent) {
+    e.preventDefault();
+  }
+
+  function handleImagenDrop(dropIdx: number) {
+    if (draggedImageIdx === null || draggedImageIdx === dropIdx) {
+      setDraggedImageIdx(null);
+      return;
+    }
+    const newImagenes = [...imagenes];
+    const [draggedImg] = newImagenes.splice(draggedImageIdx, 1);
+    newImagenes.splice(dropIdx, 0, draggedImg);
+    setImagenes(newImagenes);
+    setDraggedImageIdx(null);
   }
 
   // Manejo de características
@@ -407,7 +429,14 @@ export default function ProductoForm({ initialData = null, onSave, onCancel }: P
         {imagenes.map((img, idx) => {
           const url = typeof img === "string" ? img : (img instanceof File ? URL.createObjectURL(img) : "");
           return (
-            <div key={idx} className="flex items-center gap-2 bg-blue-50/60 dark:bg-blue-900/20 rounded-lg p-2 border border-blue-100 dark:border-blue-800">
+            <div
+              key={idx}
+              draggable
+              onDragStart={() => handleImagenDragStart(idx)}
+              onDragOver={handleImagenDragOver}
+              onDrop={() => handleImagenDrop(idx)}
+              className={`flex items-center gap-2 bg-blue-50/60 dark:bg-blue-900/20 rounded-lg p-2 border border-blue-100 dark:border-blue-800 cursor-move transition-opacity ${draggedImageIdx === idx ? "opacity-50" : ""}`}
+            >
               {url && (url.startsWith("http") || url.startsWith("blob:")) ? (
                 <img src={url} alt="img" className="w-16 h-16 object-cover rounded shadow border-2 border-blue-200" />
               ) : null}

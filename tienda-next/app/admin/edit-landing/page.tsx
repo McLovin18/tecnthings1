@@ -98,6 +98,13 @@ export default function LandingEditor() {
   const [activeHeroItemFieldStyles, setActiveHeroItemFieldStyles] = useState<
     Record<string, { index: number; fieldName: string } | null>
   >({});
+  
+  // Para drag & drop de items dentro de secciones
+  const [draggedItemState, setDraggedItemState] = useState<{
+    sectionId: string;
+    itemType: "gallery" | "featured-category" | "hero";
+    fromIndex: number;
+  } | null>(null);
   const [previewDevice, setPreviewDevice] = useState<"desktop" | "mobile">(
     "desktop"
   );
@@ -828,6 +835,38 @@ export default function LandingEditor() {
     await updateGalleryItems(sectionIndex, (items) =>
       items.filter((_, idx) => idx !== itemIndex)
     );
+  };
+
+  // ──────── Reordenar items dentro de galería ────────────────────────────────
+  const reorderGalleryItems = async (
+    sectionIndex: number,
+    fromIndex: number,
+    toIndex: number
+  ) => {
+    if (fromIndex === toIndex) return;
+
+    await updateGalleryItems(sectionIndex, (items) => {
+      const copy = [...items];
+      const [item] = copy.splice(fromIndex, 1);
+      copy.splice(toIndex, 0, item);
+      return copy;
+    });
+  };
+
+  // ──────── Reordenar items dentro de featured categories ────────────────────
+  const reorderFeaturedCategoryItems = async (
+    sectionIndex: number,
+    fromIndex: number,
+    toIndex: number
+  ) => {
+    if (fromIndex === toIndex) return;
+
+    await updateFeaturedCategoryItems(sectionIndex, (items) => {
+      const copy = [...items];
+      const [item] = copy.splice(fromIndex, 1);
+      copy.splice(toIndex, 0, item);
+      return copy;
+    });
   };
 
   const scrollFeaturedList = (direction: "left" | "right") => {
@@ -2074,11 +2113,28 @@ export default function LandingEditor() {
                                         return (
                                           <>
                                             <div className="flex items-stretch gap-3 overflow-x-auto pb-2">
-                                              {galleryItems.map((item, itemIndex) => (
-                                                <div
-                                                  key={itemIndex}
-                                                  className="shrink-0 w-56 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 p-2 flex flex-col gap-2"
-                                                >
+                                              {galleryItems.map((item, itemIndex) => {
+                                                const isDragging = draggedItemState?.sectionId === section.id && draggedItemState?.itemType === "gallery" && draggedItemState?.fromIndex === itemIndex;
+                                                return (
+                                                  <div
+                                                    key={itemIndex}
+                                                    draggable
+                                                    onDragStart={() => setDraggedItemState({ sectionId: section.id, itemType: "gallery", fromIndex: itemIndex })}
+                                                    onDragEnd={() => setDraggedItemState(null)}
+                                                    onDragOver={(e) => e.preventDefault()}
+                                                    onDrop={async (e) => {
+                                                      e.preventDefault();
+                                                      if (draggedItemState?.sectionId === section.id && draggedItemState?.itemType === "gallery") {
+                                                        await reorderGalleryItems(idx, draggedItemState.fromIndex, itemIndex);
+                                                        setDraggedItemState(null);
+                                                      }
+                                                    }}
+                                                    className={`shrink-0 w-56 rounded-lg border p-2 flex flex-col gap-2 transition-all cursor-grab active:cursor-grabbing ${
+                                                      isDragging
+                                                        ? "opacity-50 scale-95 border-purple-500 bg-purple-50 dark:bg-purple-900/20"
+                                                        : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:shadow-md"
+                                                    }`}
+                                                  >
                                                   <div className="flex items-center justify-between gap-2">
                                                     <span className="text-[11px] font-semibold text-slate-500">
                                                       Item {itemIndex + 1}
@@ -2128,7 +2184,8 @@ export default function LandingEditor() {
                                                     />
                                                   </div>
                                                 </div>
-                                              ))}
+                                                );
+                                              })}
                                             </div>
                                             <button
                                               type="button"
@@ -2306,11 +2363,28 @@ export default function LandingEditor() {
                                         return (
                                           <>
                                             <div className="flex items-stretch gap-3 overflow-x-auto pb-2">
-                                              {items.map((item, itemIndex) => (
-                                                <div
-                                                  key={itemIndex}
-                                                  className="shrink-0 w-64 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 p-3 flex flex-col gap-2"
-                                                >
+                                              {items.map((item, itemIndex) => {
+                                                const isDragging = draggedItemState?.sectionId === section.id && draggedItemState?.itemType === "featured-category" && draggedItemState?.fromIndex === itemIndex;
+                                                return (
+                                                  <div
+                                                    key={itemIndex}
+                                                    draggable
+                                                    onDragStart={() => setDraggedItemState({ sectionId: section.id, itemType: "featured-category", fromIndex: itemIndex })}
+                                                    onDragEnd={() => setDraggedItemState(null)}
+                                                    onDragOver={(e) => e.preventDefault()}
+                                                    onDrop={async (e) => {
+                                                      e.preventDefault();
+                                                      if (draggedItemState?.sectionId === section.id && draggedItemState?.itemType === "featured-category") {
+                                                        await reorderFeaturedCategoryItems(idx, draggedItemState.fromIndex, itemIndex);
+                                                        setDraggedItemState(null);
+                                                      }
+                                                    }}
+                                                    className={`shrink-0 w-64 rounded-lg border p-3 flex flex-col gap-2 transition-all cursor-grab active:cursor-grabbing ${
+                                                      isDragging
+                                                        ? "opacity-50 scale-95 border-purple-500 bg-purple-50 dark:bg-purple-900/20"
+                                                        : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:shadow-md"
+                                                    }`}
+                                                  >
                                                   <div className="flex items-center justify-between gap-2 mb-1">
                                                     <span className="text-[11px] font-semibold text-slate-500">
                                                       Categoría {itemIndex + 1}
@@ -2358,7 +2432,7 @@ export default function LandingEditor() {
                                                   />
                                                   <div className="space-y-1 mt-1">
                                                     {item.image && (
-                                                      <div className="aspect-video rounded-md overflow-hidden bg-slate-100 dark:bg-slate-800">
+                                                      <div className="aspect-square rounded-md overflow-hidden bg-slate-100 dark:bg-slate-800">
                                                         <img
                                                           src={item.image}
                                                           alt={item.title || "Categoría"}
@@ -2380,7 +2454,8 @@ export default function LandingEditor() {
                                                     />
                                                   </div>
                                                 </div>
-                                              ))}
+                                                );
+                                              })}
                                             </div>
                                             <button
                                               type="button"

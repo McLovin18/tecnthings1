@@ -117,13 +117,13 @@ export default function SearchResultsPage() {
   }, []);
 
   const inputClass =
-    "w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-white/20 bg-white dark:bg-gray-900 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-white/50 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 transition-all";
+    "w-full px-3 py-1.5 sm:py-2.5 rounded-xl border border-slate-200 dark:border-white/20 bg-white dark:bg-gray-900 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-white/50 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 transition-all";
 
   // 🔥 FilterPanel memoizado para no perder foco
   const FilterPanel = useMemo(() => (
-    <div className="space-y-5">
+    <div className="space-y-3 sm:space-y-5">
       <div>
-        <label className="text-xs font-semibold mb-2 block text-slate-700 dark:text-white">Buscar</label>
+        <label className="text-xs font-semibold mb-1 sm:mb-2 block text-slate-700 dark:text-white">Buscar</label>
         <input
           type="text"
           placeholder="Nombre, descripción o categoría..."
@@ -134,7 +134,7 @@ export default function SearchResultsPage() {
       </div>
 
       <div>
-        <label className="text-xs font-semibold mb-2 block text-slate-700 dark:text-white">Rango de precio</label>
+        <label className="text-xs font-semibold mb-1 sm:mb-2 block text-slate-700 dark:text-white">Rango de precio</label>
         <div className="grid grid-cols-2 gap-2">
           <input
             type="number"
@@ -154,7 +154,7 @@ export default function SearchResultsPage() {
       </div>
 
       <div>
-        <label className="text-xs font-semibold mb-2 block text-slate-700 dark:text-white">Marca</label>
+        <label className="text-xs font-semibold mb-1 sm:mb-2 block text-slate-700 dark:text-white">Marca</label>
         <select className={inputClass} value={marca} onChange={e => setMarca(e.target.value)}>
           <option value="">Todas las marcas</option>
           {marcas.map(m => <option key={m} value={m}>{m}</option>)}
@@ -162,7 +162,7 @@ export default function SearchResultsPage() {
       </div>
 
       <div>
-        <label className="text-xs font-semibold mb-2 block text-slate-700 dark:text-white">Ordenar</label>
+        <label className="text-xs font-semibold mb-1 sm:mb-2 block text-slate-700 dark:text-white">Ordenar</label>
         <select className={inputClass} value={orden} onChange={e => setOrden(e.target.value)}>
           <option value="newest">Más nuevos</option>
           <option value="price-low">Menor precio</option>
@@ -173,7 +173,7 @@ export default function SearchResultsPage() {
       {hasFilters && (
         <button
           onClick={clearFilters}
-          className="w-full py-2 rounded-xl text-sm text-red-500 border border-red-300 dark:border-red-500"
+          className="w-full py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm text-red-500 border border-red-300 dark:border-red-500"
         >
           Limpiar filtros
         </button>
