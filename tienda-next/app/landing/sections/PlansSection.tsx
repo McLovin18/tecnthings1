@@ -24,8 +24,8 @@ export type PlansSectionProps = {
 const DEFAULT_PLANS: Plan[] = [
 
   {
-    id: "budget",
-    name: "Plan Budget",
+    id: "Base",
+    name: "PC Base",
     description: "Accesible y funcional",
     features: [
       "Procesador económico",
@@ -33,60 +33,60 @@ const DEFAULT_PLANS: Plan[] = [
       "SSD 256GB",
       "Ideal para básico",
     ],
-    categoryLink: "/products-by-category?cat=1775935501638&sub=1775935523162&minPrice=100&maxPrice=450",
+    categoryLink: "/products-by-category?cat=1775935501638&sub=1775935523162&minPrice=400&maxPrice=1000",
     categoryName: "PCs Económicas",
     color: "black",
-    priceRange: { min: 100, max: 450 },
+    priceRange: { min: 400, max: 1000 },
   },
 
   {
     id: "office",
-    name: "Plan Office",
-    description: "Para trabajo y productividad",
+    name: "PC Gamer",
+    description: "Para juegos y productividad",
     features: [
       "Procesador Core i5/Ryzen 5",
       "16GB RAM DDR4",
       "SSD 512GB",
       "Gráficos integrados",
     ],
-    categoryLink: "/products-by-category?cat=1775935501638&sub=1775935523162&minPrice=350&maxPrice=650",
+    categoryLink: "/products-by-category?cat=1775935501638&sub=1775935523162&minPrice=1000&maxPrice=1800",
     categoryName: "PCs Oficina",
     color: "from-green-600 to-green-800",
-    priceRange: { min: 350, max: 650 },
+    priceRange: { min: 1000, max: 1800 },
   },
 
   {
     id: "workstation",
-    name: "Plan Workstation",
-    description: "Para diseño y edición",
+    name: "PC Pro",
+    description: "Para trabajo y juegos AAA",
     features: [
       "CPU Threadripper/Ryzen Pro",
       "64GB RAM mínimo",
       "GPU profesional",
       "Storage RAID",
     ],
-    categoryLink: "/products-by-category?cat=1775935501638&sub=1775935523162&minPrice=500&maxPrice=1000",
+    categoryLink: "/products-by-category?cat=1775935501638&sub=1775935523162&minPrice=1800&maxPrice=3000",
     categoryName: "Estaciones de Trabajo",
     color: "from-blue-600 to-blue-800",
-    priceRange: { min: 500, max: 1000 },
+    priceRange: { min: 1800, max: 3000 },
   },
 
 
 
   {
     id: "gamer",
-    name: "Plan Gamer",
-    description: "Para jugadores competitivos",
+    name: "PC Ultra instinto",
+    description: "Para entusiastas y creadores profesionales",
     features: [
       "Procesador de alto rendimiento",
       "Tarjeta gráfica RTX 4080+",
       "32GB RAM DDR5",
       "SSD 1TB NVMe",
     ],
-    categoryLink: "/products-by-category?cat=1775935501638&sub=1775935523162&minPrice=800&maxPrice=2000",
+    categoryLink: "/products-by-category?cat=1775935501638&sub=1775935523162&minPrice=3000&maxPrice=6000",
     categoryName: "Ensambles Gaming",
     color: "from-purple-600 to-purple-800",
-    priceRange: { min: 800, max: 2000 },
+    priceRange: { min: 3000, max: 6000 },
   },
 
 ];
