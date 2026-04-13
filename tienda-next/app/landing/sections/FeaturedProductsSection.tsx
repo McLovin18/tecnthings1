@@ -23,8 +23,8 @@ export default function FeaturedProductsSection({
   fieldStyles,
   device,
 }: FeaturedProductsSectionProps) {
-  const paddingTop = styles?.paddingTop || (typeof window !== "undefined" && window.innerWidth < 768 ? "1rem" : "3rem");
-  const paddingBottom = styles?.paddingBottom || (typeof window !== "undefined" && window.innerWidth < 768 ? "1rem" : "3rem");
+  const paddingTop = styles?.paddingTop || (typeof window !== "undefined" && window.innerWidth < 768 ? "1rem" : "2rem");
+  const paddingBottom = styles?.paddingBottom || (typeof window !== "undefined" && window.innerWidth < 768 ? "1rem" : "0.5rem");
 
   // ── Todos los hooks ANTES de cualquier return condicional ──
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -126,13 +126,13 @@ export default function FeaturedProductsSection({
   return (
     <section
       style={{ paddingTop, paddingBottom }}
-      className="w-full max-w-full px-2 flex flex-col items-center overflow-x-hidden m-0"
+      className="w-full max-w-full px-2 flex flex-col items-center m-0"
     >
       {/* Título */}
       {title && (
         <h2
-          className="text-3xl font-extrabold mb-8 text-center tracking-tight"
-          style={fieldStyles?.title || { color: "var(--text)", fontSize: "40px" }}
+          className="text-4xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight"
+          style={fieldStyles?.title || { color: "var(--text)" }}
         >
           {title}
         </h2>
@@ -177,7 +177,6 @@ export default function FeaturedProductsSection({
           }
           style={{
             minWidth: 0,
-            overflowX: "hidden",
             animation: isAnimating
               ? `slideIn${animDir === "right" ? "Right" : "Left"} 0.28s ease`
               : undefined,
@@ -187,7 +186,7 @@ export default function FeaturedProductsSection({
             <div
               key={`${prod.id}-${currentIndex}-${idx}`}
               className={`transition-all duration-300 flex flex-col items-stretch justify-stretch ${
-                isSingleVisible ? "w-full" : "w-full max-w-[320px] min-h-[420px] h-[420px]"
+                isSingleVisible ? "w-full" : "w-full max-w-[320px] h-auto md:h-[420px]"
               }`}
               style={{ width: "100%", minWidth: 0 }}
             >
@@ -198,7 +197,7 @@ export default function FeaturedProductsSection({
 
         {/* Dots indicadores */}
         {hasCarousel && products.length > 1 && (
-          <div className="flex justify-center gap-1.5 mt-6">
+          <div className="flex justify-center gap-1.5 mt-2">
             {Array.from({ length: products.length }).map((_, i) => (
               <button
                 key={i}
@@ -215,7 +214,7 @@ export default function FeaturedProductsSection({
         )}
 
         {/* Botón Ver todos los productos */}
-        <div className="flex justify-center mt-8">
+        <div className="flex justify-center mt-7">
           <Link
             href="/productos"
             className="px-3 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 dark:from-purple-500 dark:to-purple-600 dark:hover:from-purple-600 dark:hover:to-purple-700"

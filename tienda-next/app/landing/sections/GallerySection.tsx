@@ -28,8 +28,8 @@ export default function GallerySection({
   styles,
   fieldStyles,
 }: GallerySectionProps) {
-  const paddingTop = styles?.paddingTop || (typeof window !== "undefined" && window.innerWidth < 768 ? "1rem" : "3.5rem");
-  const paddingBottom = styles?.paddingBottom || (typeof window !== "undefined" && window.innerWidth < 768 ? "1rem" : "3.5rem");
+  const paddingTop = styles?.paddingTop || (typeof window !== "undefined" && window.innerWidth < 768 ? "1rem" : "4rem");
+  const paddingBottom = styles?.paddingBottom || (typeof window !== "undefined" && window.innerWidth < 768 ? "1rem" : "2rem");
 
   const galleryItems = (
     items && items.length
@@ -98,14 +98,14 @@ export default function GallerySection({
   return (
     <section
       style={{ paddingTop, paddingBottom }}
-      className="w-full px-4 sm:px-6 lg:px-8 flex flex-col items-center m-0"
+      className="w-full px-4 sm:px-6 lg:px-8 py-3 flex flex-col items-center m-0"
     >
       {/* ── Título ── */}
       {title && (
-        <div className="mb-10 text-center">
+        <div className="mb-6 text-center">
           <h2
-            className="text-3xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight"
-            style={fieldStyles?.title || { color: "var(--text)", fontSize: "40px" }}
+            className="text-4xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight"
+            style={fieldStyles?.title || { color: "var(--text)" }}
           >
             {title}
           </h2>
@@ -188,7 +188,7 @@ export default function GallerySection({
 
         {/* ── Dots ── */}
         {needsCarousel && totalSlides > 1 && (
-          <div className="flex justify-center gap-2 mt-7">
+          <div className="flex justify-center gap-2 mb-4 mt-7">
             {Array.from({ length: totalSlides }).map((_, i) => (
               <button
                 key={i}

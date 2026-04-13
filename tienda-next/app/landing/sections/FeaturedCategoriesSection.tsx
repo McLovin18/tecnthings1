@@ -102,11 +102,11 @@ export default function FeaturedCategoriesSection({
       }}
       className="px-4 lg:px-6 m-0"
     >
-      <div className="max-w-6xl mx-auto text-slate-900 dark:text-white relative">
+      <div className="max-w-6xl mx-auto text-slate-900 dark:text-white relative pt-6">
         {title && (
           <h2
-            className="text-lg md:text-xl font-semibold mb-4 text-center"
-            style={fieldStyles?.title || { color: "var(--text)", fontSize: "32px" }}
+            className="text-4xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-center"
+            style={fieldStyles?.title || { color: "var(--text)" }}
           >
             {title}
           </h2>
@@ -132,7 +132,7 @@ export default function FeaturedCategoriesSection({
         )}
 
         <div
-          className={`grid gap-3 md:gap-4 ${
+          className={`grid gap-1 md:gap-4 ${
             visibleItems.length === 1
               ? "grid-cols-1 place-items-center"
               : visibleItems.length === 2
@@ -144,14 +144,14 @@ export default function FeaturedCategoriesSection({
             <a
               key={idx}
               href={cat.link || "#"}
-              className="group block w-full max-w-md md:max-w-2xl mx-auto rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 md:p-5 hover:border-purple-500 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              className="group block w-full max-w-md md:max-w-2xl mx-auto rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-2 md:p-1 hover:border-purple-500 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
             >
               {cat.image && (
                 <div className="aspect-square w-full h-80 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 mb-3">
                   <img
                     src={cat.image}
                     alt={cat.title || "Categoría"}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    className="w-full h-full rounded-2xl object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                 </div>
               )}
