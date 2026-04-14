@@ -687,7 +687,7 @@ export const Navbar = () => {
       {/* ══════════════════ MOBILE DRAWER ══════════════════ */}
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm mb-12"
           onClick={() => setMobileOpen(false)}
         >
           <div
