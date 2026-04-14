@@ -4,6 +4,7 @@ import ProductoCard from "../../components/ProductoCard";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { obtenerProductos } from "../../lib/productos-db";
+import { productMatches } from "../../lib/search-utils";
 
 export default function SearchResultsPage() {
   const [productos, setProductos] = useState([]);
@@ -24,16 +25,8 @@ export default function SearchResultsPage() {
 
   // Filtros
   let productosFiltrados = productos.filter(p => {
-    const texto = query.trim().toLowerCase();
-    if (!texto) return false; // Si no hay query, no mostrar nada
-    const nombre = p.nombre?.toLowerCase() || "";
-    const marcaProd = p.marca?.toLowerCase() || "";
-    const categoria = p.categoria?.toLowerCase() || "";
-    const subcategoria = p.subcategoria?.toLowerCase() || "";
-    const subsubcategoria = p.subsubcategoria?.toLowerCase() || "";
-    const coincideTexto = nombre.includes(texto) || marcaProd.includes(texto) || categoria.includes(texto) || subcategoria.includes(texto) || subsubcategoria.includes(texto);
-    const coincideMarca = !marca || p.marca === marca;
-    return coincideTexto && coincideMarca;
+    if (!query.trim()) return false; // Si no hay query, no mostrar nada
+    return productMatches(p, query);
   });
   if (orden === "price-low") productosFiltrados = productosFiltrados.sort((a, b) => a.precio - b.precio);
   if (orden === "price-high") productosFiltrados = productosFiltrados.sort((a, b) => b.precio - a.precio);

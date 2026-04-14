@@ -8,6 +8,7 @@ import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { obtenerProductos } from "../lib/productos-db";
 import { useUser } from "../context/UserContext";
+import { productMatches } from "../lib/search-utils";
 
 // ─────────────────────────────────────────────
 // Acordeón de categorías para el drawer móvil
@@ -220,16 +221,7 @@ export const Navbar = () => {
   useEffect(() => {
     if (!searchValue.trim()) { setSuggestions([]); return; }
     setSearchLoading(true);
-    const texto = searchValue.trim().toLowerCase();
-    const filtered = allProducts.filter((p) => {
-      return (
-        p.nombre?.toLowerCase().includes(texto) ||
-        p.marca?.toLowerCase().includes(texto) ||
-        p.categoria?.toLowerCase().includes(texto) ||
-        p.subcategoria?.toLowerCase().includes(texto) ||
-        p.subsubcategoria?.toLowerCase().includes(texto)
-      );
-    });
+    const filtered = allProducts.filter((p) => productMatches(p, searchValue));
     setSuggestions(filtered.slice(0, 6));
     setSearchLoading(false);
   }, [searchValue, allProducts]);

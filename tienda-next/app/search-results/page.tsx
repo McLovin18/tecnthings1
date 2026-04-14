@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import ProductoCard from "../components/ProductoCard";
 import { Loading3DIcon } from "../components/Loading3DIcon";
 import { obtenerProductos } from "../lib/productos-db";
+import { productMatches } from "../lib/search-utils";
 
 export default function SearchResultsPage() {
   const searchParams = useSearchParams();
@@ -39,21 +40,7 @@ export default function SearchResultsPage() {
   const productosFiltrados = useMemo(() => {
     return productos
       .filter(p => {
-        const texto = search.toLowerCase().trim();
-        const nombre = p.nombre?.toLowerCase() || "";
-        const marcaProd = p.marca?.toLowerCase() || "";
-        const categoria = p.categoria?.toLowerCase() || "";
-        const subcategoria = p.subcategoria?.toLowerCase() || "";
-        const subsubcategoria = p.subsubcategoria?.toLowerCase() || "";
-
-        const coincideTexto =
-          !texto ||
-          nombre.includes(texto) ||
-          marcaProd.includes(texto) ||
-          categoria.includes(texto) ||
-          subcategoria.includes(texto) ||
-          subsubcategoria.includes(texto);
-
+        const coincideTexto = productMatches(p, search);
         const coincideMarca = !marca || p.marca === marca;
 
         const basePrice = Number(p.precio || 0);
