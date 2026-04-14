@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminAuth } from "../../../lib/firebase-admin";
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 
 function buildVerificationEmailHTML(verificationLink: string): string {
   return `
@@ -57,18 +57,22 @@ function buildVerificationEmailHTML(verificationLink: string): string {
                 ¡Bienvenido a TecnoThings! Para completar tu registro, necesitas verificar tu dirección de correo electrónico.
               </p>
 
-              <!-- Botón de verificación -->
-              <div style="text-align:center;margin:32px 0;">
-                <table cellpadding="0" cellspacing="0" style="margin:0 auto;">
-                  <tr>
-                    <td style="background:linear-gradient(135deg,#6d28d9 0%,#7c3aed 100%);border-radius:8px;padding:0;">
-                      <a href="${verificationLink}" style="display:block;background:linear-gradient(135deg,#6d28d9 0%,#7c3aed 100%);color:#ffffff;text-decoration:none;font-size:16px;font-weight:bold;padding:14px 40px;border-radius:8px;line-height:1.2;mso-padding-alt:14px 40px;">
-                        Verificar mi correo
-                      </a>
-                    </td>
-                  </tr>
-                </table>
-              </div>
+              <!-- Botón de verificación - Bulletproof para iPhone -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin:32px 0;">
+                <tr>
+                  <td align="center">
+                    <table cellpadding="0" cellspacing="0" style="margin:0 auto;border-collapse:collapse;">
+                      <tr>
+                        <td style="border-collapse:collapse;border-spacing:0;background:#6d28d9;border-radius:8px;text-align:center;cursor:pointer;min-width:200px;">
+                          <a href="${verificationLink}" style="display:block;background:#6d28d9;color:#ffffff;text-decoration:none;font-size:18px;font-weight:700;padding:16px 48px;border-radius:8px;line-height:1.3;font-family:Arial,sans-serif;text-align:center;min-width:200px;width:200px;box-sizing:border-box;mso-padding-alt:16px 48px;">
+                            Verificar mi correo
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
 
               <!-- Texto alternativo (para clientes que no renderean el botón) -->
               <p style="margin:24px 0 12px;color:#6b7280;font-size:13px;text-align:center;">
@@ -139,27 +143,15 @@ export async function POST(req: NextRequest) {
     const protocol = process.env.NODE_ENV === "production" ? "https" : "http";
     const verificationLink = `${protocol}://${host}/auth/verify-email?oobCode=${oobCode}`;
 
-    // Configurar nodemailer
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT || 587),
-      secure: Number(process.env.SMTP_PORT) === 465,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-    });
+    // Inicializar Resend
+    const resend = new Resend(process.env.RESEND_API_KEY);
 
-    // Enviar email
-    await transporter.sendMail({
-      from: `"TecnoThings" <${process.env.SMTP_FROM}>`,
+    // Enviar email con Resend
+    await resend.emails.send({
+      from: "noreply@technothings.com",
       to: email,
       subject: "Verifica tu correo electrónico — TecnoThings",
       html: buildVerificationEmailHTML(verificationLink),
-      // Headers importantes para asegurar que es HTML
-      headers: {
-        "Content-Type": "text/html; charset=UTF-8",
-      },
     });
 
     return NextResponse.json({ success: true });
