@@ -168,7 +168,7 @@ export async function POST(req: NextRequest) {
         "X-Entity-Ref-ID": "transactional-verification",
         "Precedence": "transactional",
       },
-      reply_to: "soporte@technothings.com",
+      reply_to: "soporte@tecnothings.com",
     });
 
     // Si falla por dominio no verificado, usar fallback
