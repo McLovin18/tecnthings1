@@ -100,7 +100,7 @@ export default function HomePage() {
                   Encuentra todo lo que necesitas
                 </h2>
                 <p className="text-slate-600 dark:text-slate-300 text-lg">
-                  Explora nuestras categorías o usa la búsqueda para encontrar exactamente lo que buscas
+                  Explora nuestras categorías o usa la búsqueda para encontrar exactamente lo que necesitas
                 </p>
               </div>
               <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
@@ -110,13 +110,16 @@ export default function HomePage() {
                 >
                   <span className="text-sm">Categorías</span>
                 </a>
-                <a
-                  href="/home/search-results"
+                <button
+                  onClick={() => {
+                    // Disparar evento para activar el buscador del navbar
+                    window.dispatchEvent(new CustomEvent("activateNavbarSearch"));
+                  }}
                   className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white dark:bg-slate-700 text-[#7b68ee] dark:text-purple-300 font-bold rounded-xl transition-colors shadow-md border-2 border-[#7b68ee] dark:border-purple-400 hover:bg-slate-50 dark:hover:bg-slate-600"
                 >
                   <span className="material-icons-round text-xl">search</span>
                   <span className="text-sm">Buscar</span>
-                </a>
+                </button>
               </div>
             </div>
           </div>

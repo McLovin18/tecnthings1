@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { useUser } from "../context/UserContext";
 import { useRouter } from "next/navigation";
 
@@ -38,8 +39,7 @@ export default function ProductoCard({
     : basePrice;
   const finalPrice = hasDiscount ? basePrice * (1 - discount / 100) : basePrice;
 
-  const goToDetail = (e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
+  const getDetailUrl = () => {
     let detailUrl = `/product-detail?id=${producto.id}`;
     try {
       if (typeof window !== "undefined" && window.location.pathname.startsWith("/home")) {
@@ -52,7 +52,12 @@ export default function ProductoCard({
       if (isAdmin) detailUrl = `/admin/product-detail?id=${producto.id}`;
       if (isCliente) detailUrl = `/home/product-detail?id=${producto.id}`;
     }
-    router.push(detailUrl);
+    return detailUrl;
+  };
+
+  const goToDetail = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    router.push(getDetailUrl());
   };
 
   const handleFav = (e: React.MouseEvent) => {
@@ -67,30 +72,31 @@ export default function ProductoCard({
     inCart ? removeCarrito(producto.id) : addCarrito({ ...producto, cantidad: 1 });
   };
 
+  const detailUrl = getDetailUrl();
+
   return (
-    <div
-      onClick={onClick || goToDetail}
-      className="
-        group cursor-pointer
-        bg-white dark:bg-white/[0.04]
-         dark:border-white/10
-        rounded-2xl overflow-hidden
-        shadow-sm
-        hover:shadow-xl dark:hover:shadow-purple-950/60
-        hover:border-[#7b68ee] dark:hover:border-[#7b68ee]
-        transition-all duration-300
+    <Link href={detailUrl}>
+      <div
+        onClick={onClick || goToDetail}
+        className="
+          group cursor-pointer
+          bg-white dark:bg-white/[0.04]
+           dark:border-white/10
+          rounded-2xl overflow-hidden
+          shadow-sm
+          hover:shadow-xl dark:hover:shadow-purple-950/60
+          hover:border-[#7b68ee] dark:hover:border-[#7b68ee]
+          transition-all duration-300
 
-        sm:h-full
+          sm:h-full
 
-        /* ── MÓVIL: horizontal (imagen izq + info der) ── */
-        flex flex-row items-stretch
+          /* ── MÓVIL: horizontal (imagen izq + info der) ── */
+          flex flex-row items-stretch
 
-        /* ── SM+: vertical (imagen arriba + info abajo) ── */
-        sm:flex-col
-      "
-    >
-
-      {/* ══ IMAGEN ══════════════════════════════════════════════ */}
+          /* ── SM+: vertical (imagen arriba + info abajo) ── */
+          sm:flex-col
+        "
+      >
       <div
         className="
           relative flex-shrink-0 overflow-hidden
@@ -262,6 +268,7 @@ export default function ProductoCard({
           </div>
         )}
       </div>
-    </div>
+      </div>
+    </Link>
   );
 }

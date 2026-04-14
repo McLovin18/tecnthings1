@@ -585,7 +585,11 @@ export default function ProductDetailPage({ params }) {
       <div className="max-w-7xl mx-auto w-full px-1 sm:px-3 pb-10">
         <h2 className="text-xl font-bold mb-4 mt-10 text-slate-800 dark:text-white">Productos relacionados</h2>
         {relacionados && relacionados.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
+          <div className="grid gap-3" style={{
+            gridTemplateColumns: `repeat(auto-fit, minmax(180px, auto))`,
+            gridAutoRows: 'max-content',
+            justifyContent: 'start'
+          }}>
             {relacionados.map((prod) => (
               <ProductoCard key={prod.id} producto={prod} />
             ))}

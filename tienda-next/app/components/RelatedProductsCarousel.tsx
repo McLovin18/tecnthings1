@@ -100,17 +100,8 @@ export default function RelatedProductsCarousel({
     setTimeout(() => setIsAnimating(false), 300);
   };
 
-  const gridCols =
-    effectiveItemsPerView === 1
-      ? "grid-cols-1"
-      : effectiveItemsPerView === 2
-      ? "grid-cols-2"
-      : effectiveItemsPerView === 3
-      ? "grid-cols-3"
-      : "grid-cols-4";
-
   return (
-    <div className="w-full">
+    <div className={hasCarousel ? "w-full" : "w-auto"}>
       <h2 className="text-xl font-bold mb-4 mt-10 text-slate-800 dark:text-white px-3 sm:px-6">
         {title}
       </h2>
@@ -118,7 +109,7 @@ export default function RelatedProductsCarousel({
       {productosLimitados.length > 0 ? (
         <div
           ref={containerRef}
-          className="w-full relative px-2 sm:px-6 md:px-12"
+          className={`relative overflow-visible ${hasCarousel ? "w-full px-10 sm:px-6 md:px-12" : "w-auto"}`}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
         >
@@ -128,7 +119,7 @@ export default function RelatedProductsCarousel({
               type="button"
               onClick={handlePrev}
               aria-label="Anterior"
-              className="absolute left-0 md:left-2 top-[35%] -translate-y-1/2 z-20 h-9 w-9 md:h-10 md:w-10 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-200 shadow-md hover:bg-purple-50 dark:hover:bg-purple-900/40 hover:border-purple-300 hover:scale-105 transition-all"
+              className="absolute left-1 md:left-2 top-[40%] z-20 h-9 w-9 md:h-10 md:w-10 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-200 shadow-md hover:bg-purple-50 dark:hover:bg-purple-900/40 hover:border-purple-300 hover:scale-105 transition-all"
             >
               <span className="material-icons-round text-[18px] md:text-[20px]">
                 chevron_left
@@ -142,7 +133,7 @@ export default function RelatedProductsCarousel({
               type="button"
               onClick={handleNext}
               aria-label="Siguiente"
-              className="absolute right-0 md:right-2 top-[35%] -translate-y-1/2 z-20 h-9 w-9 md:h-10 md:w-10 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-200 shadow-md hover:bg-purple-50 dark:hover:bg-purple-900/40 hover:border-purple-300 hover:scale-105 transition-all"
+              className="absolute right-1 md:right-2 top-[40%] z-20 h-9 w-9 md:h-10 md:w-10 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-200 shadow-md hover:bg-purple-50 dark:hover:bg-purple-900/40 hover:border-purple-300 hover:scale-105 transition-all"
             >
               <span className="material-icons-round text-[18px] md:text-[20px]">
                 chevron_right
@@ -152,13 +143,11 @@ export default function RelatedProductsCarousel({
 
           {/* Grid de productos */}
           <div
-            className={
-              isSingleVisible
-                ? "flex justify-center w-full max-w-full mx-auto"
-                : `grid w-full ${itemsPerView === 1 ? "place-items-center gap-3 md:gap-0" : "place-items-center gap-3 md:gap-6"} ${gridCols}`
-            }
+            className="grid place-items-center justify-center md:justify-start"
             style={{
-              minWidth: 0,
+              gridTemplateColumns: `repeat(${effectiveItemsPerView}, ${effectiveItemsPerView === 1 ? "340px" : "280px"})`,
+              width: effectiveItemsPerView === 1 ? "100%" : "fit-content",
+              gap: hasCarousel ? "0.75rem" : "0.75rem",
               animation: isAnimating
                 ? `slideIn${animDir === "right" ? "Right" : "Left"} 0.28s ease`
                 : undefined,
@@ -167,10 +156,11 @@ export default function RelatedProductsCarousel({
             {visibleProducts.map((prod: any, idx: number) => (
               <div
                 key={`${prod.id}-${currentIndex}-${idx}`}
-                className={`transition-all duration-300 flex flex-col items-stretch justify-stretch ${
-                  isSingleVisible ? "w-full px-2 md:px-0" : "w-full max-w-[320px] h-auto md:h-[420px]"
-                }`}
-                style={{ width: "100%", minWidth: 0 }}
+                className="transition-all duration-300 flex flex-col items-stretch justify-stretch"
+                style={{ 
+                  width: effectiveItemsPerView === 1 ? "340px" : "280px",
+                  minWidth: 0
+                }}
               >
                 <ProductoCard producto={prod} />
               </div>

@@ -217,6 +217,26 @@ export const Navbar = () => {
     }
   }, []);
 
+  // Escuchar evento para activar el buscador desde home
+  useEffect(() => {
+    const handleActivateSearch = () => {
+      const isMobile = windowWidth !== null && windowWidth < 1024;
+      
+      if (isMobile) {
+        // En móvil: abrir el menú y enfocar el input
+        setMobileOpen(true);
+        setTimeout(() => {
+          searchInputRef.current?.focus();
+        }, 100);
+      } else {
+        // En desktop: solo enfocar el input
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener("activateNavbarSearch", handleActivateSearch);
+    return () => window.removeEventListener("activateNavbarSearch", handleActivateSearch);
+  }, [windowWidth]);
+
   // Sugerencias de búsqueda
   useEffect(() => {
     if (!searchValue.trim()) { setSuggestions([]); return; }
@@ -722,7 +742,7 @@ export const Navbar = () => {
 
               {/* Búsqueda móvil */}
               <form
-                className="flex items-center gap-2 px-3 py-2 rounded-xl border mb-3"
+                className="relative flex items-center gap-2 px-3 py-2 rounded-xl border mb-3"
                 style={{ background: "var(--hover)", borderColor: "var(--border)" }}
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -736,13 +756,71 @@ export const Navbar = () => {
                   search
                 </span>
                 <input
+                  ref={searchInputRef}
                   type="text"
                   placeholder="Buscar productos..."
                   className="bg-transparent outline-none text-sm flex-1"
                   style={{ color: "var(--text)" }}
                   value={searchValue}
                   onChange={(e) => setSearchValue(e.target.value)}
+                  autoComplete="off"
                 />
+
+                {/* Dropdown sugerencias móvil */}
+                {searchValue.trim() && (
+                  <div
+                    className="absolute left-0 top-full mt-1 w-full rounded-xl border shadow-xl z-50 overflow-hidden"
+                    style={{
+                      background: "var(--cardBg)",
+                      borderColor: "var(--border)",
+                      maxHeight: 300,
+                      overflowY: "auto",
+                    }}
+                  >
+                    {searchLoading ? (
+                      <div className="p-4 text-center text-sm" style={{ color: "var(--textMuted)" }}>
+                        Buscando...
+                      </div>
+                    ) : suggestions.length > 0 ? (
+                      suggestions.map((prod) => {
+                        let href = `/product-detail?id=${prod.id}`;
+                        if (isClient) href = `/home/product-detail?id=${prod.id}`;
+                        if (isAdmin) href = `/admin/product-detail?id=${prod.id}`;
+                        return (
+                          <a
+                            key={prod.id}
+                            href={href}
+                            className="flex items-center gap-3 px-4 py-2.5 transition-colors text-sm"
+                            style={{ color: "var(--text)" }}
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => {
+                              setMobileOpen(false);
+                              setSearchValue("");
+                            }}
+                          >
+                            {prod.imagen && (
+                              <img
+                                src={prod.imagen}
+                                alt={prod.nombre}
+                                className="w-8 h-8 object-cover rounded-lg shrink-0"
+                              />
+                            )}
+                            <span className="truncate flex-1">{prod.nombre}</span>
+                            {prod.marca && (
+                              <span className="text-xs shrink-0" style={{ color: "var(--textMuted)" }}>
+                                {prod.marca}
+                              </span>
+                            )}
+                          </a>
+                        );
+                      })
+                    ) : (
+                      <div className="p-4 text-center text-sm" style={{ color: "var(--textMuted)" }}>
+                        Sin resultados
+                      </div>
+                    )}
+                  </div>
+                )}
               </form>
 
               {/* Links */}

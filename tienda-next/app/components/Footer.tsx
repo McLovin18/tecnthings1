@@ -514,7 +514,7 @@ const Footer: React.FC = () => {
               rel="noreferrer"
               className="ft-dev-link"
             >
-              Desarrollado por Hector
+              Desarrollado por Héctor Cobeña
             </a>
           </div>
         </div>
