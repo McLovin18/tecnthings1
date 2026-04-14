@@ -123,7 +123,7 @@ export default function HomePage() {
         </div>
 
         {/* Products section */}
-        <div className="w-full mx-auto px-1 sm:px-4 py-10 max-w-full sm:max-w-6xl">
+        <div className="w-full mx-auto px-0 sm:px-4 py-10 max-w-full sm:max-w-6xl">
           <div className="flex flex-col items-center mb-8 gap-4">
             <div className="w-full">
               <h2 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white text-center">
@@ -159,7 +159,7 @@ export default function HomePage() {
               </a>
             </div>
           ) : (
-            <div className="grid pb-10 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+            <div className="grid pb-10 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
               {productosDestacados.map((p) => (
                 <ProductoCard key={p.id} producto={p} showCart={true} showEye={true} />
               ))}

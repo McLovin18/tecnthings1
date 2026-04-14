@@ -59,9 +59,15 @@ function buildVerificationEmailHTML(verificationLink: string): string {
 
               <!-- Botón de verificación -->
               <div style="text-align:center;margin:32px 0;">
-                <a href="${verificationLink}" style="display:inline-block;background:linear-gradient(135deg,#6d28d9 0%,#7c3aed 100%);color:#ffffff;text-decoration:none;font-size:16px;font-weight:bold;padding:14px 40px;border-radius:8px;border:none;cursor:pointer;box-shadow:0 4px 12px rgba(109,40,217,0.3);transition:all 0.3s ease;line-height:1.2;" target="_blank" rel="noopener noreferrer">
-                  Verificar mi correo
-                </a>
+                <table cellpadding="0" cellspacing="0" style="margin:0 auto;">
+                  <tr>
+                    <td style="background:linear-gradient(135deg,#6d28d9 0%,#7c3aed 100%);border-radius:8px;padding:0;">
+                      <a href="${verificationLink}" style="display:block;background:linear-gradient(135deg,#6d28d9 0%,#7c3aed 100%);color:#ffffff;text-decoration:none;font-size:16px;font-weight:bold;padding:14px 40px;border-radius:8px;line-height:1.2;mso-padding-alt:14px 40px;">
+                        Verificar mi correo
+                      </a>
+                    </td>
+                  </tr>
+                </table>
               </div>
 
               <!-- Texto alternativo (para clientes que no renderean el botón) -->
