@@ -124,18 +124,18 @@ export default function HomePage() {
 
         {/* Products section */}
         <div className="w-full max-w-6xl mx-auto px-4 py-10">
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 gap-4">
             <div>
-              <h2 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white">
+              <h2 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white text-center sm:text-left">
                 Productos destacados
               </h2>
-              <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
+              <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 text-center sm:text-left">
                 Selección especial para ti
               </p>
             </div>
             <a
               href="/home/productos"
-              className="text-sm text-blue-500 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors whitespace-nowrap"
+              className="text-sm text-blue-500 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors whitespace-nowrap text-center sm:text-right"
             >
               Ver todos →
             </a>
