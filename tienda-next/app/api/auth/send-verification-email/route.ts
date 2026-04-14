@@ -159,7 +159,7 @@ export async function POST(req: NextRequest) {
     let emailResponse = await resend.emails.send({
       from: "noreply@tecnothings.com",
       to: email,
-      subject: "Verifica tu correo electrónico — TecnoThings",
+      subject: "Verifica tu cuenta — TecnoThings",
       html: buildVerificationEmailHTML(verificationLink),
       headers: {
         "X-Priority": "1",
@@ -177,7 +177,7 @@ export async function POST(req: NextRequest) {
       emailResponse = await resend.emails.send({
         from: "onboarding@resend.dev",
         to: email,
-        subject: "Verifica tu correo electrónico — TecnoThings",
+        subject: "Verifica tu cuenta — TecnoThings",
         html: buildVerificationEmailHTML(verificationLink),
         headers: {
           "X-Priority": "1",
