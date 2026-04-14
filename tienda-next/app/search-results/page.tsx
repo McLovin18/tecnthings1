@@ -133,7 +133,7 @@ export default function SearchResultsPage() {
         />
       </div>
 
-      <div>
+      <div className="hidden md:block">
         <label className="text-xs font-semibold mb-1 sm:mb-2 block text-slate-700 dark:text-white">Rango de precio</label>
         <div className="grid grid-cols-2 gap-2">
           <input
