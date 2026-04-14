@@ -111,6 +111,7 @@ const Footer: React.FC = () => {
         @media (max-width: 560px) {
           #pdx-footer .ft-main { grid-template-columns: 1fr; gap: 24px; padding: 28px 18px 20px; }
           #pdx-footer .ft-main-logged { grid-template-columns: 1fr; }
+
         }
 
         #pdx-footer .ft-brand-img {
@@ -254,7 +255,8 @@ const Footer: React.FC = () => {
           position: relative;
           z-index: 1;
           max-width: 1100px;
-          margin: 0 auto;
+          margin-top: 10px;
+          margin-bottom: 10px;
           padding: 14px 32px 22px;
           display: flex;
           align-items: center;
@@ -262,13 +264,12 @@ const Footer: React.FC = () => {
           flex-wrap: wrap;
           gap: 8px;
           border-top: 1px solid rgba(120,60,180,0.12);
-          margin-top: 18px;
         }
 
         @media (max-width: 560px) {
           #pdx-footer .ft-bottom { flex-direction: column; align-items: flex-start; padding: 18px 18px 0; }
           #pdx-footer .ft-divider { margin: 0 18px; }
-          #pdx-footer .ft-copy-row { padding: 14px 18px 20px; flex-direction: column; align-items: flex-start; }
+          #pdx-footer .ft-copy-row { padding: 14px 18px 20px; flex-direction: column; align-items: flex-start; margin-top: 60px; margin-bottom: 70px; }
         }
 
         #pdx-footer .ft-socials {
@@ -498,7 +499,7 @@ const Footer: React.FC = () => {
         </div>
 
         {/* Copyright row */}
-        <div className="ft-copy-row">
+        <div className="ft-copy-row ">
           <p className="ft-copy-text">
             © {new Date().getFullYear()} Tecnothings S.A.S. Todos los derechos reservados.
           </p>
