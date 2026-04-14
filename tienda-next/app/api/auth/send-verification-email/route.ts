@@ -99,55 +99,27 @@ export async function POST(req: NextRequest) {
 
     console.log("[send-verification-email] Iniciando envío:", {
       to: email,
-      from: "noreply@technothings.com",
+      from: "noreply@tecnothings.com",
       apiKeyExists: !!process.env.RESEND_API_KEY,
     });
 
-    // Intentar primero con el dominio personalizado
-    let emailResponse = await resend.emails.send({
-      from: "noreply@technothings.com",
+    // Enviar SOLO con el dominio verificado
+    const emailResponse = await resend.emails.send({
+      from: "noreply@tecnothings.com",
       to: email,
       subject: "Verifica tu cuenta",
       html: buildVerificationEmailHTML(verificationLink),
       headers: {
-        // Headers críticos para bandeja de entrada
         "X-Priority": "3",
-        "Importance": "normal",
         "X-MSMail-Priority": "Normal",
         "Precedence": "transactional",
         "X-Mailer": "Resend",
-        // DKIM y SPF
-        "DKIM-Signature": "v=1; a=rsa-sha256;",
-        // Headers de seguridad
-        "Authentication-Results": "pass",
-        // Este es criticial para Gmail
         "List-Unsubscribe": "<mailto:unsubscribe@technothings.com>",
-        // Refuerza transaccional
         "X-Entity-Ref-ID": "transactional",
         "X-Auto-Response-Suppress": "All",
       },
-      reply_to: "soporte@technothings.com",
+      reply_to: "soporte@tecnothings.com",
     });
-
-    // Si falla por dominio no verificado, usar fallback
-    if (emailResponse.error && emailResponse.error.message?.includes("not verified")) {
-      console.log("[send-verification-email] Dominio no verificado, usando fallback onboarding@resend.dev");
-      emailResponse = await resend.emails.send({
-        from: "onboarding@resend.dev",
-        to: email,
-        subject: "Verifica tu cuenta",
-        html: buildVerificationEmailHTML(verificationLink),
-        headers: {
-          "X-Priority": "3",
-          "X-MSMail-Priority": "Normal",
-          "Precedence": "transactional",
-          "X-Mailer": "Resend",
-          "List-Unsubscribe": "<mailto:unsubscribe@technothings.com>",
-          "X-Entity-Ref-ID": "transactional",
-          "X-Auto-Response-Suppress": "All",
-        },
-      });
-    }
 
     console.log("[send-verification-email] Respuesta de Resend:", emailResponse);
 
