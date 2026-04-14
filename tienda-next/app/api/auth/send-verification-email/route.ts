@@ -146,13 +146,25 @@ export async function POST(req: NextRequest) {
     // Inicializar Resend
     const resend = new Resend(process.env.RESEND_API_KEY);
 
-    // Enviar email con Resend
-    await resend.emails.send({
+    console.log("[send-verification-email] Iniciando envío:", {
+      to: email,
       from: "noreply@technothings.com",
+      apiKeyExists: !!process.env.RESEND_API_KEY,
+    });
+
+    // Enviar email con Resend
+    const emailResponse = await resend.emails.send({
+      from: "onboarding@resend.dev",
       to: email,
       subject: "Verifica tu correo electrónico — TecnoThings",
       html: buildVerificationEmailHTML(verificationLink),
     });
+
+    console.log("[send-verification-email] Respuesta de Resend:", emailResponse);
+
+    if (emailResponse.error) {
+      throw new Error(`Resend error: ${JSON.stringify(emailResponse.error)}`);
+    }
 
     return NextResponse.json({ success: true });
   } catch (err: any) {

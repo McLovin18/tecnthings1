@@ -713,6 +713,21 @@ export const Navbar = () => {
             </div>
 
             <div className="flex-1 px-4 py-4 flex flex-col gap-1">
+              {/* Usuario - Iniciar sesión PRIMERO */}
+              {!user && (
+                <>
+                  <a
+                    href="/login"
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors mb-2"
+                    style={{ color: "var(--accent)", background: "var(--hover)" }}
+                  >
+                    <span className="material-icons-round text-base">account_circle</span>
+                    Iniciar sesión
+                  </a>
+                  <div className="border-t my-2" style={{ borderColor: "var(--border)" }} />
+                </>
+              )}
+
               {/* Búsqueda móvil */}
               <form
                 className="flex items-center gap-2 px-3 py-2 rounded-xl border mb-3"
@@ -756,8 +771,8 @@ export const Navbar = () => {
               {/* Divisor */}
               <div className="border-t my-2" style={{ borderColor: "var(--border)" }} />
 
-              {/* Usuario */}
-              {user ? (
+              {/* Usuario - Opciones si está autenticado */}
+              {user && (
                 <>
                   <a
                     href={isClient ? "/home/perfil" : "/admin/perfil"}
@@ -788,15 +803,6 @@ export const Navbar = () => {
                     Cerrar sesión
                   </button>
                 </>
-              ) : (
-                <a
-                  href="/login"
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors"
-                  style={{ color: "var(--text)" }}
-                >
-                  <span className="material-icons-round text-base">account_circle</span>
-                  Iniciar sesión
-                </a>
               )}
             </div>
           </div>

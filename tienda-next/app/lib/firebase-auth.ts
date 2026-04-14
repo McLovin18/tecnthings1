@@ -51,15 +51,16 @@ export async function registerUser(email: string, password: string, profile: { n
 	const userData = await createRes.json();
 
 	// Enviar email de verificación
-	try {
-		await fetch("/api/auth/send-verification-email", {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ email: userData.email }),
-		});
-	} catch (err) {
-		console.error("Error enviando email de verificación:", err);
-		// Continuar incluso si el email falla
+	const emailRes = await fetch("/api/auth/send-verification-email", {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({ email: userData.email }),
+	});
+
+	if (!emailRes.ok) {
+		const emailErr = await emailRes.json();
+		console.error("[registerUser] Error enviando email:", emailErr);
+		throw new Error(emailErr.error || "Error al enviar email de verificación");
 	}
 
 	return { 
