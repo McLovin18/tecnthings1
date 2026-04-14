@@ -123,19 +123,19 @@ export default function HomePage() {
         </div>
 
         {/* Products section */}
-        <div className="w-full max-w-6xl mx-auto px-4 py-10">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 gap-4">
-            <div>
-              <h2 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white text-center sm:text-left">
+        <div className="w-full mx-auto px-1 sm:px-4 py-10 max-w-full sm:max-w-6xl">
+          <div className="flex flex-col items-center mb-8 gap-4">
+            <div className="w-full">
+              <h2 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white text-center">
                 Productos destacados
               </h2>
-              <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 text-center sm:text-left">
+              <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 text-center">
                 Selección especial para ti
               </p>
             </div>
             <a
               href="/home/productos"
-              className="text-sm text-blue-500 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors whitespace-nowrap text-center sm:text-right"
+              className="text-sm text-blue-500 hover:text-blue-600 dark:hover:text-blue-400 font-medium transition-colors whitespace-nowrap"
             >
               Ver todos →
             </a>
