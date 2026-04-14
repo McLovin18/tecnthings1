@@ -52,6 +52,23 @@ export default function PedidosAdminPage() {
 		return (orden.productos || []).reduce((sum: number, p: any) => sum + calcularSubtotalProducto(p), 0);
 	};
 
+	// Agrupar productos por tiempo de entrega
+	const agruparPorTiempoEntrega = (productos: any[]) => {
+		return productos.reduce((acc: Record<number, any[]>, p) => {
+			const tiempo = p.tiempoEntrega || 72;
+			if (!acc[tiempo]) acc[tiempo] = [];
+			acc[tiempo].push(p);
+			return acc;
+		}, {});
+	};
+
+	// Obtener resumen de tiempos de entrega
+	const obtenerResumenTiempos = (productos: any[]) => {
+		const porTiempo = agruparPorTiempoEntrega(productos);
+		const tiempos = Object.keys(porTiempo).map(Number).sort((a, b) => a - b);
+		return tiempos;
+	};
+
 	const aprobarOrden = async (orden: any) => {
 		await actualizarOrden(orden.id, { estado: "aprobada" });
 		setOrdenes((prev) => prev.map((o) => o.id === orden.id ? { ...o, estado: "aprobada" } : o));
@@ -190,6 +207,16 @@ export default function PedidosAdminPage() {
 					</li>
 				))}
 			</ul>
+
+			{/* Delivery Time Summary */}
+			<div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg px-3 py-2 mb-3 border border-blue-100 dark:border-blue-900/40 space-y-1">
+				{obtenerResumenTiempos(orden.productos).map((tiempo) => (
+					<div key={tiempo} className="flex items-center gap-2 text-xs text-blue-700 dark:text-blue-300">
+						<span>⏱️</span>
+						<span>Entrega: máximo {tiempo}h</span>
+					</div>
+				))}
+			</div>
 
 			<div className="flex items-center justify-between">
 				<div className="font-bold text-base text-slate-800 dark:text-slate-100">

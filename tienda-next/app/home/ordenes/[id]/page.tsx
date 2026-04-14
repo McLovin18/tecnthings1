@@ -15,6 +15,8 @@ interface OrdenProducto {
   descuento?: number;
   precioUnitario?: number;
   subtotal?: number;
+  bodegaId?: string;
+  tiempoEntrega?: number;
 }
 
 interface OrdenDetalle {
@@ -88,6 +90,18 @@ export default function OrdenDetallePage() {
     return (o.productos || []).reduce((sum, p) => sum + calcularSubtotal(p), 0);
   };
 
+  // Agrupar productos por tiempo de entrega
+  const productosPorTiempo = (orden.productos || []).reduce((acc: Record<number, OrdenProducto[]>, p) => {
+    const tiempo = p.tiempoEntrega || 72;
+    if (!acc[tiempo]) acc[tiempo] = [];
+    acc[tiempo].push(p);
+    return acc;
+  }, {});
+
+  const tiemposOrdenados = Object.keys(productosPorTiempo)
+    .map(Number)
+    .sort((a, b) => a - b);
+
   return (
     <div className="min-h-screen bg-white dark:bg-[#3a1859] text-slate-900 dark:text-white px-6 py-6 sm:py-15">
       <div className="max-w-2xl mx-auto bg-white dark:bg-slate-800 rounded-xl shadow p-6 print:shadow-none print:border print:border-slate-300">
@@ -104,6 +118,23 @@ export default function OrdenDetallePage() {
         <div className="mb-4 text-sm">
           <span className="font-semibold">Estado:</span> {orden.estado}
         </div>
+
+        {/* Información de tiempos de entrega */}
+        {tiemposOrdenados.length > 0 && (
+          <div className="mb-4 bg-blue-50 dark:bg-slate-700/50 border border-blue-200 dark:border-slate-600 rounded-lg p-4">
+            <h3 className="font-semibold text-sm mb-2">Información de Entrega</h3>
+            {tiemposOrdenados.map((tiempo) => (
+              <div key={tiempo} className="mb-2 pb-2 last:mb-0 last:pb-0 border-b border-blue-200 dark:border-slate-600 last:border-b-0">
+                <div className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1">
+                  ⏱️ Se entrega en máximo {tiempo} horas laborales
+                </div>
+                <div className="text-xs text-slate-600 dark:text-slate-300">
+                  {productosPorTiempo[tiempo]?.map((p) => p.nombre).join(", ")}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
         {orden.motivoRechazo && orden.estado === "rechazada" && (
           <div className="mb-4 text-sm text-red-600 dark:text-red-400">
             Motivo del rechazo: {orden.motivoRechazo}
@@ -117,6 +148,7 @@ export default function OrdenDetallePage() {
               <th className="py-2">Cantidad</th>
               <th className="py-2 text-right">Precio unit.</th>
               <th className="py-2 text-right">Subtotal</th>
+              <th className="py-2 text-right">Entrega</th>
             </tr>
           </thead>
           <tbody>
@@ -144,6 +176,9 @@ export default function OrdenDetallePage() {
                 </td>
                 <td className="py-1 text-right">
                   ${calcularSubtotal(p).toFixed(2)}
+                </td>
+                <td className="py-1 text-right text-xs font-semibold text-blue-600 dark:text-blue-400">
+                  {p.tiempoEntrega || 72}h
                 </td>
               </tr>
             ))}

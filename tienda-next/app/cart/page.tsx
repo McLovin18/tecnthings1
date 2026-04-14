@@ -4,6 +4,7 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { Loading3DIcon } from "../components/Loading3DIcon";
 import { crearOrden } from "../lib/ordenes-db";
+import { obtenerBodegas } from "../lib/bodegas-db";
 import { useRouter } from "next/navigation";
 import { loadStripe } from "@stripe/stripe-js";
 import { useUser } from "../context/UserContext";
@@ -520,22 +521,30 @@ export default function CartPage() {
   const total = subtotal;
 
   // ── Generar mensaje de WhatsApp para invitados ────────────────────────────────
-  const generateWhatsAppMessage = (): string => {
+  const generateWhatsAppMessage = async (): Promise<string> => {
+    // Obtener todas las bodegas para mapear bodegaId → tiempoEntrega
+    const bodegas = await obtenerBodegas();
+    const bodegasMap = new Map(bodegas.map(b => [b.id, b.tiempoEntrega]));
+
+    // Construir texto de productos con tiempo de entrega
     const productosText = carrito
-      .map((p) => p.nombre)
+      .map((p) => {
+        const tiempoEntrega = bodegasMap.get(p.bodegaId || "technothings") || 72;
+        return `${p.nombre} (Entrega Aproximada en: ${tiempoEntrega}h)`;
+      })
       .join("\n");
     
-    const headerMsg = process.env.NEXT_PUBLIC_WHATSAPP_HEADER_MESSAGE || "Hola! Me gustaría realizar una compra:";
-    const footerMsg = process.env.NEXT_PUBLIC_WHATSAPP_FOOTER_MESSAGE || "Quiero confirmar disponibilidad y conocer más detalles. ¡Gracias!";
+    const headerMsg = "Hola, Me gustaría realizar una compra:";
+    const footerMsg = "Quiero confirmar disponibilidad y conocer más detalles. ¡Gracias!";
     
     const message = `${headerMsg}\n\n${productosText}\n\n━━━━━━━━━━━━━━━\nTOTAL: $${total.toFixed(2)}\n━━━━━━━━━━━━━━━\n\n${footerMsg}`;
     return encodeURIComponent(message);
   };
 
   // ── Manejar click en "Generar orden" - enviar a WhatsApp ──────────────────────
-  const handleGenerarOrden = () => {
+  const handleGenerarOrden = async () => {
     const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_PHONE || "0962873167";
-    const message = generateWhatsAppMessage();
+    const message = await generateWhatsAppMessage();
     window.open(`https://wa.me/${whatsappNumber}?text=${message}`, "_blank");
   };
 

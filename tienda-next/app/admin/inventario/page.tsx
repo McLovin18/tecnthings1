@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import type { Producto } from "../../lib/productos-db";
 import CategoriasAdminPanel from "./CategoriasAdminPanel";
 import MarcasAdminPanel from "./MarcasAdminPanel";
+import BodegasAdminPanel from "./BodegasAdminPanel";
 import ProductoFormModal from "./ProductoFormModal";
 import ProductoCard from "../../components/ProductoCard";
 import {
@@ -11,6 +12,7 @@ import {
   actualizarProducto,
   eliminarProducto
 } from "../../lib/productos-db";
+import { crearBodegaDefault } from "../../lib/bodegas-db";
 
 type FiltroStock = "todos" | "con-stock" | "poco-stock" | "sin-stock";
 
@@ -49,6 +51,10 @@ export default function AdminInventario() {
       setProductos(prods);
       setLoading(false);
     }
+    
+    // Crear bodega default si no existe
+    crearBodegaDefault().catch(err => console.error("Error creando bodega default:", err));
+    
     fetchProductos();
   }, []);
 
@@ -109,6 +115,17 @@ export default function AdminInventario() {
             onClick={() => setVista("categorias")}
           >
             Categorías
+          </button>
+
+          <button
+            className={`flex-1 py-3 rounded-xl font-bold border-2 transition-all ${
+              vista === "bodegas"
+                ? "bg-red-700 text-white border-red-700"
+                : "bg-white text-red-700 border-red-700"
+            }`}
+            onClick={() => setVista("bodegas")}
+          >
+            Bodegas
           </button>
         </div>
 
@@ -315,6 +332,7 @@ export default function AdminInventario() {
         {/* ================== OTRAS VISTAS ================== */}
         {vista === "marcas" && <MarcasAdminPanel />}
         {vista === "categorias" && <CategoriasAdminPanel />}
+        {vista === "bodegas" && <BodegasAdminPanel />}
 
       </div>
     </div>

@@ -10,6 +10,7 @@ export interface Producto {
   subcategoria?: string;
   subsubcategoria?: string;
   marca?: string;
+  bodegaId?: string; // Referencia a la bodega para determinar tiempo de entrega
   destacado?: boolean;
   createdAt?: number | Date;
   fechaCreacion?: any;

@@ -52,6 +52,20 @@ export async function crearOrden(orden: any) {
 
     total += lineTotal;
 
+    // Obtener información de la bodega si existe
+    let tiempoEntrega = 72; // default
+    if (data.bodegaId) {
+      try {
+        const bodegaRef = doc(db, "bodegas", data.bodegaId);
+        const bodegaSnap = await getDoc(bodegaRef);
+        if (bodegaSnap.exists()) {
+          tiempoEntrega = bodegaSnap.data().tiempoEntrega || 72;
+        }
+      } catch (err) {
+        console.error("Error obteniendo bodega:", err);
+      }
+    }
+
     productosProcesados.push({
       id: item.id,
       nombre: data.nombre,
@@ -60,6 +74,8 @@ export async function crearOrden(orden: any) {
       descuento: hasDiscount ? discount : 0,
       precioUnitario: unitPrice,
       subtotal: lineTotal,
+      bodegaId: data.bodegaId || "technothings",
+      tiempoEntrega, // Tiempo de entrega en horas
     });
   }
 

@@ -5,6 +5,7 @@ import { obtenerCategorias } from "../../lib/categorias-db";
 import { obtenerProductos } from "../../lib/productos-db";
 import { useEffect } from "react";
 import { obtenerMarcas } from "../../lib/marcas-db";
+import { obtenerBodegas } from "../../lib/bodegas-db";
 
 // Componente de formulario para crear/modificar productos
 type Producto = {
@@ -20,6 +21,7 @@ type Producto = {
   imagenes: (string | File)[];
   descripcion: string;
   caracteristicas: string[];
+  bodegaId?: string;
 };
 
 type ProductoFormProps = {
@@ -50,11 +52,14 @@ export default function ProductoForm({ initialData = null, onSave, onCancel }: P
   const [imagenesInput, setImagenesInput] = useState<File[]>([]);
   const [marca, setMarca] = useState<string>(initialData?.marca || "");
   const [marcas, setMarcas] = useState<{id: string, nombre: string}[]>([]);
+  const [bodegaId, setBodegaId] = useState<string>(initialData?.bodegaId || "");
+  const [bodegas, setBodegas] = useState<any[]>([]);
   const [categoryPathChanged, setCategoryPathChanged] = useState(false);
   const [draggedImageIdx, setDraggedImageIdx] = useState<number | null>(null);
 
   useEffect(() => {
     obtenerMarcas().then(setMarcas);
+    obtenerBodegas().then(setBodegas);
   }, []);
   //
 
@@ -276,6 +281,7 @@ export default function ProductoForm({ initialData = null, onSave, onCancel }: P
         subcategoria: subcategoriaRequired ? subcategoria : "",
         subsubcategoria: subsubcategoriaRequired ? subsubcategoria : "",
         marca,
+        bodegaId,
         imagenes: imagenesFinal,
         descripcion,
         caracteristicas
@@ -292,6 +298,7 @@ export default function ProductoForm({ initialData = null, onSave, onCancel }: P
         setSubcategoria("");
         setSubsubcategoria("");
         setMarca("");
+        setBodegaId("");
         setImagenes([]);
         setDescripcion("");
         setCaracteristicas([""]);
@@ -357,6 +364,17 @@ export default function ProductoForm({ initialData = null, onSave, onCancel }: P
           <select className="input bg-white/80 border-2 border-green-300 focus:border-green-700 rounded-lg px-3 py-2 text-lg font-semibold text-slate-800 dark:text-slate-900" value={marca} onChange={e => setMarca(e.target.value)} required>
             <option value="">Selecciona</option>
             {marcas.map(m => <option key={m.id} value={m.nombre}>{m.nombre}</option>)}
+          </select>
+        </label>
+        <label className="font-bold text-purple-800 dark:text-purple-200 flex flex-col gap-1">
+          <span className="mb-1 flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-orange-600 inline-block"></span> Bodega (Entrega)</span>
+          <select className="input bg-white/80 border-2 border-orange-300 focus:border-orange-700 rounded-lg px-3 py-2 text-lg font-semibold text-slate-800 dark:text-slate-900" value={bodegaId} onChange={e => setBodegaId(e.target.value)} required>
+            <option value="">Selecciona una bodega</option>
+            {bodegas.map(b => (
+              <option key={b.id} value={b.id}>
+                {b.nombre} ({b.tiempoEntrega}h)
+              </option>
+            ))}
           </select>
         </label>
         <label className="font-bold text-purple-800 dark:text-purple-200 flex flex-col gap-1">

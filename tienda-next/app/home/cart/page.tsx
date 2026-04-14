@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useUser } from "../../context/UserContext";
 import { crearOrden } from "../../lib/ordenes-db";
+import { obtenerBodegas } from "../../lib/bodegas-db";
 import { useRouter } from "next/navigation";
 import { loadStripe } from "@stripe/stripe-js";
 import { Loading3DIcon } from "@/app/components/Loading3DIcon";
@@ -275,21 +276,26 @@ export default function CartPage() {
 
   // ── Generar orden (sin pago) ────────────────────────────────────────────────
   // ── Generar mensaje de WhatsApp para no autenticados ────────────────────────
-  const generateWhatsAppMessage = (): string => {
+  const generateWhatsAppMessage = async (): Promise<string> => {
+    // Obtener todas las bodegas para mapear bodegaId → tiempoEntrega
+    const bodegas = await obtenerBodegas();
+    const bodegasMap = new Map(bodegas.map(b => [b.id, b.tiempoEntrega]));
+
     const productosText = carrito
       .map((p) => {
         const { finalPrice, discount } = calcularPrecioData(p);
         const cantidad = p.cantidad || 1;
         const subtotalProducto = finalPrice * cantidad;
         const descuentoText = discount > 0 ? ` (-${discount}%)` : "";
-        return `*${p.nombre}*${descuentoText}\nCantidad: ${cantidad} × $${finalPrice.toFixed(2)}\nSubtotal: $${subtotalProducto.toFixed(2)}`;
+        const tiempoEntrega = bodegasMap.get(p.bodegaId || "technothings") || 72;
+        return `*${p.nombre}*${descuentoText}\nCantidad: ${cantidad} × $${finalPrice.toFixed(2)}\nSubtotal: $${subtotalProducto.toFixed(2)}\nEntrega Aproximada en: ${tiempoEntrega}h`;
       })
       .join("\n\n");
     
-    const headerMsg = process.env.NEXT_PUBLIC_WHATSAPP_HEADER_MESSAGE || "Hola! Me gustaría realizar una compra:";
-    const footerMsg = process.env.NEXT_PUBLIC_WHATSAPP_FOOTER_MESSAGE || "\n\nQuisiera conocer más detalles y confirmar disponibilidad. ¡Gracias!";
+    const headerMsg = "Hola 🖐🏻 Me gustaría realizar una compra:";
+    const footerMsg = "Quiero confirmar disponibilidad y conocer más detalles. ¡Gracias!";
     
-    const message = `${headerMsg}\n\n${productosText}\n\n━━━━━━━━━━━━━━━\n*TOTAL: $${total.toFixed(2)}*\n━━━━━━━━━━━━━━━${footerMsg}`;
+    const message = `${headerMsg}\n\n${productosText}\n\n━━━━━━━━━━━━━━━\n*TOTAL: $${total.toFixed(2)}*\n━━━━━━━━━━━━━━━\n\n${footerMsg}`;
     return encodeURIComponent(message);
   };
 
@@ -299,7 +305,7 @@ export default function CartPage() {
     // Para guests: enviar a WhatsApp
     if (isGuest) {
       const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_PHONE || "34123456789"; // Reemplazar con número real
-      const message = generateWhatsAppMessage();
+      const message = await generateWhatsAppMessage();
       window.open(`https://wa.me/${whatsappNumber}?text=${message}`, "_blank");
       return;
     }

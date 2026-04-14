@@ -49,6 +49,23 @@ export default function OrdenesPage() {
     return (orden.productos || []).reduce((sum: number, p: any) => sum + calcularSubtotalProducto(p), 0);
   };
 
+  // Agrupar productos por tiempo de entrega
+  const agruparPorTiempoEntrega = (productos: any[]) => {
+    return productos.reduce((acc: Record<number, any[]>, p) => {
+      const tiempo = p.tiempoEntrega || 72;
+      if (!acc[tiempo]) acc[tiempo] = [];
+      acc[tiempo].push(p);
+      return acc;
+    }, {});
+  };
+
+  // Obtener resumen de tiempos de entrega
+  const obtenerResumenTiempos = (productos: any[]) => {
+    const porTiempo = agruparPorTiempoEntrega(productos);
+    const tiempos = Object.keys(porTiempo).map(Number).sort((a, b) => a - b);
+    return tiempos;
+  };
+
   return (
     <div className="min-h-screen flex flex-col items-center bg-white dark:bg-black text-slate-900 dark:text-white transition-colors px-5 py-6 sm:py-15">
       <h1 className="text-3xl font-bold mb-4 text-[#3a1859] dark:text-white">Mis órdenes</h1>
@@ -94,6 +111,17 @@ export default function OrdenesPage() {
                 ))}
               </ul>
                 <div className="font-bold text-right mb-2">Total: ${calcularTotalOrden(orden).toFixed(2)}</div>
+              
+              {/* Delivery Time Summary */}
+              <div className="mt-2 mb-2 space-y-1">
+                {obtenerResumenTiempos(orden.productos).map((tiempo) => (
+                  <div key={tiempo} className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                    <span className="text-lg">⏱️</span>
+                    <span>Entrega: máximo {tiempo} horas laborales</span>
+                  </div>
+                ))}
+              </div>
+
               {orden.motivoRechazo && orden.estado === "rechazada" && (
                 <div className="mt-1 text-sm text-red-600 dark:text-red-400">
                   Motivo del rechazo: {orden.motivoRechazo}
