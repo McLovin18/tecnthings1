@@ -151,28 +151,43 @@ export async function POST(req: NextRequest) {
 
     console.log("[send-verification-email] Iniciando envío:", {
       to: email,
-      from: "noreply@technothings.com",
+      from: "noreply@tecnothings.com",
       apiKeyExists: !!process.env.RESEND_API_KEY,
     });
 
-    // Enviar email con Resend
-    const emailResponse = await resend.emails.send({
-      from: "noreply@technothings.com",
+    // Intentar primero con el dominio personalizado
+    let emailResponse = await resend.emails.send({
+      from: "noreply@tecnothings.com",
       to: email,
       subject: "Verifica tu correo electrónico — TecnoThings",
       html: buildVerificationEmailHTML(verificationLink),
       headers: {
-        // Headers para asegurar que llegue a bandeja de entrada
         "X-Priority": "1",
         "Importance": "high",
         "X-MSMail-Priority": "High",
-        // Identificar como email transaccional, no promocional
         "X-Entity-Ref-ID": "transactional-verification",
-        // Precedence para algunos clientes de email
         "Precedence": "transactional",
       },
       reply_to: "soporte@technothings.com",
     });
+
+    // Si falla por dominio no verificado, usar fallback
+    if (emailResponse.error && emailResponse.error.message?.includes("not verified")) {
+      console.log("[send-verification-email] Dominio no verificado, usando fallback onboarding@resend.dev");
+      emailResponse = await resend.emails.send({
+        from: "onboarding@resend.dev",
+        to: email,
+        subject: "Verifica tu correo electrónico — TecnoThings",
+        html: buildVerificationEmailHTML(verificationLink),
+        headers: {
+          "X-Priority": "1",
+          "Importance": "high",
+          "X-MSMail-Priority": "High",
+          "X-Entity-Ref-ID": "transactional-verification",
+          "Precedence": "transactional",
+        },
+      });
+    }
 
     console.log("[send-verification-email] Respuesta de Resend:", emailResponse);
 
