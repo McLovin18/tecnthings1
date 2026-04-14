@@ -126,7 +126,7 @@ export default function FeaturedProductsSection({
   return (
     <section
       style={{ paddingTop, paddingBottom }}
-      className="w-full max-w-full px-2 flex flex-col items-center m-0 overflow-x-hidden"
+      className="w-full max-w-full px-2 md:px-2 flex flex-col items-center m-0 overflow-x-hidden"
     >
       {/* Título */}
       {title && (
@@ -138,89 +138,92 @@ export default function FeaturedProductsSection({
         </h2>
       )}
 
-      {/* Contenedor carrusel */}
-      <div
-        className="w-full max-w-7xl mx-auto relative px-12"
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-      >
-        {/* Flecha izquierda */}
-        {hasCarousel && (
-          <button
-            type="button"
-            onClick={handlePrev}
-            aria-label="Anterior"
-            className="absolute left-2 top-1/2 -translate-y-1/2 z-20 h-10 w-10 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-200 shadow-md hover:bg-purple-50 dark:hover:bg-purple-900/40 hover:border-purple-300 hover:scale-105 transition-all"
-          >
-            <span className="material-icons-round text-[20px]">chevron_left</span>
-          </button>
-        )}
-
-        {/* Flecha derecha */}
-        {hasCarousel && (
-          <button
-            type="button"
-            onClick={handleNext}
-            aria-label="Siguiente"
-            className="absolute right-2 top-1/2 -translate-y-1/2 z-20 h-10 w-10 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-200 shadow-md hover:bg-purple-50 dark:hover:bg-purple-900/40 hover:border-purple-300 hover:scale-105 transition-all"
-          >
-            <span className="material-icons-round text-[20px]">chevron_right</span>
-          </button>
-        )}
-
-        {/* Grid de productos */}
+      {/* Wrapper móvil con flechas ARRIBA */}
+      <div className="w-full">
+        {/* Contenedor carrusel - Responsive con flechas laterales centradas */}
         <div
-          className={
-            isSingleVisible
-              ? "flex justify-center w-full max-w-xl mx-auto"
-              : `grid w-full ${itemsPerView === 1 ? "place-items-start gap-0" : "place-items-center gap-6"} ${gridCols}`
-          }
-          style={{
-            minWidth: 0,
-            animation: isAnimating
-              ? `slideIn${animDir === "right" ? "Right" : "Left"} 0.28s ease`
-              : undefined,
-          }}
+          className="w-full max-w-7xl mx-auto relative px-2 sm:px-6 md:px-12"
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
         >
-          {visibleProducts.map((prod: any, idx: number) => (
-            <div
-              key={`${prod.id}-${currentIndex}-${idx}`}
-              className={`transition-all duration-300 flex flex-col items-stretch justify-stretch ${
-                isSingleVisible ? "w-full" : "w-full max-w-[320px] h-auto md:h-[420px]"
-              }`}
-              style={{ width: "100%", minWidth: 0 }}
+          {/* Flecha izquierda - Móvil y Desktop */}
+          {hasCarousel && (
+            <button
+              type="button"
+              onClick={handlePrev}
+              aria-label="Anterior"
+              className="absolute left-0 md:left-2 top-[35%] -translate-y-1/2 z-20 h-9 w-9 md:h-10 md:w-10 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-200 shadow-md hover:bg-purple-50 dark:hover:bg-purple-900/40 hover:border-purple-300 hover:scale-105 transition-all"
             >
-              <ProductoCard producto={prod} />
-            </div>
-          ))}
-        </div>
+              <span className="material-icons-round text-[18px] md:text-[20px]">chevron_left</span>
+            </button>
+          )}
 
-        {/* Dots indicadores */}
-        {hasCarousel && products.length > 1 && (
-          <div className="flex justify-center gap-1.5 mt-2">
-            {Array.from({ length: products.length }).map((_, i) => (
-              <button
-                key={i}
-                aria-label={`Ir a producto ${i + 1}`}
-                onClick={() => setCurrentIndex(i)}
-                className={`rounded-full transition-all duration-300 ${
-                  i === currentIndex
-                    ? "w-6 h-2 bg-purple-600 dark:bg-purple-400"
-                    : "w-2 h-2 bg-white dark:bg-slate-600 hover:bg-purple-300 dark:hover:bg-purple-600"
+          {/* Flecha derecha - Móvil y Desktop */}
+          {hasCarousel && (
+            <button
+              type="button"
+              onClick={handleNext}
+              aria-label="Siguiente"
+              className="absolute right-0 md:right-2 top-[35%] -translate-y-1/2 z-20 h-9 w-9 md:h-10 md:w-10 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-200 shadow-md hover:bg-purple-50 dark:hover:bg-purple-900/40 hover:border-purple-300 hover:scale-105 transition-all"
+            >
+              <span className="material-icons-round text-[18px] md:text-[20px]">chevron_right</span>
+            </button>
+          )}
+
+          {/* Grid de productos - Full width en móvil */}
+          <div
+            className={
+              isSingleVisible
+                ? "flex justify-center w-full max-w-full mx-auto"
+                : `grid w-full ${itemsPerView === 1 ? "place-items-center gap-3 md:gap-0" : "place-items-center gap-3 md:gap-6"} ${gridCols}`
+            }
+            style={{
+              minWidth: 0,
+              animation: isAnimating
+                ? `slideIn${animDir === "right" ? "Right" : "Left"} 0.28s ease`
+                : undefined,
+            }}
+          >
+            {visibleProducts.map((prod: any, idx: number) => (
+              <div
+                key={`${prod.id}-${currentIndex}-${idx}`}
+                className={`transition-all duration-300 flex flex-col items-stretch justify-stretch ${
+                  isSingleVisible ? "w-full px-2 md:px-0" : "w-full max-w-[320px] h-auto md:h-[420px]"
                 }`}
-              />
+                style={{ width: "100%", minWidth: 0 }}
+              >
+                <ProductoCard producto={prod} />
+              </div>
             ))}
           </div>
-        )}
 
-        {/* Botón Ver todos los productos */}
-        <div className="flex justify-center mt-7">
-          <Link
-            href="/productos"
-            className="px-3 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 dark:from-purple-500 dark:to-purple-600 dark:hover:from-purple-600 dark:hover:to-purple-700"
-          >
-            Ver todos los productos
-          </Link>
+          {/* Dots indicadores */}
+          {hasCarousel && products.length > 1 && (
+            <div className="flex justify-center gap-1.5 mt-6">
+              {Array.from({ length: products.length }).map((_, i) => (
+                <button
+                  key={i}
+                  aria-label={`Ir a producto ${i + 1}`}
+                  onClick={() => setCurrentIndex(i)}
+                  className={`rounded-full transition-all duration-300 ${
+                    i === currentIndex
+                      ? "w-6 h-2 bg-purple-600 dark:bg-purple-400"
+                      : "w-2 h-2 bg-white dark:bg-slate-600 hover:bg-purple-300 dark:hover:bg-purple-600"
+                  }`}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Botón Ver todos los productos */}
+          <div className="flex justify-center mt-7 md:mt-8 w-full">
+            <Link
+              href="/productos"
+              className="px-3 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 dark:from-purple-500 dark:to-purple-600 dark:hover:from-purple-600 dark:hover:to-purple-700"
+            >
+              Ver todos los productos
+            </Link>
+          </div>
         </div>
       </div>
 
