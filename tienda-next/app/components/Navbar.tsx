@@ -157,6 +157,8 @@ export const Navbar = () => {
   const [theme, setTheme] = useState("light");
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenu, setUserMenu] = useState(false);
+  const [openCatId, setOpenCatId] = useState<string | null>(null); // Para dropdown nivel 1 en tablet/desktop
+  const [openSubId, setOpenSubId] = useState<string | null>(null); // Para dropdown nivel 2 en tablet/desktop
   const { user, isLogged, carrito } = useUser();
   const [windowWidth, setWindowWidth] = useState<number | null>(null);
   
@@ -612,9 +614,15 @@ export const Navbar = () => {
 
           {/* Categorías dinámicas */}
           {categorias.map((cat) => (
-            <div key={cat.id} className="relative group  shrink-0">
+            <div 
+              key={cat.id} 
+              className="relative group shrink-0"
+              onMouseEnter={() => windowWidth !== null && windowWidth >= 1024 && setOpenCatId(cat.id)}
+              onMouseLeave={() => windowWidth !== null && windowWidth >= 1024 && setOpenCatId(null)}
+            >
               {cat.subcategorias?.length > 0 ? (
                 <button
+                  onClick={() => setOpenCatId(openCatId === cat.id ? null : cat.id)}
                   className="flex items-center gap-1 px-3 py-2.5 text-sm font-medium whitespace-nowrap transition-shadow rounded-xl hover:shadow-sm text-black dark:text-white"
                 >
                   {cat.icono && (
@@ -622,8 +630,8 @@ export const Navbar = () => {
                   )}
                   <span className="dark:text-white">{cat.nombre}</span>
                   <span
-                    className="material-icons-round dark:text-white transition-transform duration-200 group-hover:rotate-180"
-                    style={{ fontSize: 14 }}
+                    className="material-icons-round dark:text-white transition-transform duration-200"
+                    style={{ fontSize: 14, transform: openCatId === cat.id ? "rotate(180deg)" : "rotate(0deg)" }}
                   >
                     expand_more
                   </span>
@@ -643,30 +651,45 @@ export const Navbar = () => {
               {/* Dropdown nivel 1 */}
               {cat.subcategorias?.length > 0 && (
                 <div
-                  className="absolute left-0 top-full min-w-52 rounded-2xl border hover:text-[#7b68ee] shadow-xl py-1.5 z-50
-                             opacity-0 pointer-events-none translate-y-1
-                             group-hover:opacity-100 group-hover:pointer-events-auto group-hover:translate-y-0
-                             transition-all duration-150 bg-white dark:bg-[#181028]"
-                  style={{ borderColor: "var(--border)" }}
+                  className="absolute left-0 top-full min-w-52 rounded-2xl border hover:text-[#7b68ee] shadow-xl py-1.5 z-50 bg-white dark:bg-[#181028]"
+                  style={{
+                    borderColor: "var(--border)",
+                    opacity: openCatId === cat.id ? "1" : "0",
+                    pointerEvents: openCatId === cat.id ? "auto" : "none",
+                    transform: openCatId === cat.id ? "translateY(0)" : "translateY(-10px)",
+                    transition: "all 150ms",
+                  }}
                 >
                   {cat.subcategorias.map((sub: any) => (
-                    <div key={sub.id} className="relative group/sub">
+                    <div 
+                      key={sub.id} 
+                      className="relative group/sub"
+                      onMouseEnter={() => windowWidth !== null && windowWidth >= 1024 && setOpenSubId(sub.id)}
+                      onMouseLeave={() => windowWidth !== null && windowWidth >= 1024 && setOpenSubId(null)}
+                    >
                       {sub.subcategorias?.length > 0 ? (
                         <button
+                          onClick={() => setOpenSubId(openSubId === sub.id ? null : sub.id)}
                           className="w-full flex items-center justify-between px-4 py-2.5 text-sm transition-shadow !text-black dark:!text-white hover:shadow-sm rounded-md"
                         >
                           <span className="!text-black dark:!text-white group-hover/sub:!text-[#7b68ee] dark:group-hover/sub:!text-[#7b68ee] transition-colors">{sub.nombre}</span>
-                          <span className="material-icons-round text-sm dark:text-white hover:text-[#7b68ee]">
+                          <span 
+                            className="material-icons-round text-sm dark:text-white hover:text-[#7b68ee] transition-transform duration-200"
+                            style={{ transform: openSubId === sub.id ? "rotate(90deg)" : "rotate(0deg)" }}
+                          >
                             chevron_right
                           </span>
 
                           {/* Dropdown nivel 2 */}
                           <div
-                            className="absolute left-full top-0 ml-1 min-w-44 rounded-2xl border shadow-xl py-1.5 z-60
-                                       opacity-0 pointer-events-none translate-x-1
-                                       group-hover/sub:opacity-100 group-hover/sub:pointer-events-auto group-hover/sub:translate-x-0
-                                       transition-all duration-150 bg-white dark:bg-[#181028] hover:text-[#7b68ee]"
-                            style={{ borderColor: "var(--border)" }}
+                            className="absolute left-full top-0 ml-1 min-w-44 rounded-2xl border shadow-xl py-1.5 z-60 bg-white dark:bg-[#181028] hover:text-[#7b68ee]"
+                            style={{
+                              borderColor: "var(--border)",
+                              opacity: openSubId === sub.id ? "1" : "0",
+                              pointerEvents: openSubId === sub.id ? "auto" : "none",
+                              transform: openSubId === sub.id ? "translateX(0)" : "translateX(-10px)",
+                              transition: "all 150ms",
+                            }}
                           >
                             {sub.subcategorias.map((subsub: any) => (
                               <Link
