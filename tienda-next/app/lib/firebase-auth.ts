@@ -7,61 +7,65 @@ export async function sendPasswordResetEmail(email: string) {
 import { auth } from "./firebase";
 import {
 	signInWithEmailAndPassword,
-	createUserWithEmailAndPassword,
 	signOut,
 	onAuthStateChanged,
 	getIdToken,
 	User,
-	updateProfile
 } from "firebase/auth";
 
 // LOGIN
 export async function loginUser(email: string, password: string) {
 	const userCredential = await signInWithEmailAndPassword(auth, email, password);
 	const user = userCredential.user;
-	// Solo exigir verificación si el usuario fue creado en esta sesión
-	let mustVerify = false;
-	try {
-		if (typeof window !== "undefined") {
-			const justRegistered = localStorage.getItem("justRegisteredEmail");
-			if (justRegistered && justRegistered === user.email) {
-				mustVerify = true;
-			}
-		}
-	} catch {}
-	if (mustVerify && !user.emailVerified) {
+	
+	// ⚠️ IMPORTANTE: Validar que el email esté verificado SIEMPRE
+	if (!user.emailVerified) {
 		// Cerrar sesión inmediata para evitar sesión local
 		await signOut(auth);
 		throw new Error("Debes verificar tu correo electrónico antes de iniciar sesión. Revisa tu email y haz clic en el enlace de verificación.");
 	}
+	
 	const idToken = await getIdToken(user, true);
 	// Puedes hacer fetch a tu API para guardar la sesión/cookie aquí
 	return { success: true, user, idToken };
 }
 
-// REGISTRO
+// REGISTRO - ⚠️ NUNCA autentica al cliente
 export async function registerUser(email: string, password: string, profile: { name?: string } = {}) {
-	const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-	const user = userCredential.user;
-	if (profile.name) {
-		await updateProfile(user, { displayName: profile.name });
+	// ✅ Crear usuario desde BACKEND (Admin SDK) - NO autentica al cliente
+	const createRes = await fetch("/api/auth/create-account", {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({ 
+			email: email.trim(),
+			password: password,
+			displayName: profile.name?.trim()
+		}),
+	});
+
+	if (!createRes.ok) {
+		const err = await createRes.json();
+		throw new Error(err.error || "Error al crear la cuenta");
 	}
-	
-	// Enviar email de verificación personalizado (HTML con link clickeable en iPhones)
+
+	const userData = await createRes.json();
+
+	// Enviar email de verificación
 	try {
 		await fetch("/api/auth/send-verification-email", {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ email: user.email }),
+			body: JSON.stringify({ email: userData.email }),
 		});
 	} catch (err) {
 		console.error("Error enviando email de verificación:", err);
 		// Continuar incluso si el email falla
 	}
-	
-	const idToken = await getIdToken(user, true);
-	// Puedes hacer fetch a tu API para guardar la sesión/cookie aquí
-	return { success: true, user, idToken };
+
+	return { 
+		success: true, 
+		message: "Cuenta creada. Revisa tu email para verificar tu cuenta."
+	};
 }
 
 // LOGOUT
