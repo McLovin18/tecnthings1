@@ -14,6 +14,7 @@ export interface AppUser {
   displayName?: string;
   photoURL?: string;
   role?: string;
+  emailVerified?: boolean;  // Nuevo: track email verification status
   [key: string]: any;
 }
 
@@ -64,47 +65,45 @@ export function UserProvider({ children }: { children: ReactNode }) {
         setLoading(false);
         return;
       }
-      // Solo bloquear si fue creado en esta sesión (flag justRegisteredEmail)
-      let mustVerify = false;
-      try {
-        if (typeof window !== "undefined") {
-          const justRegistered = localStorage.getItem("justRegisteredEmail");
-          if (justRegistered && justRegistered === realUser.email) {
-            mustVerify = true;
-          }
-        }
-      } catch {}
-      if (mustVerify && !realUser.emailVerified) {
-        setUser(null);
-        setLoading(false);
-        return;
-      }
+      
+      // MEJORA: Usar emailVerified de Firebase directamente
+      // No bloquear acceso si el email no está verificado, solo mostrar banner
+      // La navegación está permitida pero se mostrará una alerta
+      
       try {
         // Forzar refresh del token para obtener claims actualizados
         await getIdToken(realUser, true);
         const idToken = await getIdToken(realUser);
+        
         // Intentar obtener rol desde backend si existe endpoint
         try {
           const res = await fetch("/api/auth/me", { headers: { Authorization: `Bearer ${idToken}` } });
           if (res.ok) {
             const data = await res.json();
-            setUser({ ...(realUser as any), role: data.role });
+            // Incluir emailVerified en el usuario sin bloquear acceso
+            setUser({ ...(realUser as any), role: data.role, emailVerified: realUser.emailVerified });
             setLoading(false);
             return;
           }
         } catch (e) {
           // ignore and fallback to token claims
         }
+        
         // Fallback: leer claims desde el token
         try {
           const tokenResult = await getIdTokenResult(realUser);
-          setUser({ ...(realUser as any), role: (tokenResult?.claims as any)?.role });
+          setUser({ 
+            ...(realUser as any), 
+            role: (tokenResult?.claims as any)?.role,
+            emailVerified: realUser.emailVerified 
+          });
         } catch (e) {
-          setUser(realUser);
+          setUser({ ...(realUser as any), emailVerified: realUser.emailVerified });
         }
       } catch (err) {
-        setUser(realUser);
+        setUser({ ...(realUser as any), emailVerified: realUser.emailVerified });
       }
+      
       setLoading(false);
     });
     return () => unsubscribe();

@@ -121,7 +121,17 @@ export async function POST(req: NextRequest) {
     }
 
     // Generar el link de verificación usando Firebase Admin SDK
-    const verificationLink = await adminAuth.generateEmailVerificationLink(email);
+    const firebaseLink = await adminAuth.generateEmailVerificationLink(email);
+    
+    // Extraer el oobCode del link de Firebase
+    const url = new URL(firebaseLink);
+    const oobCode = url.searchParams.get("oobCode");
+    
+    // Crear nuestro propio link personalizado
+    // Usar el dominio actual o un dominio hardcodeado de producción
+    const host = req.headers.get("host") || process.env.NEXT_PUBLIC_DOMAIN || "localhost:3000";
+    const protocol = process.env.NODE_ENV === "production" ? "https" : "http";
+    const verificationLink = `${protocol}://${host}/auth/verify-email?oobCode=${oobCode}`;
 
     // Configurar nodemailer
     const transporter = nodemailer.createTransport({

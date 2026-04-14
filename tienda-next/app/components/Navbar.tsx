@@ -691,7 +691,7 @@ export const Navbar = () => {
           onClick={() => setMobileOpen(false)}
         >
           <div
-            className="absolute left-0 top-0 w-[85vw] max-w-xs h-full overflow-y-auto shadow-2xl flex flex-col"
+            className="absolute left-0 top-0 w-[85vw] max-w-xs max-h-[calc(100vh-80px)] overflow-y-auto shadow-2xl flex flex-col"
             style={{ background: "var(--cardBg)", color: "var(--text)" }}
             onClick={(e) => e.stopPropagation()}
           >
