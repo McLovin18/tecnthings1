@@ -154,7 +154,7 @@ export async function POST(req: NextRequest) {
 
     // Enviar email con Resend
     const emailResponse = await resend.emails.send({
-      from: "onboarding@resend.dev",
+      from: "noreply@technothings.com",
       to: email,
       subject: "Verifica tu correo electrónico — TecnoThings",
       html: buildVerificationEmailHTML(verificationLink),
