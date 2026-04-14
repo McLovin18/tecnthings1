@@ -157,7 +157,7 @@ export async function POST(req: NextRequest) {
 
     // Intentar primero con el dominio personalizado
     let emailResponse = await resend.emails.send({
-      from: "noreply@tecnothings.com",
+      from: "tecnothings@tecnothings.com",
       to: email,
       subject: "Verifica tu cuenta — TecnoThings",
       html: buildVerificationEmailHTML(verificationLink),
