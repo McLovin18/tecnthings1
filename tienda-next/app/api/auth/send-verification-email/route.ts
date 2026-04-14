@@ -38,11 +38,11 @@ function buildVerificationEmailHTML(verificationLink: string): string {
       <td align="center">
         <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,0.08);max-width:98vw;">
           
-          <!-- Header -->
+          <!-- Header con color corporativo -->
           <tr>
-            <td style="background:linear-gradient(135deg,#3a1859 0%,#6d28d9 100%);padding:40px 36px;text-align:center;">
+            <td style="background:#6d28d9;padding:40px 36px;text-align:center;" bgcolor="#6d28d9">
               <h1 style="margin:0;color:#ffffff;font-size:32px;letter-spacing:1px;font-weight:bold;line-height:1.2;">TecnoThings</h1>
-              <p style="margin:8px 0 0;color:#e9d5ff;font-size:14px;line-height:1.4;">Tu tienda de tecnología</p>
+              <p style="margin:8px 0 0;color:#e9d5ff;font-size:14px;line-height:1.4;">Verificación de correo electrónico</p>
             </td>
           </tr>
 
@@ -54,17 +54,17 @@ function buildVerificationEmailHTML(verificationLink: string): string {
               </h2>
               
               <p style="margin:0 0 24px;color:#4b5563;font-size:16px;line-height:1.6;text-align:center;">
-                ¡Bienvenido a TecnoThings! Para completar tu registro, necesitas verificar tu dirección de correo electrónico.
+                ¡Bienvenido a TecnoThings! Para completar tu registro, necesitas verificar tu dirección de correo electrónico. Haz clic en el botón de abajo para continuar.
               </p>
 
-              <!-- Botón de verificación - Bulletproof para iPhone -->
-              <table width="100%" cellpadding="0" cellspacing="0" style="margin:32px 0;">
+              <!-- Botón de verificación - Bulletproof para todos los clientes -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin:32px 0;border-collapse:collapse;">
                 <tr>
-                  <td align="center">
+                  <td align="center" style="border-collapse:collapse;">
                     <table cellpadding="0" cellspacing="0" style="margin:0 auto;border-collapse:collapse;">
                       <tr>
-                        <td style="border-collapse:collapse;border-spacing:0;background:#6d28d9;border-radius:8px;text-align:center;cursor:pointer;min-width:200px;">
-                          <a href="${verificationLink}" style="display:block;background:#6d28d9;color:#ffffff;text-decoration:none;font-size:18px;font-weight:700;padding:16px 48px;border-radius:8px;line-height:1.3;font-family:Arial,sans-serif;text-align:center;min-width:200px;width:200px;box-sizing:border-box;mso-padding-alt:16px 48px;">
+                        <td style="border-collapse:collapse;border-spacing:0;background:#6d28d9;border-radius:8px;text-align:center;cursor:pointer;" bgcolor="#6d28d9">
+                          <a href="${verificationLink}" style="display:block;background:#6d28d9;color:#ffffff;text-decoration:none;font-size:18px;font-weight:700;padding:16px 48px;border-radius:8px;line-height:1.3;font-family:Arial,sans-serif;text-align:center;min-width:200px;box-sizing:border-box;mso-padding-alt:16px 48px;border:none;" target="_blank" rel="noopener noreferrer">
                             Verificar mi correo
                           </a>
                         </td>
@@ -74,27 +74,30 @@ function buildVerificationEmailHTML(verificationLink: string): string {
                 </tr>
               </table>
 
-              <!-- Texto alternativo (para clientes que no renderean el botón) -->
+              <!-- Texto alternativo -->
               <p style="margin:24px 0 12px;color:#6b7280;font-size:13px;text-align:center;">
-                O copia y pega este enlace en tu navegador:
+                O copia este enlace en tu navegador:
               </p>
               
-              <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:12px 16px;margin:0;word-break:break-all;word-wrap:break-word;">
+              <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:12px 16px;margin:0;word-break:break-all;word-wrap:break-word;overflow-wrap:break-word;">
                 <p style="margin:0;color:#374151;font-size:12px;font-family:'Courier New',monospace;line-height:1.4;word-break:break-all;">
                   <a href="${verificationLink}" style="color:#6d28d9;text-decoration:none;" target="_blank" rel="noopener noreferrer">${verificationLink}</a>
                 </p>
               </div>
 
-              <!-- Información importante -->
-              <div style="background:#fef3c7;border-left:4px solid #f59e0b;padding:16px;margin:32px 0 24px;border-radius:4px;">
-                <p style="margin:0;color:#92400e;font-size:13px;line-height:1.5;">
-                  <strong>Importante:</strong> Este enlace expirará en 24 horas. Si no verificas tu correo en ese plazo, deberás registrarte nuevamente.
+              <!-- Información sobre expiración -->
+              <div style="background:#fef3c7;border-left:4px solid #f59e0b;padding:16px;margin:32px 0 24px;border-radius:4px;border-collapse:collapse;">
+                <p style="margin:0;color:#92400e;font-size:13px;line-height:1.5;font-weight:500;">
+                  Importante: Este enlace expirará en 24 horas.
                 </p>
               </div>
 
-              <!-- Contacto -->
-              <p style="margin:24px 0 0;color:#9ca3af;font-size:12px;text-align:center;line-height:1.5;">
-                Si no creaste esta cuenta o tienes problemas, contacta con nuestro equipo de soporte.
+              <!-- Línea separadora -->
+              <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;" />
+
+              <!-- Contacto de soporte -->
+              <p style="margin:16px 0 0;color:#9ca3af;font-size:12px;text-align:center;line-height:1.5;">
+                ¿Problemas? Contáctanos en <a href="mailto:soporte@technothings.com" style="color:#6d28d9;text-decoration:none;">soporte@technothings.com</a>
               </p>
             </td>
           </tr>
@@ -102,11 +105,11 @@ function buildVerificationEmailHTML(verificationLink: string): string {
           <!-- Footer -->
           <tr>
             <td style="background:#f9fafb;padding:20px 36px;text-align:center;border-top:1px solid #e5e7eb;">
-              <p style="margin:0;color:#9ca3af;font-size:12px;line-height:1.4;">
+              <p style="margin:0;color:#9ca3af;font-size:11px;line-height:1.4;">
                 © ${new Date().getFullYear()} TecnoThings. Todos los derechos reservados.
               </p>
-              <p style="margin:8px 0 0;color:#9ca3af;font-size:11px;line-height:1.3;">
-                Este correo fue enviado automáticamente. No respondas a este mensaje.
+              <p style="margin:8px 0 0;color:#9ca3af;font-size:10px;line-height:1.2;">
+                Este es un correo de verificación automático. Por favor no respondas a este mensaje.
               </p>
             </td>
           </tr>
@@ -158,6 +161,17 @@ export async function POST(req: NextRequest) {
       to: email,
       subject: "Verifica tu correo electrónico — TecnoThings",
       html: buildVerificationEmailHTML(verificationLink),
+      headers: {
+        // Headers para asegurar que llegue a bandeja de entrada
+        "X-Priority": "1",
+        "Importance": "high",
+        "X-MSMail-Priority": "High",
+        // Identificar como email transaccional, no promocional
+        "X-Entity-Ref-ID": "transactional-verification",
+        // Precedence para algunos clientes de email
+        "Precedence": "transactional",
+      },
+      reply_to: "soporte@technothings.com",
     });
 
     console.log("[send-verification-email] Respuesta de Resend:", emailResponse);
