@@ -3,6 +3,7 @@
 import { obtenerProductoPorId, obtenerProductosPorCategoria, obtenerProductosPorSubcategoria, obtenerProductosPorSubsubcategoria } from "../lib/productos-db";
 import { Loading3DIcon } from "../components/Loading3DIcon";
 import ProductoCard from "../components/ProductoCard";
+import RelatedProductsCarousel from "../components/RelatedProductsCarousel";
 import React, { useState, useEffect } from "react";
 import { ProductReview } from "../lib/reviews-types";
 import { useUser } from "../context/UserContext";
@@ -48,15 +49,15 @@ export default function ProductDetailPage({ params }) {
         let rel = [];
         console.log("[RELACIONADOS] subsubcategoria:", prod.subsubcategoria, "subcategoria:", prod.subcategoria, "categoria:", prod.categoria);
         if (prod.subsubcategoria) {
-          rel = await obtenerProductosPorSubsubcategoria(prod.subsubcategoria, prod.id, 5);
+          rel = await obtenerProductosPorSubsubcategoria(prod.subsubcategoria, prod.id, 10);
           console.log("[RELACIONADOS] encontrados por subsubcategoria:", rel);
         }
         if ((!rel || rel.length === 0) && prod.subcategoria) {
-          rel = await obtenerProductosPorSubcategoria(prod.subcategoria, prod.id, 5);
+          rel = await obtenerProductosPorSubcategoria(prod.subcategoria, prod.id, 10);
           console.log("[RELACIONADOS] encontrados por subcategoria:", rel);
         }
         if ((!rel || rel.length === 0) && prod.categoria) {
-          rel = await obtenerProductosPorCategoria(prod.categoria, prod.id, 5);
+          rel = await obtenerProductosPorCategoria(prod.categoria, prod.id, 10);
           console.log("[RELACIONADOS] encontrados por categoria:", rel);
         }
         setRelacionados(rel);
@@ -146,6 +147,10 @@ export default function ProductDetailPage({ params }) {
   const maxCantidad = producto.stock;
   const isFav = favoritos?.some((p) => p.id === producto.id);
   const inCart = carrito?.some((p) => p.id === producto.id);
+  
+  // Detectar si es un producto de ensambles (subcategoría 1775935523162)
+  const isEnsamblesProduct = producto.subcategoria === "1775935523162";
+  const imageContainerWidthClass = isEnsamblesProduct ? "md:w-[60%]" : "md:w-[44%]";
 
   const basePrice = Number(producto.precio || 0);
   const discount = Number(producto.descuento || 0);
@@ -214,7 +219,7 @@ export default function ProductDetailPage({ params }) {
         <div className="flex flex-col md:flex-row gap-8 lg:gap-14">
 
           {/* ══ GALERÍA + TABS ══════════════════════════════════════ */}
-          <div className="w-full md:w-[44%] flex flex-col gap-3">
+          <div className={`w-full ${imageContainerWidthClass} flex flex-col gap-3`}>
 
             {/* Imagen principal */}
             <div className="relative aspect-square rounded-2xl overflow-hidden dark:bg-white/[0.03] border border-slate-100 dark:border-white/[0.06]">
@@ -585,16 +590,7 @@ export default function ProductDetailPage({ params }) {
 
       {/* Productos relacionados */}
       <div className="max-w-7xl mx-auto w-full px-1 sm:px-3 pb-10">
-        <h2 className="text-xl font-bold mb-4 mt-10 text-slate-800 dark:text-white">Productos relacionados</h2>
-        {relacionados && relacionados.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
-            {relacionados.map((prod) => (
-              <ProductoCard key={prod.id} producto={prod} />
-            ))}
-          </div>
-        ) : (
-          <div className="text-slate-400 dark:text-white/30 text-center py-8">No hay productos relacionados para mostrar.</div>
-        )}
+        <RelatedProductsCarousel productos={relacionados} title="Productos relacionados" />
       </div>
     </div>
   );

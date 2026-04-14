@@ -127,7 +127,7 @@ export default function GallerySection({
             onClick={() => navigate("left")}
             aria-label="Anterior"
             className="
-              absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 lg:-translate-x-6
+              absolute left-0 top-[35%] md:top-[40%] -translate-y-1/2 -translate-x-4 lg:-translate-x-6
               z-20 h-10 w-10 rounded-full flex items-center justify-center
               shadow-lg border transition-all duration-200
               hover:scale-110 active:scale-95
@@ -149,7 +149,7 @@ export default function GallerySection({
             onClick={() => navigate("right")}
             aria-label="Siguiente"
             className="
-              absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 lg:translate-x-6
+              absolute right-0 top-[35%] md:top-[40%] -translate-y-1/2 translate-x-4 lg:translate-x-6
               z-20 h-10 w-10 rounded-full flex items-center justify-center
               shadow-lg border transition-all duration-200
               hover:scale-110 active:scale-95
