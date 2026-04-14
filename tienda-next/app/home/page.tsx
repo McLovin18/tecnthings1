@@ -72,7 +72,7 @@ export default function HomePage() {
         {/* Hero section */}
         <div className="w-full bg-gradient-to-b from-[#7b68ee] via-[#a78bfa] to-[#f3e8ff] dark:from-[#3a1859] dark:via-[#7b68ee] dark:to-[#1e1b2e] px-4 pt-14 pb-16 text-center">
           <div className="max-w-xl mx-auto">
-            <p className="text-[#7b68ee] dark:text-[#a78bfa] text-sm font-medium uppercase tracking-widest mb-3">
+            <p className="text-black text-sm font-medium uppercase tracking-widest mb-3">
               Tu tienda de tecnología
             </p>
             <h1 className="text-3xl md:text-5xl font-extrabold text-[#3a1859] dark:text-white mb-4 leading-tight">
@@ -89,6 +89,37 @@ export default function HomePage() {
           <svg viewBox="0 0 1440 48" xmlns="http://www.w3.org/2000/svg" className="w-full block fill-[#a78bfa] dark:fill-[#3a1859]">
             <path d="M0,48 C360,0 1080,96 1440,48 L1440,0 L0,0 Z" />
           </svg>
+        </div>
+
+        {/* Exploración CTA */}
+        <div className="w-full bg-gradient-to-r from-purple-50 to-purple-100 dark:from-slate-800 dark:to-slate-900 px-4 py-16">
+          <div className="max-w-6xl mx-auto">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+              <div>
+                <h2 className="text-2xl md:text-4xl font-extrabold text-slate-900 dark:text-white mb-3 leading-tight">
+                  Encuentra todo lo que necesitas
+                </h2>
+                <p className="text-slate-600 dark:text-slate-300 text-lg">
+                  Explora nuestras categorías o usa la búsqueda para encontrar exactamente lo que buscas
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                <a
+                  href="/home/products-by-category"
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#7b68ee] hover:bg-[#6d28d9] text-white font-bold rounded-xl transition-colors shadow-md"
+                >
+                  <span className="text-sm">Categorías</span>
+                </a>
+                <a
+                  href="/home/search-results"
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white dark:bg-slate-700 text-[#7b68ee] dark:text-purple-300 font-bold rounded-xl transition-colors shadow-md border-2 border-[#7b68ee] dark:border-purple-400 hover:bg-slate-50 dark:hover:bg-slate-600"
+                >
+                  <span className="material-icons-round text-xl">search</span>
+                  <span className="text-sm">Buscar</span>
+                </a>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Products section */}
@@ -123,12 +154,12 @@ export default function HomePage() {
                 </svg>
               </div>
               <p className="text-slate-500 dark:text-slate-400 font-medium">No hay productos destacados</p>
-              <a href="/productos" className="text-sm text-blue-500 hover:underline">
+              <a href="/productos" className="text-sm text-blue-500  hover:underline">
                 Ver todos los productos
               </a>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+            <div className="grid pb-10 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
               {productosDestacados.map((p) => (
                 <ProductoCard key={p.id} producto={p} showCart={true} showEye={true} />
               ))}

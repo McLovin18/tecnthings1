@@ -207,7 +207,7 @@ export default function PopToolOnboarding({ onFinish, layoutReady, mode, onReady
 					`poptool-popover animate-poptool-bounce fixed` +
 					((mode === "welcome" || step === 0)
 						? " bg-gradient-to-br from-[#7b68ee] via-[#a78bfa] to-[#f3e8ff] dark:from-[#3a1859] dark:via-[#7b68ee] dark:to-[#1e1b2e] text-white shadow-2xl border-0 p-7"
-						: " bg-white dark:bg-slate-900 rounded-2xl shadow-2xl p-4 border border-slate-200 dark:border-slate-700 text-center"
+						: " bg-white dark:bg-slate-900 rounded-2xl shadow-2xl p-1 border border-slate-200 dark:border-slate-700 text-center"
 					)
 				}
 				style={popoverStyle}

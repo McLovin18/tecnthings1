@@ -10,7 +10,80 @@ import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
-// ── Stripe inner form ─────────────────────────────────────────────────────────
+// ── Modal de Éxito ──────────────────────────────────────────────────────────
+function SuccessModal({ visitDate, visitTime }: { visitDate: string; visitTime: string }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div className="relative w-full max-w-[420px] rounded-3xl shadow-2xl bg-white dark:bg-[#0f0a23] border border-green-200 dark:border-green-900/40 p-8 text-center space-y-4">
+        <div className="flex justify-center">
+          <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+            <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+        </div>
+        <h2 className="text-2xl font-bold text-slate-900 dark:text-white">¡Listo! Tu orden fue generada</h2>
+        <p className="text-slate-600 dark:text-slate-300 text-sm">
+          Tu orden fue enviada correctamente a tu correo electrónico.
+        </p>
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-xl p-3 text-sm text-blue-800 dark:text-blue-300">
+          <p className="font-semibold mb-1">Acércate al local en:</p>
+          <p>📅 <strong>{visitDate}</strong> a las <strong>{visitTime}</strong></p>
+        </div>
+        <p className="text-slate-500 dark:text-slate-400 text-xs">
+          Nos dirigiremos a la página de tus ordenes en 5 segundos...
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ── Modal de Términos y Condiciones ─────────────────────────────────────────
+function TermsModal({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-[520px] max-h-[80vh] overflow-y-auto rounded-3xl shadow-2xl bg-white dark:bg-[#0f0a23] border border-purple-100 dark:border-purple-900">
+        <div className="sticky top-0 px-6 pt-6 pb-4 bg-white dark:bg-[#0f0a23] border-b border-purple-100 dark:border-purple-900 flex items-center justify-between">
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white">Términos y Condiciones</h2>
+          <button onClick={onClose} className="text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div className="px-6 py-6 text-sm text-slate-700 dark:text-slate-300 space-y-4">
+          <div>
+            <h3 className="font-bold text-slate-900 dark:text-white mb-2">💳 Pago con Tarjeta</h3>
+            <p>
+              Al elegir <strong>pago virtual con tarjeta</strong>, el total puede variar según la plataforma de procesamiento de transacciones (Stripe) y su compatibilidad con tu banco.
+            </p>
+          </div>
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-3">
+            <p className="text-xs">
+              <strong>Nota:</strong> El monto final puede incluir gastos de gestión de pago según tu entidad bancaria.
+            </p>
+          </div>
+          <div>
+            <h3 className="font-bold text-slate-900 dark:text-white mb-2">📋 Método Alternativo</h3>
+            <p>
+              Puedes también elegir la opción <strong>"Generar orden"</strong> y completar el pago directamente en el local al retirar tu pedido, sin intermediarios de pago en línea.
+            </p>
+          </div>
+          <div>
+            <h3 className="font-bold text-slate-900 dark:text-white mb-2">🔒 Transacciones Seguras</h3>
+            <p>
+              Todos los pagos con tarjeta son procesados a través de Stripe, una plataforma de pago segura y certificada internacionalmente.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 function StripeInnerForm({
   orderId,
   total,
@@ -138,6 +211,8 @@ export default function CartPage() {
   const [stripeClientSecret, setStripeClientSecret] = useState<string | null>(null);
   const [stripeOrderId, setStripeOrderId] = useState<string>("");
   const [stripeLoading, setStripeLoading] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
 
   const router = useRouter();
   const todayStr = new Date().toISOString().split("T")[0];
@@ -160,16 +235,33 @@ export default function CartPage() {
     const { finalPrice } = calcularPrecioData(p);
     return sum + finalPrice * (p.cantidad || 1);
   }, 0);
-  const total = subtotal;
+  // Agregar 7% si es pago con tarjeta
+  const cardFee = payMode === "stripe" ? subtotal * 0.07 : 0;
+  const total = subtotal + cardFee;
 
   // ── Validaciones comunes ────────────────────────────────────────────────────
   const validarAntesDeEnviar = (): boolean => {
-    if (!visitDate || !visitTime) {
-      setError("Selecciona el día y la hora aproximada en que irás al local.");
-      return false;
+    // SOLO pedir fecha/hora si es modo "order" (generar orden)
+    // Para tarjeta (stripe) NO se requiere fecha/hora
+    if (payMode === "order") {
+      if (!visitDate || !visitTime) {
+        setError("Selecciona el día y la hora aproximada en que irás al local.");
+        return false;
+      }
+      
+      // Validar horario del local: 10:00 AM a 5:00 PM (17:00)
+      const [hours, minutes] = visitTime.split(":").map(Number);
+      const visitHourInMinutes = hours * 60 + minutes;
+      const openingTime = 10 * 60; // 10:00 AM
+      const closingTime = 17 * 60; // 5:00 PM (17:00)
+
+      if (visitHourInMinutes < openingTime || visitHourInMinutes > closingTime) {
+        setError("El local está cerrado a esa hora. Horario de atención: 10:00 AM a 5:00 PM.");
+        return false;
+      }
     }
-    if (!emailFinal) {
-      setError("Ingresa tu correo electrónico para continuar.");
+    if (!emailFinal || emailFinal.trim() === "" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailFinal.trim())) {
+      setError("Ingresa un correo electrónico válido para continuar.");
       return false;
     }
     for (const p of carrito) {
@@ -182,22 +274,54 @@ export default function CartPage() {
   };
 
   // ── Generar orden (sin pago) ────────────────────────────────────────────────
+  // ── Generar mensaje de WhatsApp para no autenticados ────────────────────────
+  const generateWhatsAppMessage = (): string => {
+    const productosText = carrito
+      .map((p) => {
+        const { finalPrice, discount } = calcularPrecioData(p);
+        const cantidad = p.cantidad || 1;
+        const subtotalProducto = finalPrice * cantidad;
+        const descuentoText = discount > 0 ? ` (-${discount}%)` : "";
+        return `*${p.nombre}*${descuentoText}\nCantidad: ${cantidad} × $${finalPrice.toFixed(2)}\nSubtotal: $${subtotalProducto.toFixed(2)}`;
+      })
+      .join("\n\n");
+    
+    const headerMsg = process.env.NEXT_PUBLIC_WHATSAPP_HEADER_MESSAGE || "Hola! Me gustaría realizar una compra:";
+    const footerMsg = process.env.NEXT_PUBLIC_WHATSAPP_FOOTER_MESSAGE || "\n\nQuisiera conocer más detalles y confirmar disponibilidad. ¡Gracias!";
+    
+    const message = `${headerMsg}\n\n${productosText}\n\n━━━━━━━━━━━━━━━\n*TOTAL: $${total.toFixed(2)}*\n━━━━━━━━━━━━━━━${footerMsg}`;
+    return encodeURIComponent(message);
+  };
+
   const handleGenerarOrden = async () => {
     setError("");
+    
+    // Para guests: enviar a WhatsApp
+    if (isGuest) {
+      const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_PHONE || "34123456789"; // Reemplazar con número real
+      const message = generateWhatsAppMessage();
+      window.open(`https://wa.me/${whatsappNumber}?text=${message}`, "_blank");
+      return;
+    }
+    
+    // Para autenticados: validar y crear orden
     if (!validarAntesDeEnviar()) return;
     setLoading(true);
     try {
       await crearOrden({
         userId: user?.uid || null,
-        guestEmail: !user?.uid ? emailFinal : undefined,
-        userEmail: user?.uid ? emailFinal : undefined,
+        ...(user?.uid ? { userEmail: emailFinal.trim() } : { guestEmail: emailFinal.trim() }),
         productos: carrito.map((p) => ({ id: p.id, cantidad: p.cantidad })),
         estado: "generada",
         visitaFecha: visitDate,
         visitaHora: visitTime,
       });
       carrito.forEach((p) => removeCarrito(p.id));
-      router.push("/home/ordenes");
+      setShowSuccessModal(true);
+      setTimeout(() => {
+        setShowSuccessModal(false);
+        router.push("/home/ordenes");
+      }, 5000);
     } catch (e) {
       console.error("Error al generar la orden:", e);
       setError("Error al generar la orden. Intenta de nuevo.");
@@ -216,7 +340,7 @@ export default function CartPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           carrito: carrito.map((p) => ({ id: p.id, cantidad: p.cantidad })),
-          email: emailFinal,
+          email: emailFinal.trim(),
           visitDate,
           visitTime,
           userId: user?.uid || null,
@@ -251,11 +375,23 @@ export default function CartPage() {
     addCarrito({ ...prod, cantidad });
   };
 
-  const canSubmit = !!visitDate && !!visitTime && !!emailFinal;
+  // ── Validación de submit dinámico según modo de pago ──────────────────────────
+  const canSubmit = 
+    payMode === "order" 
+      ? !!visitDate && !!visitTime && !!emailFinal  // Order requiere fecha, hora y email
+      : !!emailFinal;  // Stripe solo requiere email
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <>
+      {showSuccessModal && (
+        <SuccessModal visitDate={visitDate} visitTime={visitTime} />
+      )}
+
+      {showTermsModal && (
+        <TermsModal onClose={() => setShowTermsModal(false)} />
+      )}
+
       {stripeClientSecret && (
         <StripePaymentModal
           clientSecret={stripeClientSecret}
@@ -379,6 +515,14 @@ export default function CartPage() {
                       <span>Envío</span>
                       <span className="text-green-600 dark:text-green-400 font-medium">Gratis</span>
                     </div>
+                    {cardFee > 0 && (
+                      <div className="flex justify-between text-sm text-slate-600 dark:text-slate-400">
+                        <span className="flex items-center gap-1">
+                          <span className="text-xs">💳</span> Gestión de pago
+                        </span>
+                        <span>${cardFee.toFixed(2)}</span>
+                      </div>
+                    )}
                   </div>
                   <div className="border-t border-slate-100 dark:border-purple-900/40 mt-3 pt-3 flex justify-between font-bold text-base">
                     <span>Total</span>
@@ -386,123 +530,151 @@ export default function CartPage() {
                   </div>
                 </div>
 
-                {/* Selector de método de pago */}
-                <div>
-                  <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
-                    ¿Cómo deseas pagar?
-                  </p>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      onClick={() => setPayMode("order")}
-                      className={`relative flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border-2 text-xs font-semibold transition-all ${
-                        payMode === "order"
-                          ? "border-[#7b68ee] bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300"
-                          : "border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:border-purple-300"
-                      }`}
-                    >
-                      {payMode === "order" && (
-                        <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-purple-600 rounded-full flex items-center justify-center">
-                          <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                          </svg>
-                        </span>
-                      )}
-                      <span className="material-icons-round text-lg">description</span>
-                      Generar orden
-                    </button>
+                {/* Selector de método de pago - solo para autenticados */}
+                {!isGuest && (
+                  <div>
+                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
+                      ¿Cómo deseas pagar?
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => setPayMode("order")}
+                        className={`relative flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border-2 text-xs font-semibold transition-all ${
+                          payMode === "order"
+                            ? "border-[#7b68ee] bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300"
+                            : "border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:border-purple-300"
+                        }`}
+                      >
+                        {payMode === "order" && (
+                          <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-purple-600 rounded-full flex items-center justify-center">
+                            <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                          </span>
+                        )}
+                        <span className="material-icons-round text-lg">description</span>
+                        Generar orden
+                      </button>
 
-                    <button
-                      onClick={() => setPayMode("stripe")}
-                      className={`relative flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border-2 text-xs font-semibold transition-all ${
-                        payMode === "stripe"
-                          ? "border-transparent bg-[#7b68ee] text-white"
-                          : "border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:border-purple-300"
-                      }`}
-                    >
-                      {payMode === "stripe" && (
-                        <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-white rounded-full flex items-center justify-center">
-                          <svg className="w-2.5 h-2.5 text-purple-600" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                          </svg>
-                        </span>
-                      )}
-                      <span className="material-icons-round text-lg">credit_card</span>
-                      Pago virtual
-                    </button>
-                  </div>
-
-                  {payMode === "stripe" && (
-                    <div className="mt-2 flex flex-wrap gap-1 justify-center">
-                      {["Visa", "Mastercard", "Amex", "G Pay", "Apple Pay"].map((m) => (
-                        <span
-                          key={m}
-                          className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700"
-                        >
-                          {m}
-                        </span>
-                      ))}
+                      <button
+                        onClick={() => setPayMode("stripe")}
+                        className={`relative flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border-2 text-xs font-semibold transition-all ${
+                          payMode === "stripe"
+                            ? "border-transparent bg-[#7b68ee] text-white"
+                            : "border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:border-purple-300"
+                        }`}
+                      >
+                        {payMode === "stripe" && (
+                          <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-white rounded-full flex items-center justify-center">
+                            <svg className="w-2.5 h-2.5 text-purple-600" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                          </span>
+                        )}
+                        <span className="material-icons-round text-lg">credit_card</span>
+                        Pago con tarjeta
+                      </button>
                     </div>
-                  )}
-                </div>
 
-                {/* Campos del formulario */}
-                <div className="space-y-3">
-                  <div className="flex flex-col gap-1">
-                    <label className="text-xs font-semibold text-slate-600 dark:text-slate-300">
-                      Día de visita al local
-                    </label>
-                    <input
-                      type="date"
-                      min={todayStr}
-                      value={visitDate}
-                      onChange={(e) => setVisitDate(e.target.value)}
-                      className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-400"
-                    />
+                    {payMode === "stripe" && (
+                      <div className="mt-2 flex flex-wrap gap-1 justify-center">
+                        {["Visa", "Mastercard", "Amex", "G Pay", "Apple Pay"].map((m) => (
+                          <span
+                            key={m}
+                            className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700"
+                          >
+                            {m}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <div className="flex flex-col gap-1">
-                    <label className="text-xs font-semibold text-slate-600 dark:text-slate-300">
-                      Hora aproximada de visita
-                    </label>
-                    <input
-                      type="time"
-                      value={visitTime}
-                      onChange={(e) => setVisitTime(e.target.value)}
-                      className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-400"
-                    />
-                  </div>
+                )}
 
-                  {/* Email: solo para invitados */}
-                  {!user?.email ? (
-                    <div className="flex flex-col gap-1">
-                      <label className="text-xs font-semibold text-slate-600 dark:text-slate-300">
-                        Correo electrónico
-                      </label>
-                      <input
-                        type="email"
-                        placeholder="tu@correo.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-400"
-                      />
-                      <p className="text-[11px] text-slate-400 dark:text-slate-500">
-                        {payMode === "order"
-                          ? "Recibirás la confirmación de tu orden en este correo."
-                          : "Recibirás el comprobante de pago aquí."}
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-900/40">
-                      <span className="material-icons-round text-purple-400 text-sm">mark_email_read</span>
-                      <span className="text-xs text-slate-600 dark:text-slate-300 truncate">{user.email}</span>
-                    </div>
-                  )}
-                </div>
+                {/* Campos del formulario - solo para autenticados */}
+                {!isGuest && (
+                  <div className="space-y-3">
+                    {/* Mostrar campos de fecha/hora solo para autenticados con orden */}
+                    {payMode === "order" && (
+                      <>
+                        <div className="flex flex-col gap-1">
+                          <label className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                            Día de visita al local
+                          </label>
+                          <input
+                            type="date"
+                            min={todayStr}
+                            value={visitDate}
+                            onChange={(e) => setVisitDate(e.target.value)}
+                            className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-400"
+                          />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <label className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                            Hora aproximada de visita
+                          </label>
+                          <input
+                            type="time"
+                            value={visitTime}
+                            onChange={(e) => setVisitTime(e.target.value)}
+                            className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-400"
+                          />
+                        </div>
+                      </>
+                    )}
+
+                    {/* Email: mostrar email del usuario autenticado */}
+                    {user?.email ? (
+                      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-900/40">
+                        <span className="material-icons-round text-purple-400 text-sm">mark_email_read</span>
+                        <span className="text-xs text-slate-600 dark:text-slate-300 truncate">{user.email}</span>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-1">
+                        <label className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                          Correo electrónico
+                        </label>
+                        <input
+                          type="email"
+                          placeholder="tu@correo.com"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-400"
+                        />
+                        <p className="text-[11px] text-slate-400 dark:text-slate-500">
+                          {payMode === "order"
+                            ? "Recibirás la confirmación de tu orden en este correo."
+                            : "Recibirás el comprobante de pago aquí."}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Botón de acción */}
-                {payMode === "order" ? (
+                {isGuest ? (
+                  // SOLO BOTÓN PARA INVITADOS
                   <button
                     onClick={handleGenerarOrden}
-                    disabled={loading || !canSubmit}
+                    disabled={loading}
+                    className="w-full flex items-center justify-center gap-2 py-3.5 px-6 bg-purple-700 hover:bg-purple-800 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-sm rounded-xl transition-colors shadow-md"
+                  >
+                    {loading ? (
+                      <>
+                        <Loading3DIcon />
+                        <span className="ml-2">Enviando...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="material-icons-round text-base">whatsapp</span>
+                        Generar orden
+                      </>
+                    )}
+                  </button>
+                ) : payMode === "order" ? (
+                  <button
+                    onClick={handleGenerarOrden}
+                    disabled={loading || (!isGuest && !canSubmit)}
                     className="w-full flex items-center justify-center gap-2 py-3.5 px-6 bg-purple-700 hover:bg-purple-800 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-sm rounded-xl transition-colors shadow-md"
                   >
                     {loading ? (
@@ -518,23 +690,36 @@ export default function CartPage() {
                     )}
                   </button>
                 ) : (
-                  <button
-                    onClick={handleIniciarPago}
-                    disabled={stripeLoading || !canSubmit}
-                    className="w-full flex items-center justify-center gap-2 py-3.5 px-6 bg-gradient-to-r from-purple-700 via-purple-600 to-violet-500 hover:from-purple-800 hover:to-violet-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-sm rounded-xl transition-all shadow-md active:scale-[0.98]"
-                  >
-                    {stripeLoading ? (
-                      <>
-                        <Loading3DIcon />
-                        <span className="ml-2">Preparando pago...</span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="material-icons-round text-base">lock</span>
-                        Ir al pago · ${total.toFixed(2)}
-                      </>
-                    )}
-                  </button>
+                  <>
+                    <button
+                      onClick={handleIniciarPago}
+                      disabled={stripeLoading || !canSubmit}
+                      className="w-full flex items-center justify-center gap-2 py-3.5 px-6 bg-gradient-to-r from-purple-700 via-purple-600 to-violet-500 hover:from-purple-800 hover:to-violet-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-sm rounded-xl transition-all shadow-md active:scale-[0.98]"
+                    >
+                      {stripeLoading ? (
+                        <>
+                          <Loading3DIcon />
+                          <span className="ml-2">Preparando pago...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="material-icons-round text-base">lock</span>
+                          Ir al pago · ${total.toFixed(2)}
+                        </>
+                      )}
+                    </button>
+                    {/* Términos y condiciones */}
+                    <div className="text-xs text-slate-500 dark:text-slate-400 text-center">
+                      Aplican{" "}
+                      <button
+                        type="button"
+                        onClick={() => setShowTermsModal(true)}
+                        className="text-purple-600 dark:text-purple-400 hover:underline font-semibold"
+                      >
+                        términos y condiciones
+                      </button>
+                    </div>
+                  </>
                 )}
 
                 {/* Sello de seguridad */}

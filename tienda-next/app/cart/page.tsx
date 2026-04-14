@@ -422,7 +422,7 @@ export default function CartPage() {
       setError("Selecciona el día y la hora aproximada en que irás al local.");
       return;
     }
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (!email || email.trim() === "" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       setError("Ingresa un correo electrónico válido para recibir la proforma.");
       return;
     }
@@ -436,7 +436,7 @@ export default function CartPage() {
     try {
       const orden = await crearOrden({
         userId: null,
-        guestEmail: email,
+        guestEmail: email.trim(),
         productos: carrito.map((p) => ({ id: p.id, cantidad: p.cantidad })),
         estado: "generada",
         visitaFecha: visitDate,
@@ -457,7 +457,7 @@ export default function CartPage() {
       await fetch("/api/send-proforma", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orden: ordenCreada, email }),
+        body: JSON.stringify({ orden: ordenCreada, email: email.trim() }),
       });
       carrito.forEach((p) => removeCarrito(p.id));
       router.push(`/order-confirmation?orderId=${ordenCreada.orderId}`);
@@ -475,7 +475,7 @@ export default function CartPage() {
       setError("Selecciona el día y la hora aproximada en que vendrás a retirar tu pedido.");
       return;
     }
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (!email || email.trim() === "" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       setError("Ingresa un correo válido para recibir el comprobante de pago.");
       return;
     }
@@ -492,7 +492,7 @@ export default function CartPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           carrito: carrito.map((p) => ({ id: p.id, cantidad: p.cantidad })),
-          email,
+          email: email.trim(),
           visitDate: visitDate || null,
           visitTime: visitTime || null,
           userId: user?.uid || null,
@@ -518,6 +518,26 @@ export default function CartPage() {
     return sum + finalPrice * (p.cantidad || 1);
   }, 0);
   const total = subtotal;
+
+  // ── Generar mensaje de WhatsApp para invitados ────────────────────────────────
+  const generateWhatsAppMessage = (): string => {
+    const productosText = carrito
+      .map((p) => p.nombre)
+      .join("\n");
+    
+    const headerMsg = process.env.NEXT_PUBLIC_WHATSAPP_HEADER_MESSAGE || "Hola! Me gustaría realizar una compra:";
+    const footerMsg = process.env.NEXT_PUBLIC_WHATSAPP_FOOTER_MESSAGE || "Quiero confirmar disponibilidad y conocer más detalles. ¡Gracias!";
+    
+    const message = `${headerMsg}\n\n${productosText}\n\n━━━━━━━━━━━━━━━\nTOTAL: $${total.toFixed(2)}\n━━━━━━━━━━━━━━━\n\n${footerMsg}`;
+    return encodeURIComponent(message);
+  };
+
+  // ── Manejar click en "Generar orden" - enviar a WhatsApp ──────────────────────
+  const handleGenerarOrden = () => {
+    const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_PHONE || "0962873167";
+    const message = generateWhatsAppMessage();
+    window.open(`https://wa.me/${whatsappNumber}?text=${message}`, "_blank");
+  };
 
   const handleCantidad = (id: string, cantidad: number) => {
     if (cantidad < 1) return;
@@ -755,151 +775,27 @@ export default function CartPage() {
 
                   {/* Selector de método de pago */}
                   <div>
-                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
-                      ¿Cómo deseas pagar?
+                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">
+                      Contacto rápido
                     </p>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        onClick={() => setPayMode("order")}
-                        className={`relative flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border-2 text-xs font-semibold transition-all ${
-                          payMode === "order"
-                            ? "border-[#7b68ee] bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300"
-                            : "border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:border-purple-300"
-                        }`}
-                      >
-                        {payMode === "order" && (
-                          <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-purple-600 rounded-full flex items-center justify-center">
-                            <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                            </svg>
-                          </span>
-                        )}
-                        <span className="material-icons-round text-lg">description</span>
-                        Generar orden
-                      </button>
-
-                      <button
-                        onClick={() => setPayMode("stripe")}
-                        className={`relative flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border-2 text-xs font-semibold transition-all ${
-                          payMode === "stripe"
-                            ? "border-transparent bg-[#7b68ee] text-white"
-                            : "border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:border-purple-300"
-                        }`}
-                      >
-                        {payMode === "stripe" && (
-                          <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-white rounded-full flex items-center justify-center">
-                            <svg className="w-2.5 h-2.5 text-purple-600" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                            </svg>
-                          </span>
-                        )}
-                        <span className="material-icons-round text-lg">credit_card</span>
-                        Pago virtual
-                      </button>
-                    </div>
-
-                    {payMode === "stripe" && (
-                      <div className="mt-2 flex flex-wrap gap-1 justify-center">
-                        {["Visa", "Mastercard", "Amex", "G Pay", "Apple Pay"].map((m) => (
-                          <span
-                            key={m}
-                            className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700"
-                          >
-                            {m}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Campos del formulario */}
-                  <div className="space-y-3">
-                    <div className="flex flex-col gap-1">
-                      <label className="text-xs font-semibold text-slate-600 dark:text-slate-300">
-                        Día de visita al local
-                      </label>
-                      <input
-                        type="date"
-                        min={todayStr}
-                        value={visitDate}
-                        onChange={(e) => setVisitDate(e.target.value)}
-                        className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-400"
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <label className="text-xs font-semibold text-slate-600 dark:text-slate-300">
-                        Hora aproximada de visita
-                      </label>
-                      <input
-                        type="time"
-                        value={visitTime}
-                        onChange={(e) => setVisitTime(e.target.value)}
-                        className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-400"
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <label className="text-xs font-semibold text-slate-600 dark:text-slate-300">
-                        Correo electrónico
-                      </label>
-                      <input
-                        type="email"
-                        placeholder="tu@correo.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-400"
-                      />
-                      <p className="text-[11px] text-slate-400 dark:text-slate-500">
-                        {payMode === "order"
-                          ? "Recibirás la proforma en este correo."
-                          : "Recibirás el comprobante de pago aquí."}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Botón de acción */}
-                  {payMode === "order" ? (
                     <button
-                      onClick={handleVerProforma}
-                      disabled={loading || !visitDate || !visitTime || !email}
-                      className="w-full flex items-center justify-center gap-2 py-3.5 px-6 bg-purple-700 hover:bg-purple-800 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-sm rounded-xl transition-colors shadow-md"
+                      onClick={handleGenerarOrden}
+                      className="w-full flex items-center text-center justify-center gap-2 py-3.5 px-6 bg-purple-700 hover:bg-[#20BA5C] text-white font-bold text-sm rounded-xl transition-colors shadow-md"
+                      title="Enviar pedido por WhatsApp"
                     >
-                      {loading ? (
-                        <>
-                          <Loading3DIcon />
-                          <span className="ml-2">Generando...</span>
-                        </>
-                      ) : (
-                        <>
-                          <span className="material-icons-round text-base">description</span>
-                          Generar orden
-                        </>
-                      )}
+                      Generar orden
                     </button>
-                  ) : (
-                    <button
-                      onClick={handleIniciarPago}
-                      disabled={stripeLoading || !email || !visitDate || !visitTime}
-                      className="w-full flex items-center justify-center gap-2 py-3.5 px-6 bg-gradient-to-r from-purple-700 via-purple-600 to-violet-500 hover:from-purple-800 hover:to-violet-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-sm rounded-xl transition-all shadow-md active:scale-[0.98]"
-                    >
-                      {stripeLoading ? (
-                        <>
-                          <Loading3DIcon />
-                          <span className="ml-2">Preparando pago...</span>
-                        </>
-                      ) : (
-                        <>
-                          <span className="material-icons-round text-base">lock</span>
-                          Ir al pago · ${total.toFixed(2)}
-                        </>
-                      )}
-                    </button>
-                  )}
-
-                  {/* Sello de seguridad */}
-                  <div className="flex items-center justify-center gap-1.5 text-slate-400 dark:text-slate-500">
-                    <span className="material-icons-round text-sm">lock</span>
-                    <span className="text-[11px]">Pago seguro y encriptado</span>
+                    <p className="text-xs text-slate-400 dark:text-slate-500 text-center mt-2">
+                      Te enviaremos el resumen del pedido por WhatsApp
+                    </p>
                   </div>
+
+                  {/* Nota informativa */}
+                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-3 text-xs text-blue-800 dark:text-blue-300">
+                    <p className="font-semibold mb-1">💡 Proceso simple:</p>
+                    <p>Click en el botón → WhatsApp abre → Confirmamos tu pedido y disponibilidad</p>
+                  </div>
+
 
                 </div>
               </div>

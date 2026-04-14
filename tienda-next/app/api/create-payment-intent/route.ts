@@ -15,8 +15,10 @@ export async function POST(req: NextRequest) {
     if (!Array.isArray(carrito) || carrito.length === 0) {
       return NextResponse.json({ error: "Carrito vacío" }, { status: 400 });
     }
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return NextResponse.json({ error: "Correo inválido" }, { status: 400 });
+    
+    // Validación estricta del email
+    if (!email || typeof email !== "string" || email.trim() === "" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      return NextResponse.json({ error: "Correo electrónico inválido o ausente" }, { status: 400 });
     }
 
     const db = admin.firestore();
@@ -68,7 +70,7 @@ export async function POST(req: NextRequest) {
     const orderData = {
       orderId,
       userId: userId || null,
-      guestEmail: email,
+      ...(userId ? { userEmail: email.trim() } : { guestEmail: email.trim() }),
       productos: productosProcesados,
       total,
       estado: "pendiente_pago",

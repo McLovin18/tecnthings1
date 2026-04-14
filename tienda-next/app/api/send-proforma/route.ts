@@ -123,8 +123,9 @@ export async function POST(req: NextRequest) {
   try {
     const { orden, email } = await req.json();
 
-    if (!orden || !email) {
-      return NextResponse.json({ error: "Datos incompletos" }, { status: 400 });
+    if (!orden || !email || typeof email !== "string" || email.trim() === "" || 
+        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      return NextResponse.json({ error: "Email inválido o datos incompletos" }, { status: 400 });
     }
 
     const transporter = nodemailer.createTransport({

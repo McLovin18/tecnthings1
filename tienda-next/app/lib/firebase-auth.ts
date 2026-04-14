@@ -1,4 +1,4 @@
-import { sendPasswordResetEmail as _sendPasswordResetEmail, sendEmailVerification } from "firebase/auth";
+import { sendPasswordResetEmail as _sendPasswordResetEmail } from "firebase/auth";
 
 // RECUPERAR CONTRASEÑA
 export async function sendPasswordResetEmail(email: string) {
@@ -46,7 +46,19 @@ export async function registerUser(email: string, password: string, profile: { n
 	if (profile.name) {
 		await updateProfile(user, { displayName: profile.name });
 	}
-	await sendEmailVerification(user);
+	
+	// Enviar email de verificación personalizado (HTML con link clickeable en iPhones)
+	try {
+		await fetch("/api/auth/send-verification-email", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ email: user.email }),
+		});
+	} catch (err) {
+		console.error("Error enviando email de verificación:", err);
+		// Continuar incluso si el email falla
+	}
+	
 	const idToken = await getIdToken(user, true);
 	// Puedes hacer fetch a tu API para guardar la sesión/cookie aquí
 	return { success: true, user, idToken };

@@ -20,6 +20,16 @@ export async function POST(req: NextRequest) {
     if (!data.productId || !data.userName || !data.rating || !data.comment) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
+    // Validar userEmail si está presente (puede ser vacío para usuarios sin email)
+    if (data.userEmail && (typeof data.userEmail !== "string" || 
+        data.userEmail.trim() === "" || 
+        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.userEmail.trim()))) {
+      return NextResponse.json({ error: "Invalid email format" }, { status: 400 });
+    }
+    // Trim email si existe
+    if (data.userEmail) {
+      data.userEmail = data.userEmail.trim();
+    }
     await addProductReview(data);
     return NextResponse.json({ ok: true });
   } catch (err) {

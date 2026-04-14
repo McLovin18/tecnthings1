@@ -1,11 +1,14 @@
 "use client";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import ProductoCard from "../../components/ProductoCard";
 import { useEffect, useState, useMemo, useCallback } from "react";
+import { useUser } from "../../context/UserContext";
 import type { Producto } from "../../lib/productos-db";
 import { obtenerProductos, obtenerProductosPorCategoria, obtenerProductosPorSubcategoria, obtenerProductosPorSubsubcategoria } from "../../lib/productos-db";
 
 export default function ProductsByCategoryPage() {
+  const router = useRouter();
+  const { addCarrito, removeCarrito, carrito, isCliente, isAdmin } = useUser();
   const searchParams = useSearchParams();
   const categoria = searchParams?.get("cat") || searchParams?.get("category") || "";
   const subcategoria = searchParams?.get("subcat") || searchParams?.get("subcategory") || "";
@@ -141,6 +144,24 @@ export default function ProductsByCategoryPage() {
     setOrden("newest");
   }, []);
 
+  // Handlers para interacción con productos
+  const handleProductoClick = useCallback((producto: any) => {
+    router.push(`/home/product-detail?id=${producto.id}`);
+  }, [router]);
+
+  const handleAddCart = useCallback((producto: any) => {
+    const inCart = carrito?.some((p: any) => p.id === producto.id);
+    if (inCart) {
+      removeCarrito(producto.id);
+    } else {
+      addCarrito({ ...producto, cantidad: 1 });
+    }
+  }, [addCarrito, removeCarrito, carrito]);
+
+  const handleEye = useCallback((producto: any) => {
+    router.push(`/home/product-detail?id=${producto.id}`);
+  }, [router]);
+
   const ordenOpciones = [
     { value: "newest",     label: "Más nuevos"    },
     { value: "price-low",  label: "Menor precio"  },
@@ -217,8 +238,8 @@ export default function ProductsByCategoryPage() {
             {hasFilters && (
               <button
                 onClick={clearFilters}
-                  className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-              
+                className={chip(true)}
+              >
                 <span className="material-icons-round text-[14px]">close</span>
                 Limpiar
               </button>
@@ -318,9 +339,9 @@ export default function ProductsByCategoryPage() {
                   showCart
                   showEye
                   showFav={isAuthenticated}
-                  onClick={() => {}}
-                  onAddCart={() => {}}
-                  onEye={() => {}}
+                  onClick={() => handleProductoClick(p)}
+                  onAddCart={() => handleAddCart(p)}
+                  onEye={() => handleEye(p)}
                 />
               ))}
             </div>
