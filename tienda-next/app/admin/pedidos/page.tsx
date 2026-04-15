@@ -85,18 +85,55 @@ export default function PedidosAdminPage() {
 
 	const rechazarOrden = async (orden: any) => {
 		const motivo = prompt("Motivo de rechazo (opcional):");
+		if (motivo === null) return; // Usuario canceló
+		
 		try {
-			// Devolver stock cuando se rechaza (en caso de que se haya deducido)
-			if (orden.estado === "aprobada") {
-				await devolverStockOrden(orden.id);
+			setLoading(true);
+			
+			// 🚀 Llamar al endpoint backend para rechazar
+			// Este endpoint:
+			// 1. Restaura el stock de forma atómica
+			// 2. Actualiza el estado de la orden
+			// 3. Registra en historial
+			const res = await fetch("/api/admin/reject-order", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					"x-admin-token": process.env.NEXT_PUBLIC_ADMIN_TOKEN || "", // ← Token admin
+				},
+				body: JSON.stringify({
+					orderId: orden.orderId || orden.id, // Probamos ambos
+					reason: motivo || "Rechazada por el administrador",
+				}),
+			});
+			
+			if (!res.ok) {
+				const error = await res.json();
+				throw new Error(error.error || `Error ${res.status}`);
 			}
 			
-			// Actualizar estado a "rechazada"
-			await actualizarOrden(orden.id, { estado: "rechazada", motivoRechazo: motivo || "" });
-			setOrdenes((prev) => prev.map((o) => o.id === orden.id ? { ...o, estado: "rechazada", motivoRechazo: motivo || "" } : o));
-		} catch (error) {
+			const data = await res.json();
+			
+			// ✅ Actualizar UI localmente
+			setOrdenes((prev) =>
+				prev.map((o) =>
+					o.id === orden.id || o.orderId === orden.orderId
+						? {
+							...o,
+							estado: "rechazada",
+							motivoRechazo: motivo || "",
+							estadoRazon: motivo || "Rechazada por el administrador",
+						}
+						: o
+				)
+			);
+			
+			alert(`✅ ${data.message || "Orden rechazada exitosamente"}`);
+		} catch (error: any) {
 			console.error("Error al rechazar orden:", error);
-			alert("Error al rechazar la orden");
+			alert(`❌ Error: ${error.message || "No se pudo rechazar la orden"}`);
+		} finally {
+			setLoading(false);
 		}
 	};
 
