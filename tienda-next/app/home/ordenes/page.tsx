@@ -14,15 +14,13 @@ export default function OrdenesPage() {
       if (!user?.uid) return;
       setLoading(true);
       const ords = await obtenerOrdenesPorUsuario(user.uid);
-      // Ordenar: primero órdenes cuya visita es hoy, luego por fecha de visita
-      const hoyStr = new Date().toISOString().split("T")[0];
+      // 📅 Ordenar por fecha de CREACIÓN (más reciente primero)
       const ordenadas = [...ords].sort((a, b) => {
-        const aHoy = a.visitaFecha === hoyStr ? 1 : 0;
-        const bHoy = b.visitaFecha === hoyStr ? 1 : 0;
-        if (aHoy !== bHoy) return bHoy - aHoy; // hoy primero
-        const aKey = `${a.visitaFecha || ""} ${a.visitaHora || ""}`;
-        const bKey = `${b.visitaFecha || ""} ${b.visitaHora || ""}`;
-        return aKey.localeCompare(bKey);
+        // Convertir createdAt a timestamp para comparar
+        const aCreated = a.createdAt?.toMillis?.() ?? a.createdAt?.getTime?.() ?? 0;
+        const bCreated = b.createdAt?.toMillis?.() ?? b.createdAt?.getTime?.() ?? 0;
+        // Descendiente: más reciente primero
+        return bCreated - aCreated;
       });
       setOrdenes(ordenadas);
       setLoading(false);
