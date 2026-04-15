@@ -25,10 +25,10 @@ export async function POST(req: NextRequest) {
       console.warn(`[create-account] Email ya registrado recientemente: ${email}`);
       return NextResponse.json(
         {
-          error: "Este email se registró recientemente. Intenta en 7 días.",
-          retryAfter: 604800,
+          error: "Este email se registró recientemente. Intenta en 5 minutos.",
+          retryAfter: 300,
         },
-        { status: 429, headers: { "Retry-After": "604800" } }
+        { status: 429, headers: { "Retry-After": "300" } }
       );
     }
     
