@@ -208,20 +208,24 @@ export async function POST(req: NextRequest) {
     const currency = process.env.NEXT_PUBLIC_STRIPE_CURRENCY || "usd";
     const amountInCents = Math.round(total * 100);
 
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: amountInCents,
-      currency,
-      payment_method_types: ["card"],
-      receipt_email: email,
-      // 🔒 Idempotency en Stripe también
-      idempotency_key: idempotencyKey,
-      metadata: {
-        orderId,
-        email,
-        reserveId,
+    const paymentIntent = await stripe.paymentIntents.create(
+      {
+        amount: amountInCents,
+        currency,
+        payment_method_types: ["card"],
+        receipt_email: email,
+        metadata: {
+          orderId,
+          email,
+          reserveId,
+        },
+        description: `TecnoThings – Orden ${orderId}`,
       },
-      description: `TecnoThings – Orden ${orderId}`,
-    });
+      {
+        // 🔒 Idempotency key como header HTTP (no en body)
+        idempotencyKey: idempotencyKey,
+      }
+    );
 
     // ─────── CREAR ORDEN EN FIRESTORE (CON STRIPE ID) ───────
     const orderData = {

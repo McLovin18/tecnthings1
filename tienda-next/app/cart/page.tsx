@@ -3,8 +3,6 @@
 
 import React, { useState, useCallback, useEffect } from "react";
 import { Loading3DIcon } from "../components/Loading3DIcon";
-import { crearOrden } from "../lib/ordenes-db";
-import { obtenerBodegas } from "../lib/bodegas-db";
 import { useRouter } from "next/navigation";
 import { loadStripe } from "@stripe/stripe-js";
 import { useUser } from "../context/UserContext";
@@ -435,19 +433,31 @@ export default function CartPage() {
     }
     setLoading(true);
     try {
-      const orden = await crearOrden({
-        userId: null,
-        guestEmail: email.trim(),
-        productos: carrito.map((p) => ({ id: p.id, cantidad: p.cantidad })),
-        estado: "generada",
-        visitaFecha: visitDate,
-        visitaHora: visitTime,
+      // 🚀 Llamar al endpoint API para crear orden con stock deduction atómico
+      const res = await fetch("/api/ordenes/crear", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: null,
+          email: email.trim(),
+          productos: carrito.map((p) => ({ id: p.id, cantidad: p.cantidad })),
+          visitDate,
+          visitTime,
+        }),
       });
-      setOrdenCreada(orden);
+
+      const data = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(data.error || "Error al generar la orden");
+      }
+
+      // ✅ Orden creada exitosamente con stock reservado
+      setOrdenCreada(data.orden);
       setStep("proforma");
-    } catch (e) {
+    } catch (e: any) {
       console.error("Error al generar proforma:", e);
-      setError("Error al generar la orden. Intenta de nuevo.");
+      setError(e.message || "Error al generar la orden. Intenta de nuevo.");
     }
     setLoading(false);
   };

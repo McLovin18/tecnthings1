@@ -19,6 +19,10 @@ export default function LoginPage() {
   const [alert, setAlert] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const [showLoginPass, setShowLoginPass] = useState(false);
   const [showRegisterPass, setShowRegisterPass] = useState(false);
+  
+  // ← Estado para rate limiting
+  const [rateLimitBlockedUntil, setRateLimitBlockedUntil] = useState<number | null>(null);
+  const [rateLimitSecondsRemaining, setRateLimitSecondsRemaining] = useState<number>(0);
 
   // Login state
   const [loginEmail, setLoginEmail] = useState("");
@@ -39,6 +43,29 @@ export default function LoginPage() {
     return () => clearTimeout(t);
   }, [alert]);
 
+  // ← Contador regresivo para rate limiting
+  useEffect(() => {
+    if (!rateLimitBlockedUntil) return;
+    
+    const interval = setInterval(() => {
+      const now = Date.now();
+      const remaining = Math.max(0, Math.ceil((rateLimitBlockedUntil - now) / 1000));
+      
+      setRateLimitSecondsRemaining(remaining);
+      
+      if (remaining <= 0) {
+        // Se desbloqueó
+        setRateLimitBlockedUntil(null);
+        setAlert({
+          message: "✓ Puedes intentar iniciar sesión nuevamente",
+          type: "success",
+        });
+      }
+    }, 1000);
+    
+    return () => clearInterval(interval);
+  }, [rateLimitBlockedUntil]);
+
   // --- Handlers ---
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -46,6 +73,16 @@ export default function LoginPage() {
       setAlert({ message: "Completa los campos", type: "error" });
       return;
     }
+    
+    // ← Evitar si está bloqueado por rate limiting
+    if (rateLimitBlockedUntil && rateLimitSecondsRemaining > 0) {
+      setAlert({
+        message: `Espera ${rateLimitSecondsRemaining} segundos antes de intentar de nuevo.`,
+        type: "error",
+      });
+      return;
+    }
+    
     try {
       setLoading(true);
       const result = await loginUser(loginEmail, loginPassword);
@@ -73,7 +110,21 @@ export default function LoginPage() {
         router.push(role === "admin" ? "/admin" : "/home");
       }
     } catch (error: any) {
-      setAlert({ message: error.message, type: "error" });
+      const errorMsg = error.message || "Error al iniciar sesión";
+      setAlert({ message: errorMsg, type: "error" });
+      
+      // ← Detectar si es error de rate limiting y establecer bloqueoBLOQUEO
+      if (errorMsg.includes("Demasiados intentos")) {
+        // Extraer el tiempo restante de "Intenta nuevamente en X segundos"
+        const secondsMatch = errorMsg.match(/(\d+)\s*segundos/);
+        if (secondsMatch) {
+          const secondsToWait = parseInt(secondsMatch[1], 10);
+          const blockedUntil = Date.now() + (secondsToWait * 1000);
+          setRateLimitBlockedUntil(blockedUntil);
+          setRateLimitSecondsRemaining(secondsToWait);
+        }
+      }
+      
       // Limpiar password pero mantener email por comodidad
       setLoginPassword("");
       try {
@@ -246,13 +297,20 @@ export default function LoginPage() {
                 </div>
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || (rateLimitBlockedUntil !== null && rateLimitSecondsRemaining > 0)}
                   className="w-full bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white font-semibold py-3.5 rounded-xl transition-all duration-200 shadow-sm disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2"
                 >
                   {loading ? (
                     <>
                       <Loading3DIcon />
                       <span>Ingresando...</span>
+                    </>
+                  ) : rateLimitBlockedUntil !== null && rateLimitSecondsRemaining > 0 ? (
+                    <>
+                      <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span>Espera {rateLimitSecondsRemaining}s</span>
                     </>
                   ) : (
                     "Iniciar sesión"

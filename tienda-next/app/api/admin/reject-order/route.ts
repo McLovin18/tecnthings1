@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import admin from "../../../lib/firebase-admin";
-import { liberarReserva, obtenerReserva } from "../../../lib/stock-reserves-db";
 
 /**
  * 🚨 ENDPOINT: Rechazar orden de proforma
@@ -102,27 +101,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const stockReservation = orderDoc.stockReservation;
-    if (!stockReservation || !stockReservation.reserveId) {
-      return NextResponse.json(
-        { error: "Esta orden no tiene una reserva de stock asociada" },
-        { status: 400 }
-      );
-    }
-
-    // ─────── VERIFICAR QUE LA RESERVA ESTÁ EN ESTADO "PENDING" ───────
-    const reservation = await obtenerReserva(stockReservation.reserveId);
-    if (!reservation) {
-      console.warn(`⚠️ Reserva ${stockReservation.reserveId} no existe`);
-    } else if (reservation.status !== "pending") {
-      return NextResponse.json(
-        { 
-          error: `La reserva ya está en estado "${reservation.status}". No se puede rechazar.` 
-        },
-        { status: 400 }
-      );
-    }
-
     // ✅ SECURITY: Verificar que Stripe NO pagó aún
     // Si la orden ya está confirmada (pagada), NO se puede liberar stock
     if (orderDoc.estado === "confirmed" || orderDoc.estado === "completada") {
@@ -135,15 +113,43 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ─────── LIBERAR LA RESERVA (DEVUELVE STOCK) ───────
-    const releaseResult = await liberarReserva(stockReservation.reserveId);
+    // ─────── LIBERAR STOCK SI FUE RESERVADO EN ORDEN GENERADA ───────
+    // Si la orden tiene stockReserved = true, devolver el stock
+    let itemsReleased = 0;
 
-    if (!releaseResult.success) {
-      console.error(`❌ Error liberando reserva ${stockReservation.reserveId}:`, releaseResult.error);
-      return NextResponse.json(
-        { error: `No fue posible liberar el stock: ${releaseResult.error}` },
-        { status: 500 }
-      );
+    if (orderDoc.stockReserved === true && orderDoc.productos) {
+      const result = await db.runTransaction(async (transaction) => {
+        let released = 0;
+
+        // Para cada producto en la orden, restaurar stock
+        for (const producto of orderDoc.productos) {
+          const productRef = db.collection("productos").doc(producto.id);
+
+          // Restaurar stock usando increment (atómico)
+          transaction.update(productRef, {
+            stock: admin.firestore.FieldValue.increment(producto.cantidad),
+            lastStockUpdateAt: admin.firestore.Timestamp.now(),
+          });
+
+          // Guardar historial de liberación
+          const historyRef = productRef
+            .collection("stock_history")
+            .doc(`reject_${orderDoc.orderId}_${Date.now()}`);
+          transaction.set(historyRef, {
+            type: "order_rejected",
+            cantidad: producto.cantidad, // Positivo porque se devuelve
+            orderId: orderDoc.orderId,
+            timestamp: admin.firestore.Timestamp.now(),
+            reason: reason || "Rechazada por el administrador",
+          });
+
+          released++;
+        }
+
+        return released;
+      });
+
+      itemsReleased = result;
     }
 
     // ─────── ACTUALIZAR ESTADO DE LA ORDEN ───────
@@ -151,25 +157,21 @@ export async function POST(req: NextRequest) {
       estado: "rechazada",
       estadoRazon: reason || "Rechazada por el administrador",
       rechazadaEn: admin.firestore.Timestamp.now(),
-      stockReservation: {
-        ...stockReservation,
-        status: "released",
-        releasedAt: admin.firestore.Timestamp.now(),
-        releasedBy: "admin-reject",
-      },
+      stockReserved: false, // Ya no está reservado
+      stockReservedAt: null,
     });
 
     // ─────── LOGGING DE AUDITORÍA ───────
     console.log(
-      `✅ [ORDEM_RECHAZADA] ${orderDoc.orderId} | ` +
-      `Items liberados: ${releaseResult.itemsReleased} | ` +
+      `✅ [ORDEN_RECHAZADA] ${orderDoc.orderId} | ` +
+      `Items con stock liberado: ${itemsReleased} | ` +
       `Razón: ${reason || "No especificada"}`
     );
 
     return NextResponse.json({
       success: true,
-      message: `Orden ${orderDoc.orderId} rechazada. Stock liberado.`,
-      itemsReleased: releaseResult.itemsReleased,
+      message: `Orden ${orderDoc.orderId} rechazada. ${itemsReleased} productos restaurados al stock.`,
+      itemsReleased,
     });
 
   } catch (err: any) {

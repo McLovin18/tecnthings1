@@ -2,8 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import { useUser } from "../../context/UserContext";
-import { crearOrden } from "../../lib/ordenes-db";
-import { obtenerBodegas } from "../../lib/bodegas-db";
 import { useRouter } from "next/navigation";
 import { loadStripe } from "@stripe/stripe-js";
 import { Loading3DIcon } from "@/app/components/Loading3DIcon";
@@ -314,23 +312,35 @@ export default function CartPage() {
     if (!validarAntesDeEnviar()) return;
     setLoading(true);
     try {
-      await crearOrden({
-        userId: user?.uid || null,
-        ...(user?.uid ? { userEmail: emailFinal.trim() } : { guestEmail: emailFinal.trim() }),
-        productos: carrito.map((p) => ({ id: p.id, cantidad: p.cantidad })),
-        estado: "generada",
-        visitaFecha: visitDate,
-        visitaHora: visitTime,
+      // 🚀 Llamar al endpoint API para crear orden con stock deduction atómico
+      const res = await fetch("/api/ordenes/crear", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: user?.uid || null,
+          email: emailFinal.trim(),
+          productos: carrito.map((p) => ({ id: p.id, cantidad: p.cantidad })),
+          visitDate,
+          visitTime,
+        }),
       });
+
+      const data = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(data.error || "Error al generar la orden");
+      }
+
+      // ✅ Orden creada exitosamente con stock reservado
       carrito.forEach((p) => removeCarrito(p.id));
       setShowSuccessModal(true);
       setTimeout(() => {
         setShowSuccessModal(false);
         router.push("/home/ordenes");
       }, 5000);
-    } catch (e) {
+    } catch (e: any) {
       console.error("Error al generar la orden:", e);
-      setError("Error al generar la orden. Intenta de nuevo.");
+      setError(e.message || "Error al generar la orden. Intenta de nuevo.");
     }
     setLoading(false);
   };
@@ -493,6 +503,13 @@ export default function CartPage() {
                               </button>
                             </div>
                             <span className="text-xs text-slate-400">{p.stock} en stock</span>
+                            <button
+                              onClick={() => removeCarrito(p.id)}
+                              className="ml-auto text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg p-1.5 transition-colors"
+                              title="Eliminar del carrito"
+                            >
+                              <span className="material-icons-round text-base">delete</span>
+                            </button>
                           </div>
                         </div>
                         <div className="font-bold text-lg text-right min-w-[4.5rem] mt-3 sm:mt-0">

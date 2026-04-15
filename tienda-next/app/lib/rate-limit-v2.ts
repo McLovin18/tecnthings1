@@ -27,18 +27,19 @@ interface RateLimitResult {
   remaining: number;
   retryAfter?: number;
   reason?: string;
+  blockedUntilTimestamp?: number; // ← Agregado: timestamp opcional para mostrar cuándo se desbloquea
 }
 
 /**
  * MULTI-CAPA RATE LIMITING - SEGURIDAD AVANZADA
  * 
  * ✅ CAPA 1: EMAIL (PRIMARIA - FUENTE DE VERDAD)
- *    - 5 intentos fallidos en 1 hora → bloquear 24 horas
+ *    - 3 intentos fallidos en 5 minutos → bloquear 5 minutos
  *    - Email es verificable y único
  *    - Es el FACTOR DE IDENTIDAD REAL
  * 
  * ⚠️ CAPA 2: IP (SECUNDARIA - MACRO)
- *    - 20 intentos fallidos en 24 horas → bloquear 1 hora
+ *    - 10 intentos fallidos en 30 minutos → bloquear 5 minutos
  *    - Impide ataques distribuidos
  *    - Menos restrictivo (múltiples usuarios en misma red)
  * 
@@ -66,21 +67,26 @@ export async function checkRateLimit(
     // ============================================
     const emailKey = `rl:${action}:email:${email.toLowerCase()}`;
     const emailCount = await redisClient.incr(emailKey);
+    const emailTtl = await redisClient.ttl(emailKey);
     
     if (emailCount === 1) {
-      // Primer intento: ventana de 1 hora
-      await redisClient.expire(emailKey, 3600);
+      // Primer intento: ventana de 5 minutos (300 segundos)
+      await redisClient.expire(emailKey, 300);
       console.log(`[rate-limit] 📝 Nueva sesión: ${email}`);
     }
     
-    // Límite: 5 intentos en 1 hora
-    if (emailCount > 5) {
-      console.warn(`[rate-limit] ❌ EMAIL BLOQUEADO: ${email} (${emailCount}/5)`);
+    // Límite: 3 intentos en 5 minutos
+    if (emailCount > 3) {
+      const remainingSeconds = emailTtl > 0 ? emailTtl : 300;
+      const blockedUntil = Date.now() + (remainingSeconds * 1000);
+      
+      console.warn(`[rate-limit] ❌ EMAIL BLOQUEADO: ${email} (${emailCount}/3)`);
       return {
         allowed: false,
         remaining: 0,
-        retryAfter: 86400, // 24 horas
-        reason: "Demasiados intentos. Intenta nuevamente en 24 horas.",
+        retryAfter: remainingSeconds,
+        blockedUntilTimestamp: blockedUntil,
+        reason: `Demasiados intentos. Intenta nuevamente en ${remainingSeconds} segundos.`,
       };
     }
     
@@ -90,30 +96,35 @@ export async function checkRateLimit(
     if (ip !== "unknown") {
       const ipKey = `rl:${action}:ip:${ip}`;
       const ipCount = await redisClient.incr(ipKey);
+      const ipTtl = await redisClient.ttl(ipKey);
       
       if (ipCount === 1) {
-        // Primer intento: ventana de 24 horas
-        await redisClient.expire(ipKey, 86400);
+        // Primer intento: ventana de 30 minutos (1800 segundos)
+        await redisClient.expire(ipKey, 1800);
       }
       
-      // Límite: 20 intentos en 24 horas
-      if (ipCount > 20) {
-        console.warn(`[rate-limit] ⚠️  IP BLOQUEADA: ${ip} (${ipCount}/20)`);
+      // Límite: 10 intentos en 30 minutos
+      if (ipCount > 10) {
+        const remainingSeconds = ipTtl > 0 ? ipTtl : 1800;
+        const blockedUntil = Date.now() + (remainingSeconds * 1000);
+        
+        console.warn(`[rate-limit] ⚠️  IP BLOQUEADA: ${ip} (${ipCount}/10)`);
         return {
           allowed: false,
           remaining: 0,
-          retryAfter: 3600, // 1 hora
-          reason: "Demasiados intentos desde esta red. Intenta en 1 hora.",
+          retryAfter: remainingSeconds,
+          blockedUntilTimestamp: blockedUntil,
+          reason: `Demasiados intentos desde esta red. Intenta en ${remainingSeconds} segundos.`,
         };
       }
       
-      console.log(`[rate-limit] ✓ Email ${emailCount}/5 | IP ${ipCount}/20`);
+      console.log(`[rate-limit] ✓ Email ${emailCount}/3 | IP ${ipCount}/10`);
     }
     
     // ✅ PERMITIDO
     return {
       allowed: true,
-      remaining: Math.max(0, 5 - emailCount),
+      remaining: Math.max(0, 3 - emailCount),
     };
     
   } catch (err: any) {
