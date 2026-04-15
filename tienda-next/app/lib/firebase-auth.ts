@@ -1,9 +1,4 @@
 import { sendPasswordResetEmail as _sendPasswordResetEmail } from "firebase/auth";
-
-// RECUPERAR CONTRASEÑA
-export async function sendPasswordResetEmail(email: string) {
-	await _sendPasswordResetEmail(auth, email);
-}
 import { auth } from "./firebase";
 import {
 	signInWithEmailAndPassword,
@@ -12,61 +7,61 @@ import {
 	getIdToken,
 	User,
 } from "firebase/auth";
+import { registerWithRateLimit, loginWithRateLimit } from "./device-id-client";
+
+// RECUPERAR CONTRASEÑA
+export async function sendPasswordResetEmail(email: string) {
+	await _sendPasswordResetEmail(auth, email);
+}
 
 // LOGIN
 export async function loginUser(email: string, password: string) {
-	const userCredential = await signInWithEmailAndPassword(auth, email, password);
-	const user = userCredential.user;
-	
-	// ⚠️ IMPORTANTE: Validar que el email esté verificado SIEMPRE
-	if (!user.emailVerified) {
-		// Cerrar sesión inmediata para evitar sesión local
-		await signOut(auth);
-		throw new Error("Debes verificar tu correo electrónico antes de iniciar sesión. Revisa tu email y haz clic en el enlace de verificación.");
+	try {
+		// 🔒 Rate limit + validar credenciales en backend
+		await loginWithRateLimit(email, password);
+		
+		// ✅ Luego: Login normal con Firebase SDK
+		const userCredential = await signInWithEmailAndPassword(auth, email, password);
+		const user = userCredential.user;
+		
+		// Validar que el email esté verificado
+		if (!user.emailVerified) {
+			await signOut(auth);
+			throw new Error("Debes verificar tu correo electrónico antes de iniciar sesión. Revisa tu email y haz clic en el enlace de verificación.");
+		}
+		
+		const idToken = await getIdToken(user, true);
+		return { success: true, user, idToken };
+	} catch (error: any) {
+		// Si es error del rate limit o validación, propagar
+		if (error.message.includes("Demasiados") || error.message.includes("Email")) {
+			throw error;
+		}
+		// Otros errores de Firebase
+		throw new Error(error.message || "Error al iniciar sesión");
 	}
-	
-	const idToken = await getIdToken(user, true);
-	// Puedes hacer fetch a tu API para guardar la sesión/cookie aquí
-	return { success: true, user, idToken };
 }
 
 // REGISTRO - ⚠️ NUNCA autentica al cliente
 export async function registerUser(email: string, password: string, profile: { name?: string } = {}) {
-	// ✅ Crear usuario desde BACKEND (Admin SDK) - NO autentica al cliente
-	const createRes = await fetch("/api/auth/create-account", {
-		method: "POST",
-		headers: { "Content-Type": "application/json" },
-		body: JSON.stringify({ 
-			email: email.trim(),
-			password: password,
-			displayName: profile.name?.trim()
-		}),
-	});
+	try {
+		// 🔒 Crear usuario desde BACKEND con rate limiting (Anti-spam)
+		const result = await registerWithRateLimit(
+			email.trim(),
+			password,
+			profile.name?.trim() || ""
+		);
 
-	if (!createRes.ok) {
-		const err = await createRes.json();
-		throw new Error(err.error || "Error al crear la cuenta");
+		// Enviar email de verificación (el backend ya lo envía en registerWithRateLimit)
+		return { 
+			success: true, 
+			message: "Cuenta creada. Revisa tu email para verificar tu cuenta.",
+			uid: result.uid
+		};
+	} catch (error: any) {
+		console.error("[registerUser] Error:", error.message);
+		throw new Error(error.message || "Error al crear la cuenta");
 	}
-
-	const userData = await createRes.json();
-
-	// Enviar email de verificación
-	const emailRes = await fetch("/api/auth/send-verification-email", {
-		method: "POST",
-		headers: { "Content-Type": "application/json" },
-		body: JSON.stringify({ email: userData.email }),
-	});
-
-	if (!emailRes.ok) {
-		const emailErr = await emailRes.json();
-		console.error("[registerUser] Error enviando email:", emailErr);
-		throw new Error(emailErr.error || "Error al enviar email de verificación");
-	}
-
-	return { 
-		success: true, 
-		message: "Cuenta creada. Revisa tu email para verificar tu cuenta."
-	};
 }
 
 // LOGOUT

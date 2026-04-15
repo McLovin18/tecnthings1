@@ -1,5 +1,115 @@
 import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
+import admin from "../../lib/firebase-admin";
+
+/**
+ * ⚠️ VALIDACIONES DE SEGURIDAD EN ÓRDENES (PROFORMA)
+ * 
+ * 1. Validar cantidad razonable (anti-ataque)
+ * 2. Validar stock disponible
+ * 3. Recalcular total desde Firestore
+ * 4. Usar getAll en batch (más eficiente)
+ */
+const MAX_QUANTITY_PER_ITEM = 10;
+
+/**
+ * Recalcula y valida el total desde Firestore
+ * NUNCA confía en el total enviado por el cliente
+ */
+async function validarYRecalcularTotal(productos: any[]): Promise<{ 
+  total: number; 
+  valid: boolean; 
+  reason?: string;
+  snapshot?: any[];
+}> {
+  if (!Array.isArray(productos) || productos.length === 0) {
+    return { total: 0, valid: false, reason: "No hay productos" };
+  }
+
+  const db = admin.firestore();
+  let calculatedTotal = 0;
+  const snapshot: any[] = [];
+
+  try {
+    // Validar cantidades antes de procesar
+    for (const item of productos) {
+      const cantidad = Number(item.cantidad || 1);
+      if (cantidad > MAX_QUANTITY_PER_ITEM) {
+        return { 
+          total: 0, 
+          valid: false, 
+          reason: `Cantidad máxima permitida: ${MAX_QUANTITY_PER_ITEM}` 
+        };
+      }
+      if (cantidad < 1) {
+        return { total: 0, valid: false, reason: "Cantidad debe ser al menos 1" };
+      }
+    }
+
+    // 🚀 OPTIMIZACIÓN: Usar getAll en batch
+    const productRefs: FirebaseFirestore.DocumentReference[] = [];
+    const productIdMap = new Map<string, any>();
+
+    for (const item of productos) {
+      if (item?.id && !productIdMap.has(item.id)) {
+        productRefs.push(db.collection("productos").doc(item.id));
+        productIdMap.set(item.id, item);
+      }
+    }
+
+    // Obtener todos los productos de una vez
+    const productSnaps = await db.getAll(...productRefs);
+    const productDataMap = new Map<string, any>();
+    
+    for (const snap of productSnaps) {
+      if (snap.exists) {
+        productDataMap.set(snap.id, snap.data());
+      }
+    }
+
+    // Procesar y validar
+    for (const item of productos) {
+      if (!item?.id) continue;
+      
+      const data = productDataMap.get(item.id);
+      if (!data) {
+        return { total: 0, valid: false, reason: `Producto ${item.id} no existe` };
+      }
+
+      const cantidad = Number(item.cantidad || 1);
+      const basePrice = Number(data.precio || 0);
+      
+      // ⚠️ VALIDACIÓN: Stock disponible (anti-overselling)
+      const stock = Number(data.stock || 0);
+      if (stock < cantidad) {
+        return { 
+          total: 0, 
+          valid: false, 
+          reason: `Stock insuficiente para "${data.nombre}". Disponibles: ${stock}, Solicitados: ${cantidad}` 
+        };
+      }
+
+      // SIEMPRE usar precio base, NUNCA descuento
+      const lineTotal = basePrice * cantidad;
+      calculatedTotal += lineTotal;
+
+      // 💾 Guardar snapshot de validación
+      snapshot.push({
+        id: item.id,
+        nombre: data.nombre,
+        cantidad,
+        precio: basePrice,
+        stock: stock,
+        timestamp: Date.now(),
+      });
+    }
+
+    return { total: calculatedTotal, valid: true, snapshot };
+  } catch (err: any) {
+    console.error("[send-proforma] Error validando total:", err);
+    return { total: 0, valid: false, reason: "Error en validación de servidor" };
+  }
+}
 
 function buildProformaHTML(orden: any): string {
   const rows = orden.productos
@@ -121,12 +231,128 @@ function buildProformaHTML(orden: any): string {
 
 export async function POST(req: NextRequest) {
   try {
-    const { orden, email } = await req.json();
+    const { orden, email, userId } = await req.json();
 
     if (!orden || !email || typeof email !== "string" || email.trim() === "" || 
         !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       return NextResponse.json({ error: "Email inválido o datos incompletos" }, { status: 400 });
     }
+
+    // ─────── IMPORTAR FUNCIONES ───────
+    const { crearReservaStock, liberarReserva } = await import("../../lib/stock-reserves-db");
+    const { generateIdempotencyKey, validateIdempotencyKey, saveIdempotencyRecord, getIdempotencyRecord } = await import("../../lib/idempotency-db");
+    const { canResendProformaEmail, recordEmailResend } = await import("../../lib/email-rate-limit-db");
+    const { cleanupExpiredReserves } = await import("../../lib/stock-cleanup-db");
+
+    // 🔑 IDEMPOTENCY: Generar key para detectar duplicados
+    const idempotencyKey = generateIdempotencyKey(userId || email, email.trim(), orden.productos);
+
+    // ✅ Validar idempotency (detectar/bloquear duplicados)
+    const idempotencyValidation = await validateIdempotencyKey(
+      idempotencyKey,
+      userId || email,
+      email.trim(),
+      orden.productos
+    );
+
+    if (!idempotencyValidation.valid) {
+      console.warn(`[send-proforma] ⚠️ Idempotency validation failed: ${idempotencyValidation.error}`);
+      return NextResponse.json({ error: idempotencyValidation.error }, { status: 400 });
+    }
+
+    // ♻️ SI ES DUPLICADO: Devolver respuesta cacheada sin procesar
+    if (idempotencyValidation.isDuplicate && idempotencyValidation.record) {
+      console.log(`[send-proforma] ♻️ Duplicate request detected, returning cached response`);
+      return NextResponse.json({
+        success: true,
+        cached: true,
+        reserveId: idempotencyValidation.record.response.reserveId,
+        message: `Esta orden ya fue generada. Se reenviará el correo a ${email.trim()}.`,
+      });
+    }
+
+    // 📧 RATE LIMIT: Verificar si puede reenviar email
+    const rateLimitCheck = await canResendProformaEmail(email.trim(), orden.orderId || "temp");
+
+    if (!rateLimitCheck.canResend) {
+      console.warn(`[send-proforma] ⚠️ Rate limit exceeded for ${email}: ${rateLimitCheck.error}`);
+      return NextResponse.json(
+        {
+          error: rateLimitCheck.error || "Demasiados reenvíos. Intenta más tarde.",
+          remainingResends: rateLimitCheck.remainingResends,
+          nextAvailableAt: rateLimitCheck.nextAvailableAt,
+        },
+        { status: 429 } // Too Many Requests
+      );
+    }
+
+    // 🧹 CLEANUP: Ejecutar limpieza de reservas expiradas antes de crear nuevas
+    await cleanupExpiredReserves().catch(console.error);
+
+    // ⚠️ VALIDACIÓN CRÍTICA: Recalcular total desde Firestore + stock + cantidad
+    const { total: calculatedTotal, valid, reason, snapshot } = await validarYRecalcularTotal(orden.productos);
+    
+    if (!valid) {
+      console.warn(`[send-proforma] ⚠️ Validación fallida: ${reason}`);
+      return NextResponse.json({ error: reason || "Error al validar la orden" }, { status: 400 });
+    }
+
+    // ⚠️ SEGURIDAD: Validar que el total coincida (tolerancia: 1 centavo por redondeos)
+    const tolerance = 0.01;
+    const clientTotal = Number(orden.total || 0);
+    const difference = Math.abs(calculatedTotal - clientTotal);
+
+    if (difference > tolerance) {
+      console.warn(
+        `[send-proforma] 🚨 INTENTO DE MANIPULACIÓN DETECTADO:`,
+        `Cliente envió: $${clientTotal}, Calculado desde Firestore: $${calculatedTotal}, Diferencia: $${difference}`
+      );
+      return NextResponse.json(
+        { error: "Error al validar el total. Intenta de nuevo." },
+        { status: 400 }
+      );
+    }
+
+    // ─────── CREAR RESERVA DE STOCK PARA PROFORMA ───────
+    // Esto bloquea el stock mientras el admin revisa/aprueba
+    const stockReserveItems = snapshot!.map((item: any) => ({
+      productId: item.id,
+      cantidad: item.cantidad,
+      snapshot: {
+        precio: item.precio,
+        stock: item.stock,
+        nombre: item.nombre,
+      },
+    }));
+
+    const reservaResult = await crearReservaStock(
+      userId || `guest-proforma-${email}`,
+      email.trim(),
+      stockReserveItems,
+      { type: "proforma", orderId: orden.orderId, total: calculatedTotal }
+    );
+
+    if (!reservaResult.success) {
+      console.error(`❌ [send-proforma] Error creando reserva: ${reservaResult.error}`);
+      return NextResponse.json(
+        { error: `No fue posible reservar el stock: ${reservaResult.error}` },
+        { status: 400 }
+      );
+    }
+
+    const reserveId = reservaResult.reserveId;
+
+    // Usar el total recalculado desde Firestore (más seguro)
+    const ordenConTotalValido = {
+      ...orden,
+      total: calculatedTotal,
+      validationSnapshot: snapshot,  // 📋 Guard para auditoría
+      stockReservation: {
+        reserveId,
+        status: "pending", // Esperando aprobación del admin
+        createdAt: new Date().toISOString(),
+      },
+    };
 
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
@@ -142,12 +368,59 @@ export async function POST(req: NextRequest) {
       from: process.env.SMTP_FROM,
       to: email,
       subject: `Tu proforma de orden ${orden.orderId} — TecnoThings`,
-      html: buildProformaHTML(orden),
+      html: buildProformaHTML(ordenConTotalValido),
     });
 
-    return NextResponse.json({ success: true });
+    // ─────── GUARDAR EN FIRESTORE CON RESERVA ───────
+    const db = admin.firestore();
+    const orderId = orden.orderId || `temp-${Date.now()}`;
+    
+    // Guardar la orden con referencia a la reserva
+    await db.collection("ordenes").add({
+      ...ordenConTotalValido,
+      estado: "proforma_enviada", // Esperando aprobación
+      metodoPago: "proforma",
+      createdAt: admin.firestore.Timestamp.now(),
+    });
+
+    console.log(
+      `✅ [PROFORMA_ENVIADA] ${orderId} | Email: ${email} | Total: $${calculatedTotal.toFixed(2)} | ` +
+      `Items: ${snapshot?.length || 0} | ReserveID: ${reserveId} | IdempotencyKey: ${idempotencyKey}`
+    );
+
+    // ─────── GUARDAR IDEMPOTENCY RECORD ───────
+    // Para detectar futuros duplicados y devolver respuesta cacheada
+    const idempotencySaveResult = await saveIdempotencyRecord(
+      idempotencyKey,
+      userId || email,
+      email.trim(),
+      orden.productos,
+      {
+        reserveId,
+        orderId,
+      }
+    ).catch((err: any) => {
+      console.warn("[send-proforma] Warning saving idempotency record:", err);
+    });
+
+    // 📧 REGISTRAR RESEND (para rate limiting)
+    const emailRecordResult = await recordEmailResend(
+      email.trim(),
+      orden.orderId || "temp"
+    ).catch((err: any) => {
+      console.warn("[send-proforma] Warning recording email resend:", err);
+    });
+
+    return NextResponse.json({ 
+      success: true,
+      cached: false,
+      reserveId,
+      idempotencyKey,
+      remainingResends: rateLimitCheck.remainingResends,
+      message: `Proforma enviada a ${email.trim()}. El stock está reservado por 10 minutos.`
+    });
   } catch (err: any) {
-    console.error("[send-proforma] Error:", err);
+    console.error("[send-proforma] ❌ Error:", err);
     return NextResponse.json({ error: err.message || "Error al enviar correo" }, { status: 500 });
   }
 }

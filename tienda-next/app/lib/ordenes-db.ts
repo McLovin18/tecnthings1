@@ -35,20 +35,57 @@ export async function crearOrden(orden: any) {
   const productosProcesados: any[] = [];
   let total = 0;
 
+  // ⚠️ Validar cantidades razonables (anti-ataque masivo)
+  const MAX_QUANTITY_PER_ITEM = 10;
+  for (const item of productosOrigen) {
+    const cantidad = Number(item.cantidad || 1);
+    if (cantidad > MAX_QUANTITY_PER_ITEM) {
+      throw new Error(`Cantidad máxima permitida por producto: ${MAX_QUANTITY_PER_ITEM}`);
+    }
+    if (cantidad < 1) {
+      throw new Error("Cantidad debe ser al menos 1");
+    }
+  }
+
+  // 🚀 OPTIMIZACIÓN: Usar bulk read en lugar de getDoc individual
+  const productRefs = productosOrigen
+    .filter((item: any) => item?.id)
+    .map((item: any) => doc(db, "productos", item.id));
+
+  // Obtener todos de una vez (más eficiente con Firestore)
+  // Nota: getAll no está disponible en SDK de cliente, usamos Promise.all con getDoc
+  const productDocs = await Promise.all(
+    productRefs.map((ref) => getDoc(ref).catch(() => null))
+  );
+
+  const productDataMap = new Map<string, any>();
+  for (let i = 0; i < productDocs.length; i++) {
+    const snap = productDocs[i];
+    if (snap && snap.exists()) {
+      productDataMap.set(snap.id, snap.data());
+    }
+  }
+
   for (const item of productosOrigen) {
     if (!item?.id) continue;
 
-    const prodRef = doc(db, "productos", item.id);
-    const prodSnap = await getDoc(prodRef);
-    if (!prodSnap.exists()) continue;
+    const data = productDataMap.get(item.id);
+    if (!data) continue;
 
-    const data: any = prodSnap.data();
     const basePrice = Number(data.precio || 0);
     const discount = Number(data.descuento || 0);
     const hasDiscount = !isNaN(discount) && discount > 0 && discount < 100;
     const cantidad = Number(item.cantidad || 1);
     const unitPrice = basePrice; // SIEMPRE el precio base, nunca aplicar descuento real
     const lineTotal = unitPrice * cantidad;
+
+    // ⚠️ VALIDACIÓN: Stock disponible (anti-overselling)
+    const stock = Number(data.stock || 0);
+    if (stock < cantidad) {
+      throw new Error(
+        `Stock insuficiente para "${data.nombre}". Disponibles: ${stock}, Solicitados: ${cantidad}`
+      );
+    }
 
     total += lineTotal;
 
@@ -66,6 +103,7 @@ export async function crearOrden(orden: any) {
       }
     }
 
+    // 💾 SNAPSHOT de precios: Protección contra disputas y cambios
     productosProcesados.push({
       id: item.id,
       nombre: data.nombre,
@@ -76,6 +114,14 @@ export async function crearOrden(orden: any) {
       subtotal: lineTotal,
       bodegaId: data.bodegaId || "technothings",
       tiempoEntrega, // Tiempo de entrega en horas
+      // 🔒 SNAPSHOT de seguridad
+      precioSnapshot: {
+        base: basePrice,
+        descuento: discount,
+        final: unitPrice,
+        timestamp: Date.now(),
+      },
+      stockSnapshot: stock,
     });
   }
 
@@ -112,4 +158,64 @@ export async function obtenerOrdenPorId(id: string) {
 
 export async function actualizarOrden(id: string, data: any) {
   await updateDoc(doc(db, COLLECTION, id), data);
+}
+
+// Deducir stock cuando se aprueba una orden
+export async function deducirStockOrden(orderId: string) {
+  try {
+    const ordenRef = doc(db, COLLECTION, orderId);
+    const ordenSnap = await getDoc(ordenRef);
+
+    if (!ordenSnap.exists()) {
+      throw new Error("Orden no encontrada");
+    }
+
+    const orden = ordenSnap.data();
+
+    // Iterar sobre los productos y deducir stock
+    for (const producto of orden.productos || []) {
+      const prodRef = doc(db, "productos", producto.id);
+      const prodSnap = await getDoc(prodRef);
+
+      if (prodSnap.exists()) {
+        const stockActual = prodSnap.data().stock || 0;
+        const nuevoStock = Math.max(0, stockActual - producto.cantidad);
+        
+        await updateDoc(prodRef, { stock: nuevoStock });
+      }
+    }
+  } catch (err) {
+    console.error("Error deduciendo stock:", err);
+    throw err;
+  }
+}
+
+// Devolver stock cuando se rechaza una orden
+export async function devolverStockOrden(orderId: string) {
+  try {
+    const ordenRef = doc(db, COLLECTION, orderId);
+    const ordenSnap = await getDoc(ordenRef);
+
+    if (!ordenSnap.exists()) {
+      throw new Error("Orden no encontrada");
+    }
+
+    const orden = ordenSnap.data();
+
+    // Iterar sobre los productos y devolver stock
+    for (const producto of orden.productos || []) {
+      const prodRef = doc(db, "productos", producto.id);
+      const prodSnap = await getDoc(prodRef);
+
+      if (prodSnap.exists()) {
+        const stockActual = prodSnap.data().stock || 0;
+        const nuevoStock = stockActual + producto.cantidad;
+        
+        await updateDoc(prodRef, { stock: nuevoStock });
+      }
+    }
+  } catch (err) {
+    console.error("Error devolviendo stock:", err);
+    throw err;
+  }
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { obtenerTodasOrdenes, actualizarOrden } from "../../lib/ordenes-db";
+import { obtenerTodasOrdenes, actualizarOrden, deducirStockOrden, devolverStockOrden } from "../../lib/ordenes-db";
 
 function getTodayYMD() {
 	const now = new Date();
@@ -70,14 +70,34 @@ export default function PedidosAdminPage() {
 	};
 
 	const aprobarOrden = async (orden: any) => {
-		await actualizarOrden(orden.id, { estado: "aprobada" });
-		setOrdenes((prev) => prev.map((o) => o.id === orden.id ? { ...o, estado: "aprobada" } : o));
+		try {
+			// Deducir stock cuando se aprueba
+			await deducirStockOrden(orden.id);
+			
+			// Actualizar estado a "aprobada"
+			await actualizarOrden(orden.id, { estado: "aprobada" });
+			setOrdenes((prev) => prev.map((o) => o.id === orden.id ? { ...o, estado: "aprobada" } : o));
+		} catch (error) {
+			console.error("Error al aprobar orden:", error);
+			alert("Error al aprobar la orden");
+		}
 	};
 
 	const rechazarOrden = async (orden: any) => {
 		const motivo = prompt("Motivo de rechazo (opcional):");
-		await actualizarOrden(orden.id, { estado: "rechazada", motivoRechazo: motivo || "" });
-		setOrdenes((prev) => prev.map((o) => o.id === orden.id ? { ...o, estado: "rechazada", motivoRechazo: motivo || "" } : o));
+		try {
+			// Devolver stock cuando se rechaza (en caso de que se haya deducido)
+			if (orden.estado === "aprobada") {
+				await devolverStockOrden(orden.id);
+			}
+			
+			// Actualizar estado a "rechazada"
+			await actualizarOrden(orden.id, { estado: "rechazada", motivoRechazo: motivo || "" });
+			setOrdenes((prev) => prev.map((o) => o.id === orden.id ? { ...o, estado: "rechazada", motivoRechazo: motivo || "" } : o));
+		} catch (error) {
+			console.error("Error al rechazar orden:", error);
+			alert("Error al rechazar la orden");
+		}
 	};
 
 	// Filtro por rango de fechas de visita
