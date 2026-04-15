@@ -75,8 +75,8 @@ export async function checkRateLimit(
       console.log(`[rate-limit] 📝 Nueva sesión: ${email}`);
     }
     
-    // Límite: 3 intentos en 5 minutos
-    if (emailCount > 3) {
+    // Límite: 5 intentos en 5 minutos
+    if (emailCount > 5) {
       const remainingSeconds = emailTtl > 0 ? emailTtl : 300;
       const blockedUntil = Date.now() + (remainingSeconds * 1000);
       
