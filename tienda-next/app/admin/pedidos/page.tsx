@@ -16,6 +16,7 @@ export default function PedidosAdminPage() {
 	const [clientesMap, setClientesMap] = useState<Record<string, { displayName: string | null; email: string | null }>>({});
 	const [fechaDesde, setFechaDesde] = useState<string>(getTodayYMD());
 	const [fechaHasta, setFechaHasta] = useState<string>(getTodayYMD());
+	const [expandedTarjetas, setExpandedTarjetas] = useState(false);
 
 	useEffect(() => {
 		async function load() {
@@ -71,15 +72,48 @@ export default function PedidosAdminPage() {
 
 	const aprobarOrden = async (orden: any) => {
 		try {
-			// Deducir stock cuando se aprueba
+			setLoading(true);
+
+			// 💳 STRIPE: Usar endpoint específico para órdenes pagadas
+			if (orden.metodoPago === "stripe") {
+				const res = await fetch("/api/admin/approve-stripe-order", {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						"x-admin-token": process.env.NEXT_PUBLIC_ADMIN_TOKEN || "",
+					},
+					body: JSON.stringify({ orderId: orden.id }),
+				});
+
+				if (!res.ok) {
+					const error = await res.json();
+					throw new Error(error.error || `Error ${res.status}`);
+				}
+
+				const data = await res.json();
+				setOrdenes((prev) =>
+					prev.map((o) =>
+						o.id === orden.id
+							? { ...o, estado: "aprobada", aprobadasAt: new Date() }
+							: o
+					)
+				);
+				alert(`✅ ${data.message || "Pago verificado, orden aprobada exitosamente"}`);
+				return;
+			}
+
+			// 📋 PROFORMA: Deducir stock cuando se aprueba
 			await deducirStockOrden(orden.id);
 			
 			// Actualizar estado a "aprobada"
 			await actualizarOrden(orden.id, { estado: "aprobada" });
 			setOrdenes((prev) => prev.map((o) => o.id === orden.id ? { ...o, estado: "aprobada" } : o));
-		} catch (error) {
+			alert("✅ Orden aprobada exitosamente");
+		} catch (error: any) {
 			console.error("Error al aprobar orden:", error);
-			alert("Error al aprobar la orden");
+			alert(`❌ Error: ${error.message || "No se pudo aprobar la orden"}`);
+		} finally {
+			setLoading(false);
 		}
 	};
 
@@ -90,19 +124,19 @@ export default function PedidosAdminPage() {
 		try {
 			setLoading(true);
 			
-			// 🚀 Llamar al endpoint backend para rechazar
-			// Este endpoint:
-			// 1. Restaura el stock de forma atómica
-			// 2. Actualiza el estado de la orden
-			// 3. Registra en historial
-			const res = await fetch("/api/admin/reject-order", {
+			// � STRIPE: Usar endpoint específico para órdenes pagadas
+			const endpoint = orden.metodoPago === "stripe" 
+				? "/api/admin/reject-stripe-order"
+				: "/api/admin/reject-order";
+			
+			const res = await fetch(endpoint, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
-					"x-admin-token": process.env.NEXT_PUBLIC_ADMIN_TOKEN || "", // ← Token admin
+					"x-admin-token": process.env.NEXT_PUBLIC_ADMIN_TOKEN || "",
 				},
 				body: JSON.stringify({
-					orderId: orden.orderId || orden.id, // Probamos ambos
+					orderId: orden.id,
 					reason: motivo || "Rechazada por el administrador",
 				}),
 			});
@@ -117,18 +151,17 @@ export default function PedidosAdminPage() {
 			// ✅ Actualizar UI localmente
 			setOrdenes((prev) =>
 				prev.map((o) =>
-					o.id === orden.id || o.orderId === orden.orderId
+					o.id === orden.id
 						? {
 							...o,
 							estado: "rechazada",
 							motivoRechazo: motivo || "",
-							estadoRazon: motivo || "Rechazada por el administrador",
 						}
 						: o
 				)
 			);
 			
-			alert(`✅ ${data.message || "Orden rechazada exitosamente"}`);
+			alert(`✅ ${data.message || "Orden rechazada exitosamente y stock devuelto"}`);
 		} catch (error: any) {
 			console.error("Error al rechazar orden:", error);
 			alert(`❌ Error: ${error.message || "No se pudo rechazar la orden"}`);
@@ -170,6 +203,9 @@ export default function PedidosAdminPage() {
 		estaEnRango(o.visitaFecha) &&
 		matchesBusqueda(o)
 	);
+
+	// 🔵 Filtro para pedidos con PAGO VIRTUAL (Stripe/Tarjeta)
+	const ordenesConTarjeta = ordenes.filter((o) => o.metodoPago === "stripe");
 
 	const ordenesMostradas = tab === "pendientes" ? ordenesPendientes : ordenesAprobadas;
 
@@ -280,25 +316,30 @@ export default function PedidosAdminPage() {
 					Total: <span className="text-purple-700 dark:text-purple-300">${calcularTotalOrden(orden).toFixed(2)}</span>
 				</div>
 
-				{/* Acciones */}
-				{orden.estado === "generada" && (
+				{/* Acciones - Mostrar botones si NO está ya aprobada/rechazada */}
+				{orden.estado !== "aprobada" && orden.estado !== "rechazada" && (
 					<div className="flex gap-2">
 						<button
 							onClick={() => rechazarOrden(orden)}
 							className="px-3 py-1.5 rounded-lg border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 text-sm font-medium transition-colors"
 						>
-							Rechazar
+							🚫 Rechazar
 						</button>
-						{orden.metodoPago === "stripe" && orden.paymentStatus !== "paid" ? (
+
+						{/* Para órdenes Stripe: verificar si está pagada */}
+						{orden.metodoPago === "stripe" && orden.status !== "paid" && orden.paymentStatus !== "paid" ? (
 							<button disabled className="px-3 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500 text-sm font-medium cursor-not-allowed">
-								Esperando pago
+								⏳ {orden.status || "Esperando pago"}
 							</button>
 						) : (
 							<button
 								onClick={() => aprobarOrden(orden)}
-								className="px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 text-white text-sm font-medium transition-colors"
+								className="px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 text-white text-sm font-medium transition-colors flex items-center gap-2"
 							>
-								Aprobar
+								<span>✅ Aprobar</span>
+								{orden.metodoPago === "stripe" && (
+									<span className="text-xs bg-green-700 px-2 py-0.5 rounded">${calcularTotalOrden(orden).toFixed(2)}</span>
+								)}
 							</button>
 						)}
 					</div>
@@ -398,6 +439,74 @@ export default function PedidosAdminPage() {
 					);
 				})}
 			</div>
+
+			{/* 🔵 Sección: Pedidos con Tarjetas (Pago Virtual) */}
+			{ordenesConTarjeta.length > 0 && (
+				<div className="mb-6">
+					<button
+						onClick={() => setExpandedTarjetas(!expandedTarjetas)}
+						className="w-full bg-indigo-50 dark:bg-indigo-950/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 border-2 border-indigo-200 dark:border-indigo-800 rounded-xl p-4 transition-all duration-200 cursor-pointer"
+					>
+						<div className="flex items-center justify-between">
+							<div className="flex items-center gap-3">
+								<span className="text-2xl">💳</span>
+								<div className="text-left">
+									<h3 className="font-bold text-slate-800 dark:text-slate-100">Pedidos con Tarjета</h3>
+									<p className="text-xs text-slate-600 dark:text-slate-400">Pago virtual (Stripe)</p>
+								</div>
+							</div>
+							<div className="flex items-center gap-3">
+								<span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-indigo-600 dark:bg-indigo-500 text-white font-bold text-sm">
+									{ordenesConTarjeta.length}
+								</span>
+								<span className={`text-2xl transition-transform duration-300 ${expandedTarjetas ? "rotate-180" : ""}`}>
+									▼
+								</span>
+							</div>
+						</div>
+
+						{/* Preview: Máximo 3 pedidos */}
+						{!expandedTarjetas && ordenesConTarjeta.length > 0 && (
+							<div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3">
+								{ordenesConTarjeta.slice(0, 3).map((orden) => (
+									<div
+										key={orden.id}
+										className="text-left bg-white dark:bg-slate-800 rounded-lg p-2 border border-indigo-100 dark:border-indigo-900/40 text-xs"
+									>
+										<div className="flex items-center justify-between mb-1">
+											<span className="font-bold text-slate-800 dark:text-slate-100">{orden.orderId || `#${orden.id.slice(-6)}`}</span>
+											{estadoBadge(orden.estado)}
+										</div>
+										<p className="text-slate-600 dark:text-slate-400 text-[11px]">
+											Total: <span className="font-semibold">${calcularTotalOrden(orden).toFixed(2)}</span>
+										</p>
+									</div>
+								))}
+								{ordenesConTarjeta.length > 3 && (
+									<div className="text-center py-2 text-slate-500 dark:text-slate-400 text-xs font-medium">
+										+{ordenesConTarjeta.length - 3} más
+									</div>
+								)}
+							</div>
+						)}
+					</button>
+
+					{/* Vista Expandida: Todos los pedidos con tarjeta */}
+					{expandedTarjetas && (
+						<div className="mt-3 space-y-3">
+							{ordenesConTarjeta.length === 0 ? (
+								<div className="text-center py-8 text-slate-400 dark:text-slate-500">
+									<p className="text-sm">No hay pedidos con tarjeta</p>
+								</div>
+							) : (
+								ordenesConTarjeta.map((orden) => (
+									<OrdenCard key={orden.id} orden={orden} />
+								))
+							)}
+						</div>
+					)}
+				</div>
+			)}
 
 			{/* Contenido */}
 			{loading ? (
