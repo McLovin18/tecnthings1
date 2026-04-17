@@ -1,0 +1,83 @@
+import type { Metadata } from "next";
+import { getBlogById } from "../../lib/blogs-db";
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://tecnothings.ec";
+
+// ISR: Revalidar cada hora (3600 segundos)
+// Significa que la página se cachea por 1 hora, después se regenera
+export const revalidate = 3600;
+
+// Permitir rutas dinámicas fuera de las estáticas generadas
+export const dynamicParams = true;
+
+interface Props {
+  params: Promise<{ id: string }>;
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  try {
+    const { id } = await params;
+    const blog = await getBlogById(id);
+
+    if (!blog) {
+      return {
+        title: "Artículo no encontrado | TecnoThings",
+        description: "El artículo que buscas no existe.",
+      };
+    }
+
+    const description =
+      blog.excerpt || blog.content?.substring(0, 160) || "Artículo de TecnoThings";
+    const imageUrl = blog.image || `${SITE_URL}/default-blog-image.jpg`;
+
+    return {
+      title: `${blog.title} | TecnoThings`,
+      description: description,
+      keywords: blog.tags || ["tecnología", "PC Gamer"],
+      openGraph: {
+        type: "article",
+        url: `${SITE_URL}/blogs/${id}`,
+        title: blog.title,
+        description: description,
+        images: [
+          {
+            url: imageUrl,
+            width: 1200,
+            height: 630,
+            alt: blog.title,
+          },
+        ],
+        publishedTime: blog.createdAt
+          ? new Date(blog.createdAt).toISOString()
+          : undefined,
+        modifiedTime: blog.updatedAt
+          ? new Date(blog.updatedAt).toISOString()
+          : undefined,
+        authors: [blog.author || "TecnoThings"],
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: blog.title,
+        description: description,
+        images: [imageUrl],
+      },
+      alternates: {
+        canonical: `${SITE_URL}/blogs/${id}`,
+      },
+    };
+  } catch (error) {
+    console.error("Error generando metadata del blog:", error);
+    return {
+      title: "Artículo | TecnoThings",
+      description: "Cargando artículo...",
+    };
+  }
+}
+
+export default function BlogLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return <>{children}</>;
+}

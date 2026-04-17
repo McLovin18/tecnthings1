@@ -2,10 +2,11 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useUser } from "../context/UserContext";
 import { useRouter } from "next/navigation";
 
-export default function ProductoCard({
+function ProductoCard({
   producto,
   onClick,
   showCart = false,
@@ -109,18 +110,20 @@ export default function ProductoCard({
           sm:w-full sm:h-56
         "
       >
-      <img
-        src={producto.imagenes?.[0] || "/no-image.png"}
-        alt={producto.nombre}
-        loading="lazy" // <--- AÑADE ESTO
-        decoding="async" // <--- AYUDA AL RENDIMIENTO
-        className="
-          w-full h-full object-contain
-          p-3 sm:p-5
-          group-hover:scale-105
-          transition-transform duration-500
-        "
-      />
+        <Image
+          src={producto.imagenes?.[0] || "/no-image.png"}
+          alt={producto.nombre}
+          fill
+          sizes="(max-width: 640px) 140px, (max-width: 768px) 100vw, 400px"
+          className="
+            object-contain
+            p-3 sm:p-5
+            group-hover:scale-105
+            transition-transform duration-500
+          "
+          priority={false}
+          loading="lazy"
+        />
         {/* Badge descuento */}
         {hasDiscount && (
           <span className="
@@ -272,3 +275,15 @@ export default function ProductoCard({
     </Link>
   );
 }
+
+// Memoizar para evitar re-renders innecesarios cuando aparece en listas
+export default React.memo(ProductoCard, (prevProps, nextProps) => {
+  // El componente se re-renderiza si el ID del producto cambió
+  // O si las props de visibilidad cambiaron
+  return (
+    prevProps.producto.id === nextProps.producto.id &&
+    prevProps.showCart === nextProps.showCart &&
+    prevProps.showEye === nextProps.showEye &&
+    prevProps.showFav === nextProps.showFav
+  );
+});

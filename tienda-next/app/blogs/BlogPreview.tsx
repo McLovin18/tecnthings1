@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 import type { Blog, BlogBlock } from "../lib/blog-types";
 
 export type BlogPreviewProps = {
@@ -57,10 +58,14 @@ function renderBlock(block: BlogBlock, index: number) {
         style={style}
       >
         {block.url && (
-          <img
+          <Image
             src={block.url}
             alt={block.alt || "Imagen del blog"}
+            width={800}
+            height={400}
             className="w-full rounded-lg max-h-96 object-cover shadow-md"
+            sizes="(max-width: 768px) 100vw, 800px"
+            loading="lazy"
           />
         )}
         {block.caption && (

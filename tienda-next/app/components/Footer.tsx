@@ -2,9 +2,12 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useUser } from "../context/UserContext";
 import { usePathname } from "next/navigation";
 import WhatsAppFloatingButton from "./WhatsAppFloatingButton";
+import type { CSSProperties } from "react";
+import styles from "./Footer.module.css";
 
 const IconInstagram = () => (
   <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
@@ -55,326 +58,25 @@ const Footer: React.FC = () => {
 
   return (
     <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;700;800&family=DM+Sans:wght@300;400;500&display=swap');
-
-        #pdx-footer {
-          font-family: 'DM Sans', sans-serif;
-          background: #100820;
-          color: #e8dff5;
-          position: relative;
-          overflow: hidden;
-        }
-
-        #pdx-footer .ft-glow-left {
-          position: absolute;
-          top: -80px;
-          left: -120px;
-          width: 420px;
-          height: 420px;
-          border-radius: 50%;
-          background: radial-gradient(circle, rgba(120,60,200,0.18) 0%, transparent 70%);
-          pointer-events: none;
-        }
-
-        #pdx-footer .ft-glow-right {
-          position: absolute;
-          bottom: -60px;
-          right: -80px;
-          width: 320px;
-          height: 320px;
-          border-radius: 50%;
-          background: radial-gradient(circle, rgba(80,30,160,0.14) 0%, transparent 70%);
-          pointer-events: none;
-        }
-
-        #pdx-footer .ft-main {
-          position: relative;
-          z-index: 1;
-          max-width: 1100px;
-          margin: 0 auto;
-          padding: 52px 32px 36px;
-          display: grid;
-          grid-template-columns: 1.4fr 1fr 1fr 1.2fr;
-          gap: 40px;
-        }
-
-        #pdx-footer .ft-main-logged {
-          grid-template-columns: 1.4fr 1fr 1.6fr;
-        }
-
-        @media (max-width: 900px) {
-          #pdx-footer .ft-main { grid-template-columns: 1fr 1fr; gap: 28px; padding: 36px 20px 24px; }
-          #pdx-footer .ft-main-logged { grid-template-columns: 1fr 1fr; }
-        }
-
-        @media (max-width: 560px) {
-          #pdx-footer .ft-main { grid-template-columns: 1fr; gap: 24px; padding: 28px 18px 20px; }
-          #pdx-footer .ft-main-logged { grid-template-columns: 1fr; }
-
-        }
-
-        #pdx-footer .ft-brand-img {
-          height: 36px;
-          width: auto;
-          margin-bottom: 14px;
-          filter: brightness(0) invert(1);
-          opacity: 0.92;
-          display: block;
-        }
-
-        #pdx-footer .ft-brand-desc {
-          font-size: 13px;
-          line-height: 1.75;
-          color: #a898c0;
-          max-width: 210px;
-          font-weight: 300;
-          margin: 0;
-        }
-
-        #pdx-footer .ft-col-label {
-          font-family: 'Syne', sans-serif;
-          font-size: 10px;
-          font-weight: 700;
-          letter-spacing: 0.16em;
-          text-transform: uppercase;
-          color: #7c5fa0;
-          margin-bottom: 18px;
-          display: block;
-        }
-
-        #pdx-footer .ft-links {
-          list-style: none;
-          padding: 0;
-          margin: 0;
-          display: flex;
-          flex-direction: column;
-          gap: 11px;
-        }
-
-        #pdx-footer .ft-links a {
-          font-size: 13.5px;
-          color: #c4b4da;
-          text-decoration: none;
-          font-weight: 300;
-          transition: color 0.18s;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-
-        #pdx-footer .ft-links a:hover { color: #ffffff; }
-
-        #pdx-footer .ft-dot {
-          width: 4px;
-          height: 4px;
-          border-radius: 50%;
-          background: #6b3fa0;
-          flex-shrink: 0;
-          transition: background 0.18s;
-        }
-
-        #pdx-footer .ft-links a:hover .ft-dot { background: #b47aff; }
-
-        #pdx-footer .ft-contact-item {
-          display: flex;
-          flex-direction: column;
-          gap: 3px;
-          margin-bottom: 14px;
-        }
-
-        #pdx-footer .ft-contact-label {
-          font-size: 10px;
-          font-weight: 500;
-          letter-spacing: 0.1em;
-          text-transform: uppercase;
-          color: #7c5fa0;
-        }
-
-        #pdx-footer .ft-contact-val {
-          font-size: 13.5px;
-          color: #c4b4da;
-          font-weight: 300;
-          text-decoration: none;
-          transition: color 0.18s;
-        }
-
-        #pdx-footer a.ft-contact-val:hover { color: #fff; }
-
-        #pdx-footer .ft-map-wrap {
-          margin-top: 4px;
-          border-radius: 4px;
-          overflow: hidden;
-          border: 1px solid rgba(180,100,255,0.15);
-          height: 160px;
-        }
-
-        #pdx-footer .ft-map-wrap iframe {
-          width: 100%;
-          height: 100%;
-          border: 0;
-        }
-
-        #pdx-footer .ft-map-inline-wrap {
-          border-radius: 12px;
-          overflow: hidden;
-          border: 1px solid rgba(180,100,255,0.15);
-          height: 160px;
-          margin-top: 16px;
-        }
-
-        #pdx-footer .ft-map-inline-wrap iframe {
-          width: 100%;
-          height: 100%;
-          border: 0;
-          filter: saturate(0.2) brightness(0.7) hue-rotate(200deg);
-        }
-
-        #pdx-footer .ft-divider {
-          position: relative;
-          z-index: 1;
-          height: 1px;
-          background: linear-gradient(90deg, transparent, rgba(140,80,220,0.3) 30%, rgba(140,80,220,0.3) 70%, transparent);
-          margin: 0 32px;
-        }
-
-        #pdx-footer .ft-bottom {
-          position: relative;
-          z-index: 1;
-          max-width: 1100px;
-          margin: 0 auto;
-          padding: 20px 32px 0;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          flex-wrap: wrap;
-          gap: 16px;
-        }
-
-        #pdx-footer .ft-copy-row {
-          position: relative;
-          z-index: 1;
-          max-width: 1100px;
-          margin-top: 10px;
-          margin-bottom: 10px;
-          padding: 14px 32px 22px;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          flex-wrap: wrap;
-          gap: 8px;
-          border-top: 1px solid rgba(120,60,180,0.12);
-        }
-
-        @media (max-width: 560px) {
-          #pdx-footer .ft-bottom { flex-direction: column; align-items: flex-start; padding: 18px 18px 0; }
-          #pdx-footer .ft-divider { margin: 0 18px; }
-          #pdx-footer .ft-copy-row { padding: 14px 18px 20px; flex-direction: column; align-items: flex-start; margin-top: 60px; margin-bottom: 70px; }
-        }
-
-        #pdx-footer .ft-socials {
-          display: flex;
-          gap: 4px;
-          list-style: none;
-          padding: 0;
-          margin: 0;
-        }
-
-        #pdx-footer .ft-socials a {
-          width: 34px;
-          height: 34px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: 8px;
-          border: 1px solid rgba(180,100,255,0.15);
-          color: #9070b8;
-          text-decoration: none;
-          transition: all 0.18s;
-        }
-
-        #pdx-footer .ft-socials a:hover {
-          border-color: rgba(180,100,255,0.45);
-          color: #d0aaff;
-          background: rgba(140,60,220,0.12);
-        }
-
-        #pdx-footer .ft-payments-img {
-          height: 22px;
-          width: auto;
-          opacity: 0.5;
-          filter: brightness(0) invert(1);
-        }
-
-        #pdx-footer .ft-copy-text {
-          font-size: 11.5px;
-          color: #5a4472;
-          margin: 0;
-        }
-
-        #pdx-footer .ft-copy-right {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-
-        #pdx-footer .ft-badge {
-          display: inline-flex;
-          align-items: center;
-          gap: 5px;
-          background: rgba(140,60,220,0.1);
-          border: 1px solid rgba(140,60,220,0.2);
-          border-radius: 20px;
-          padding: 2px 10px;
-          font-size: 10.5px;
-          color: #9070b8;
-        }
-
-        #pdx-footer .ft-badge-dot {
-          width: 5px;
-          height: 5px;
-          border-radius: 50%;
-          background: #7c3fb0;
-          flex-shrink: 0;
-        }
-
-        #pdx-footer .ft-dev-link {
-          font-size: 11.5px;
-          color: #7a5a9a;
-          text-decoration: none;
-          transition: color 0.18s;
-        }
-
-        #pdx-footer .ft-dev-link:hover { color: #c4b4da; }
-
-        #pdx-footer .ft-contact-logged {
-          display: flex;
-          flex-direction: row;
-          gap: 32px;
-          flex-wrap: wrap;
-        }
-
-        @media (max-width: 560px) {
-          #pdx-footer .ft-contact-logged { flex-direction: column; gap: 0; }
-        }
-      `}</style>
-
-      <footer id="pdx-footer">
-        <div className="ft-glow-left" />
-        <div className="ft-glow-right" />
+      <footer className={styles.pdxFooter}>
+        <div className={styles.ftGlowLeft} />
+        <div className={styles.ftGlowRight} />
 
         {/* Main grid */}
-        <div className={`ft-main${isLogged ? " ft-main-logged" : ""}`}>
+        <div className={`${styles.ftMain}${isLogged ? ` ${styles.ftMainLogged}` : ""}`}>
 
           {/* Brand */}
           <div>
-            <img
-              className="ft-brand-img"
+            <Image
+              className={styles.ftBrandImg}
               src="https://imagedelivery.net/0tt38OLkrSmHRt7hdItWEA/b85e233d-e857-410c-a566-8affd2d44f00/public"
               alt="Tecnothings S.A.S"
+              width={100}
+              height={36}
+              priority={false}
               loading="lazy"
             />
-            <p className="ft-brand-desc">
+            <p className={styles.ftBrandDesc}>
               ¡Lleva tu talento al siguiente nivel! Tecnología que potencia a gamers,
               streamers y creadores de contenido.
             </p>
@@ -383,17 +85,17 @@ const Footer: React.FC = () => {
           {/* Políticas — solo cuando NO está logueado */}
           {!isLogged && (
             <div>
-              <span className="ft-col-label">Servicio al cliente</span>
-              <ul className="ft-links">
+              <span className={styles.ftColLabel}>Servicio al cliente</span>
+              <ul className={styles.ftLinks}>
                 <li>
                   <Link href="/politicas/terminos-y-condiciones">
-                    <span className="ft-dot" />
+                    <span className={styles.ftDot} />
                     Términos y condiciones
                   </Link>
                 </li>
                 <li>
                   <Link href="/politicas/privacidad">
-                    <span className="ft-dot" />
+                    <span className={styles.ftDot} />
                     Políticas de privacidad
                   </Link>
                 </li>
@@ -404,32 +106,32 @@ const Footer: React.FC = () => {
 
           {/* Contacto */}
           <div>
-            <span className="ft-col-label">Contacto</span>
+            <span className={styles.ftColLabel}>Contacto</span>
 
             {isLogged ? (
               /* Cuando está logueado: info + mapa inline en la misma columna */
               <>
-                <div className="ft-contact-logged">
+                <div className={styles.ftContactLogged}>
                   <div>
-                    <div className="ft-contact-item">
-                      <span className="ft-contact-label">Dirección</span>
-                      <span className="ft-contact-val">Centro Comercial San Felipe</span>
+                    <div className={styles.ftContactItem}>
+                      <span className={styles.ftContactLabel}>Dirección</span>
+                      <span className={styles.ftContactVal}>Centro Comercial San Felipe</span>
                     </div>
-                    <div className="ft-contact-item">
-                      <span className="ft-contact-label">Teléfono</span>
-                      <a href="tel:+593962873167" className="ft-contact-val">
+                    <div className={styles.ftContactItem}>
+                      <span className={styles.ftContactLabel}>Teléfono</span>
+                      <a href="tel:+593962873167" className={styles.ftContactVal}>
                         +593 96 287 3167
                       </a>
                     </div>
-                    <div className="ft-contact-item">
-                      <span className="ft-contact-label">Correo</span>
-                      <a href="mailto:Tecnothings.sas@gmail.com" className="ft-contact-val">
+                    <div className={styles.ftContactItem}>
+                      <span className={styles.ftContactLabel}>Correo</span>
+                      <a href="mailto:Tecnothings.sas@gmail.com" className={styles.ftContactVal}>
                         Tecnothings.sas@gmail.com
                       </a>
                     </div>
                   </div>
                 </div>
-                <div className="ft-map-inline-wrap">
+                <div className={styles.ftMapInlineWrap}>
                   <iframe
                     title="Ubicación Tecno Things GYE"
                     src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3987.0631435887085!2d-79.9309434253004!3d-2.1294173978516073!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x902d733792952ed1%3A0x2fda88783fa806f2!2sTECNOTHINGS%20GYE!5e0!3m2!1ses-419!2sec!4v1772574979027!5m2!1ses-419!2sec"
@@ -441,19 +143,19 @@ const Footer: React.FC = () => {
               </>
             ) : (
               <div>
-                <div className="ft-contact-item">
-                  <span className="ft-contact-label">Dirección</span>
-                  <span className="ft-contact-val">Centro Comercial San Felipe</span>
+                <div className={styles.ftContactItem}>
+                  <span className={styles.ftContactLabel}>Dirección</span>
+                  <span className={styles.ftContactVal}>Centro Comercial San Felipe</span>
                 </div>
-                <div className="ft-contact-item">
-                  <span className="ft-contact-label">Teléfono</span>
-                  <a href="tel:+593962873167" className="ft-contact-val">
+                <div className={styles.ftContactItem}>
+                  <span className={styles.ftContactLabel}>Teléfono</span>
+                  <a href="tel:+593962873167" className={styles.ftContactVal}>
                     +593 96 287 3167
                   </a>
                 </div>
-                <div className="ft-contact-item">
-                  <span className="ft-contact-label">Correo</span>
-                  <a href="mailto:Tecnothings.sas@gmail.com" className="ft-contact-val">
+                <div className={styles.ftContactItem}>
+                  <span className={styles.ftContactLabel}>Correo</span>
+                  <a href="mailto:Tecnothings.sas@gmail.com" className={styles.ftContactVal}>
                     Tecnothings.sas@gmail.com
                   </a>
                 </div>
@@ -464,8 +166,8 @@ const Footer: React.FC = () => {
           {/* Mapa — solo cuando NO está logueado (columna aparte) */}
           {!isLogged && (
             <div>
-              <span className="ft-col-label">Encuéntranos</span>
-              <div className="ft-map-wrap">
+              <span className={styles.ftColLabel}>Encuéntranos</span>
+              <div className={styles.ftMapWrap}>
                 <iframe
                   title="Ubicación Tecno Things GYE"
                   src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3987.0631435887085!2d-79.9309434253004!3d-2.1294173978516073!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x902d733792952ed1%3A0x2fda88783fa806f2!2sTECNOTHINGS%20GYE!5e0!3m2!1ses-419!2sec!4v1772574979027!5m2!1ses-419!2sec"
@@ -479,11 +181,11 @@ const Footer: React.FC = () => {
         </div>
 
         {/* Divider */}
-        <div className="ft-divider" />
+        <div className={styles.ftDivider} />
 
         {/* Bottom bar: redes + pagos */}
-        <div className="ft-bottom">
-          <ul className="ft-socials">
+        <div className={styles.ftBottom}>
+          <ul className={styles.ftSocials}>
             {socialLinks.map(({ href, label, Icon }) => (
               <li key={label}>
                 <a href={href} target="_blank" rel="noreferrer" title={label}>
@@ -493,26 +195,24 @@ const Footer: React.FC = () => {
             ))}
           </ul>
 
-          <img
 
-          />
         </div>
 
         {/* Copyright row */}
-        <div className="ft-copy-row ">
-          <p className="ft-copy-text">
+        <div className={styles.ftCopyRow}>
+          <p className={styles.ftCopyText}>
             © {new Date().getFullYear()} Tecnothings S.A.S. Todos los derechos reservados.
           </p>
-          <div className="ft-copy-right">
-            <div className="ft-badge">
-              <div className="ft-badge-dot" />
+          <div className={styles.ftCopyRight}>
+            <div className={styles.ftBadge}>
+              <div className={styles.ftBadgeDot} />
               Hecho en Ecuador
             </div>
             <a
               href="https://www.instagram.com/hector.cobena/"
               target="_blank"
               rel="noreferrer"
-              className="ft-dev-link"
+              className={styles.ftDevLink}
             >
               Desarrollado por Héctor Cobeña
             </a>
