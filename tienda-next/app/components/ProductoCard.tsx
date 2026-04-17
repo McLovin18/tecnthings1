@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useUser } from "../context/UserContext";
 import { useRouter } from "next/navigation";
+import { useTracking } from "../lib/useAnalytics";
 
 function ProductoCard({
   producto,
@@ -27,6 +28,7 @@ function ProductoCard({
     removeCarrito,
   } = useUser();
   const router = useRouter();
+  const { trackProductClick } = useTracking();
 
   const isFav = favoritos?.some((p) => p.id === producto.id);
   const inCart = carrito?.some((p) => p.id === producto.id);
@@ -58,6 +60,7 @@ function ProductoCard({
 
   const goToDetail = (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
+    trackProductClick().catch(console.error);
     router.push(getDetailUrl());
   };
 
@@ -103,11 +106,11 @@ function ProductoCard({
           relative flex-shrink-0 overflow-hidden
           bg-white dark:bg-white/[0.03]
 
-          /* móvil: cuadrado fijo a la izquierda */
-          w-[140px] h-[140px]
+          /* móvil: cuadrado más pequeño a la izquierda (optimizado) */
+          w-[110px] h-[110px]
 
-          /* sm+: ancho completo, altura generosa */
-          sm:w-full sm:h-56
+          /* sm+: ancho completo, altura optimizada para móvil */
+          sm:w-full sm:h-48
         "
       >
         <Image

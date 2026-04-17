@@ -29,8 +29,8 @@ export default function FeaturedCategoriesSection({
 }: FeaturedCategoriesSectionProps) {
   const bg = styles?.backgroundColor;
   const color = styles?.textColor;
-  const paddingTop = styles?.paddingTop || (typeof window !== "undefined" && window.innerWidth < 768 ? "1rem" : "2rem");
-  const paddingBottom = styles?.paddingBottom || (typeof window !== "undefined" && window.innerWidth < 768 ? "1rem" : "2rem");
+  const paddingTop = styles?.paddingTop || (typeof window !== "undefined" && window.innerWidth < 768 ? "0.5rem" : "2rem");
+  const paddingBottom = styles?.paddingBottom || (typeof window !== "undefined" && window.innerWidth < 768 ? "0.5rem" : "2rem");
 
   const categories = (items || []).filter(
     (c) => c && (c.title || c.image || c.link)
@@ -105,7 +105,7 @@ export default function FeaturedCategoriesSection({
       <div className="max-w-6xl mx-auto text-slate-900 dark:text-white relative ">
         {title && (
           <h2
-            className="text-4xl py-3 sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-center"
+            className="text-3xl py-2 sm:text-2xl lg:text-4xl font-extrabold tracking-tight text-center"
             style={fieldStyles?.title || { color: "var(--text)" }}
           >
             {title}

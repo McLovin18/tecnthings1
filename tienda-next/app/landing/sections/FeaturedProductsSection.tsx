@@ -23,8 +23,8 @@ export default function FeaturedProductsSection({
   fieldStyles,
   device,
 }: FeaturedProductsSectionProps) {
-  const paddingTop = styles?.paddingTop || (typeof window !== "undefined" && window.innerWidth < 768 ? "1rem" : "2rem");
-  const paddingBottom = styles?.paddingBottom || (typeof window !== "undefined" && window.innerWidth < 768 ? "1rem" : "0.5rem");
+  const paddingTop = styles?.paddingTop || (typeof window !== "undefined" && window.innerWidth < 768 ? "0.5rem" : "2rem");
+  const paddingBottom = styles?.paddingBottom || (typeof window !== "undefined" && window.innerWidth < 768 ? "0.5rem" : "0.5rem");
 
   // ── Todos los hooks ANTES de cualquier return condicional ──
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -131,7 +131,7 @@ export default function FeaturedProductsSection({
       {/* Título */}
       {title && (
         <h2
-          className="text-4xl text-center sm:text-3xl lg:text-4xl py-3 font-extrabold tracking-tight"
+          className="text-3xl text-center sm:text-2xl lg:text-4xl py-2 font-extrabold tracking-tight"
           style={fieldStyles?.title || { color: "var(--text)" }}
         >
           {title}
@@ -175,7 +175,7 @@ export default function FeaturedProductsSection({
             className={
               isSingleVisible
                 ? "flex justify-center w-full max-w-full mx-auto"
-                : `grid w-full ${itemsPerView === 1 ? "place-items-center gap-3 md:gap-0" : "place-items-center gap-3 md:gap-6"} ${gridCols}`
+                : `grid w-full ${itemsPerView === 1 ? "place-items-center gap-2 md:gap-0" : "place-items-center gap-2 md:gap-6"} ${gridCols}`
             }
             style={{
               minWidth: 0,
@@ -188,7 +188,7 @@ export default function FeaturedProductsSection({
               <div
                 key={`${prod.id}-${currentIndex}-${idx}`}
                 className={`transition-all duration-300 flex flex-col items-stretch justify-stretch ${
-                  isSingleVisible ? "w-full px-2 md:px-0" : "w-full max-w-[320px] h-auto md:h-[420px]"
+                  isSingleVisible ? "w-full px-2 md:px-0" : "w-full max-w-[320px] h-auto md:h-[340px]"
                 }`}
                 style={{ width: "100%", minWidth: 0 }}
               >

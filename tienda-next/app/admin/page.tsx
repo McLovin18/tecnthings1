@@ -5,6 +5,8 @@ import { obtenerTodasOrdenes } from "../lib/ordenes-db";
 import { obtenerProductos, Producto } from "../lib/productos-db";
 import { useRouter } from "next/navigation";
 import { Loading3DIcon } from "../components/Loading3DIcon";
+import AnalyticsWidget from "../components/AnalyticsWidget";
+import { useTrackPageView } from "../lib/useAnalytics";
 
 type Orden = {
 	id: string;
@@ -46,6 +48,9 @@ export default function AdminPage() {
 	});
 	const router = useRouter();
 	const today = getTodayYMD();
+
+	// Track page view on admin page load
+	useTrackPageView();
 
 	useEffect(() => {
 		async function fetchStats() {
@@ -125,24 +130,31 @@ export default function AdminPage() {
 						{error}
 					</div>
 				) : (
-					<div className="flex flex-col gap-6">
+					<div className="flex flex-col gap-8">
 
-						{/* Stats */}
+						{/* Analytics Widget - First Section */}
+						<AnalyticsWidget />
+
+						{/* Stats Cards Grid */}
 						<div className="grid grid-cols-3 gap-4">
-							<div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
-								<p className="text-xs text-slate-400 dark:text-slate-500 mb-1">Productos vendidos</p>
-								<p className="text-2xl font-bold text-slate-800 dark:text-slate-100">{stats.productosVendidos}</p>
-							</div>
-							<div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
-								<p className="text-xs text-slate-400 dark:text-slate-500 mb-1">Total en ventas</p>
+							{/* Total Ventas */}
+							<div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 cursor-pointer hover:border-purple-400 dark:hover:border-purple-600 transition-colors">
+								<p className="text-xs text-slate-400 dark:text-slate-500 mb-1">Ventas totales hoy</p>
 								<p className="text-2xl font-bold text-slate-800 dark:text-slate-100">
 									${stats.totalVentas.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
 								</p>
 							</div>
-							<div
-								className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 cursor-pointer hover:border-amber-400 dark:hover:border-amber-600 transition-colors"
-								onClick={() => router.push("/admin/productos")}
-							>
+
+							{/* Productos Vendidos */}
+							<div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 cursor-pointer hover:border-green-400 dark:hover:border-green-600 transition-colors">
+								<p className="text-xs text-slate-400 dark:text-slate-500 mb-1">Productos vendidos</p>
+								<p className="text-2xl font-bold text-slate-800 dark:text-slate-100">
+									{stats.productosVendidos}
+								</p>
+							</div>
+
+							{/* Sin Stock */}
+							<div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 cursor-pointer hover:border-amber-400 dark:hover:border-amber-600 transition-colors" onClick={() => router.push("/admin/productos")}>
 								<p className="text-xs text-slate-400 dark:text-slate-500 mb-1">Sin stock</p>
 								<p className={`text-2xl font-bold ${stats.productosSinStock.length > 0 ? "text-amber-600 dark:text-amber-400" : "text-slate-800 dark:text-slate-100"}`}>
 									{stats.productosSinStock.length}

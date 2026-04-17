@@ -28,12 +28,12 @@ export default function BottomBarPublic() {
             <li key={item.path} className="flex-1">
               <a
                 href={item.path}
-                className="flex flex-col items-center py-3 px-2 transition-colors relative"
+                className="flex flex-col items-center py-2 px-2 transition-colors relative"
                 style={{ color: "var(--textMuted)" }}
               >
                 {/* Ícono + badge */}
                 <span className="relative inline-flex items-center justify-center">
-                  <span className="material-icons-round text-xl">{item.icon}</span>
+                  <span className="material-icons-round text-lg">{item.icon}</span>
 
                   {showBadge && (
                     <span
@@ -64,7 +64,7 @@ export default function BottomBarPublic() {
                   )}
                 </span>
 
-                <span className="text-xs font-medium mt-0.5">{item.name}</span>
+                <span className="text-xs font-medium mt-0">{item.name}</span>
               </a>
             </li>
           );

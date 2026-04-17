@@ -74,5 +74,12 @@ service cloud.firestore {
     match /ordenes_meta/{docId} {
       allow read, write: if true;
     }
+
+    // Analytics: Todos pueden crear y actualizar (page views, clicks)
+    match /analytics/{docId} {
+      allow read: if isAdmin();
+      allow create: if true;
+      allow update: if true;
+    }
   }
 }
