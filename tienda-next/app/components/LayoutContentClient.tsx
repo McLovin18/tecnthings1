@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { UserProvider } from "../context/UserContext";
 import Navbar from "./Navbar";
 import Footer from "./Footer";
+import ToastContainer from "./ToastContainer";
 import { useTrackPageView } from "../lib/useAnalytics";
 
 export default function LayoutContentClient({ children }: { children: React.ReactNode }) {
@@ -19,6 +20,7 @@ export default function LayoutContentClient({ children }: { children: React.Reac
   }
   return (
     <UserProvider>
+      <ToastContainer />
       <Navbar />
       {children}
       <Footer />

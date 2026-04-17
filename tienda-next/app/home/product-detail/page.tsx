@@ -9,6 +9,7 @@ import dynamic from "next/dynamic";
 const Markdown = dynamic(() => import("../../components/Markdown"), { ssr: false });
 import { ProductReview } from "../../lib/reviews-types";
 import { useUser } from "../../context/UserContext";
+import { useToast } from "../../context/ToastContext";
 import { useSearchParams } from "next/navigation";
 
 export default function ProductDetailPage({ params }) {
@@ -31,6 +32,8 @@ export default function ProductDetailPage({ params }) {
     favoritos, addFavorito, removeFavorito,
     carrito, addCarrito, removeCarrito,
   } = useUser();
+
+  const { showToast } = useToast();
 
   const searchParams = useSearchParams();
 
@@ -157,7 +160,13 @@ export default function ProductDetailPage({ params }) {
     : 0;
 
   const handleAddCart = () => {
-    inCart ? removeCarrito(producto.id) : addCarrito({ ...producto, cantidad });
+    if (inCart) {
+      removeCarrito(producto.id);
+      showToast("Eliminado del carrito", "info");
+    } else {
+      addCarrito({ ...producto, cantidad });
+      showToast(`${producto.nombre} añadido al carrito`, "success");
+    }
   };
   const handleFav = () => {
     isFav ? removeFavorito(producto.id) : addFavorito(producto);

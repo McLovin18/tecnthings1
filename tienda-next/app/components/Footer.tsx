@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useUser } from "../context/UserContext";
 import { usePathname } from "next/navigation";
+import { useTracking } from "../lib/useAnalytics";
 import WhatsAppFloatingButton from "./WhatsAppFloatingButton";
 import type { CSSProperties } from "react";
 import styles from "./Footer.module.css";
@@ -49,6 +50,7 @@ const socialLinks = [
 const Footer: React.FC = () => {
   const { isCliente, isLogged } = useUser();
   const pathname = usePathname();
+  const { trackLinkClick } = useTracking();
 
   const showWhatsAppFloating =
     pathname && !pathname.startsWith("/home") && !pathname.startsWith("/admin");
@@ -188,7 +190,7 @@ const Footer: React.FC = () => {
           <ul className={styles.ftSocials}>
             {socialLinks.map(({ href, label, Icon }) => (
               <li key={label}>
-                <a href={href} target="_blank" rel="noreferrer" title={label}>
+                <a href={href} target="_blank" rel="noreferrer" title={label} onClick={() => trackLinkClick().catch(console.error)}>
                   <Icon />
                 </a>
               </li>
@@ -213,6 +215,7 @@ const Footer: React.FC = () => {
               target="_blank"
               rel="noreferrer"
               className={styles.ftDevLink}
+              onClick={() => trackLinkClick().catch(console.error)}
             >
               Desarrollado por Héctor Cobeña
             </a>

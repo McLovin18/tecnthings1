@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useUser } from "../context/UserContext";
 import { useRouter } from "next/navigation";
 import { useTracking } from "../lib/useAnalytics";
+import { useToast } from "../context/ToastContext";
 
 function ProductoCard({
   producto,
@@ -29,6 +30,7 @@ function ProductoCard({
   } = useUser();
   const router = useRouter();
   const { trackProductClick } = useTracking();
+  const { showToast } = useToast();
 
   const isFav = favoritos?.some((p) => p.id === producto.id);
   const inCart = carrito?.some((p) => p.id === producto.id);
@@ -65,15 +67,27 @@ function ProductoCard({
   };
 
   const handleFav = (e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation();
     isFav ? removeFavorito(producto.id) : addFavorito(producto);
   };
 
   const handleCart = (e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation();
     if (sinStock) return;
-    if (onAddCart) { onAddCart(producto); return; }
-    inCart ? removeCarrito(producto.id) : addCarrito({ ...producto, cantidad: 1 });
+    if (onAddCart) { 
+      onAddCart(producto); 
+      showToast("Añadido al carrito", "success");
+      return; 
+    }
+    if (inCart) {
+      removeCarrito(producto.id);
+      showToast("Eliminado del carrito", "info");
+    } else {
+      addCarrito({ ...producto, cantidad: 1 });
+      showToast(`${producto.nombre} añadido al carrito`, "success");
+    }
   };
 
   const detailUrl = getDetailUrl();
@@ -256,7 +270,11 @@ function ProductoCard({
 
             {showEye && (
               <button
-                onClick={(e) => { e.stopPropagation(); onEye ? onEye(producto) : goToDetail(e); }}
+                onClick={(e) => { 
+                  e.preventDefault();
+                  e.stopPropagation(); 
+                  onEye ? onEye(producto) : goToDetail(e); 
+                }}
                 className="
                   flex items-center justify-center
                   w-9 h-9 rounded-xl flex-shrink-0

@@ -27,5 +27,6 @@ export function useTracking() {
     trackCategoryClick: () => trackClick("categoryClick"),
     trackButtonClick: () => trackClick("buttonClick"),
     trackLinkClick: () => trackClick("linkClick"),
+    trackBlogClick: () => trackClick("blogClick"),
   };
 }

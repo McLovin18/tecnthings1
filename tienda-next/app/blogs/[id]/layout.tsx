@@ -14,6 +14,37 @@ interface Props {
   params: Promise<{ id: string }>;
 }
 
+// Helper function to safely convert Firestore Timestamp to ISO string
+function convertToISOString(timestamp: any): string | undefined {
+  if (!timestamp) return undefined;
+  
+  // If it's a Firestore Timestamp object with _seconds property
+  if (timestamp._seconds !== undefined) {
+    return new Date(timestamp._seconds * 1000 + (timestamp._nanoseconds || 0) / 1_000_000).toISOString();
+  }
+  
+  // If it's already a Date
+  if (timestamp instanceof Date) {
+    return timestamp.toISOString();
+  }
+  
+  // If it's a number (milliseconds)
+  if (typeof timestamp === 'number') {
+    return new Date(timestamp).toISOString();
+  }
+  
+  // If it's a string, try to parse it
+  if (typeof timestamp === 'string') {
+    try {
+      return new Date(timestamp).toISOString();
+    } catch {
+      return undefined;
+    }
+  }
+  
+  return undefined;
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   try {
     const { id } = await params;
@@ -47,12 +78,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
             alt: blog.title,
           },
         ],
-        publishedTime: blog.createdAt
-          ? new Date(blog.createdAt).toISOString()
-          : undefined,
-        modifiedTime: blog.updatedAt
-          ? new Date(blog.updatedAt).toISOString()
-          : undefined,
+        publishedTime: convertToISOString(blog.createdAt),
+        modifiedTime: convertToISOString(blog.updatedAt),
         authors: [blog.author || "TecnoThings"],
       },
       twitter: {

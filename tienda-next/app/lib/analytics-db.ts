@@ -24,6 +24,7 @@ interface DailyAnalytics {
     categoryClick: number;
     buttonClick: number;
     linkClick: number;
+    blogClick: number;
     [key: string]: number;
   };
   lastUpdated: any;
@@ -44,6 +45,7 @@ function getTodayDate(): string {
 export async function trackPageView(): Promise<void> {
   try {
     const deviceId = getOrCreateDeviceId();
+    console.log("[Analytics] Tracking page view for device:", deviceId);
     
     const response = await fetch(API_TRACK_URL, {
       method: "POST",
@@ -57,7 +59,11 @@ export async function trackPageView(): Promise<void> {
     });
 
     if (!response.ok) {
-      console.warn("[Analytics] API returned non-ok status:", response.status);
+      const errorText = await response.text();
+      console.error("[Analytics] API returned non-ok status:", response.status);
+      console.error("[Analytics] API response:", errorText);
+    } else {
+      console.log("[Analytics] Page view tracked successfully");
     }
   } catch (error) {
     console.error("[Analytics] Error tracking page view:", error);
@@ -69,10 +75,11 @@ export async function trackPageView(): Promise<void> {
  * Uses API endpoint for safety and permissions
  */
 export async function trackClick(
-  type: "productClick" | "categoryClick" | "buttonClick" | "linkClick" = "buttonClick"
+  type: "productClick" | "categoryClick" | "buttonClick" | "linkClick" | "blogClick" = "buttonClick"
 ): Promise<void> {
   try {
     const deviceId = getOrCreateDeviceId();
+    console.log("[Analytics] Tracking click:", { type, deviceId });
     
     const response = await fetch(API_TRACK_URL, {
       method: "POST",
@@ -87,7 +94,11 @@ export async function trackClick(
     });
 
     if (!response.ok) {
-      console.warn("[Analytics] API returned non-ok status:", response.status);
+      const errorText = await response.text();
+      console.error("[Analytics] Click API returned non-ok status:", response.status);
+      console.error("[Analytics] Click API response:", errorText);
+    } else {
+      console.log("[Analytics] Click tracked successfully");
     }
   } catch (error) {
     console.error("[Analytics] Error tracking click:", error);

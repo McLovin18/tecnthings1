@@ -4,9 +4,11 @@ import Link from "next/link";
 import { db } from "../lib/firebase";
 import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
 import { useUser } from "../context/UserContext";
+import { useTracking } from "../lib/useAnalytics";
 
 const CategoriesBar = () => {
   const { isCliente, isAdmin, user } = useUser();
+  const { trackCategoryClick } = useTracking();
 
   // Esperar a que cargue el usuario
   if (typeof user === "undefined") return null;
@@ -95,6 +97,7 @@ const CategoriesBar = () => {
                                 <Link
                                   key={subsub.id}
                                   href={`${basePath}?cat=${category.id}&sub=${sub.id}&subsub=${subsub.id}`}
+                                  onClick={() => trackCategoryClick().catch(console.error)}
                                   className="block px-4 py-2 hover:bg-slate-100 dark:hover:bg-black text-sm"
                                 >
                                   {subsub.nombre}
@@ -110,6 +113,7 @@ const CategoriesBar = () => {
             ) : (
               <Link
                 href={`${basePath}?cat=${category.id}`}
+                onClick={() => trackCategoryClick().catch(console.error)}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition-colors shadow-sm border"
                 style={{
                   background: "var(--cardBg)",

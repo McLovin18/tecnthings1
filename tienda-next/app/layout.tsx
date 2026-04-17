@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import Navbar from "./components/Navbar";
 import { UserProvider } from "./context/UserContext";
 import { OnboardingProvider } from "./context/OnboardingContext";
+import { ToastProvider } from "./context/ToastContext";
 import LayoutContentClient from "./components/LayoutContentClient";
 import { StructuredData } from "./components/StructuredData";
 import type { Metadata, Viewport } from "next";
@@ -122,9 +123,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <StructuredData />
       </head>
       <body className="relative">
-        <OnboardingProvider>
-          <LayoutContentClient>{children}</LayoutContentClient>
-        </OnboardingProvider>
+        <ToastProvider>
+          <OnboardingProvider>
+            <LayoutContentClient>{children}</LayoutContentClient>
+          </OnboardingProvider>
+        </ToastProvider>
       </body>
     </html>
   );

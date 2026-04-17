@@ -17,6 +17,7 @@ interface Analytics {
     categoryClick: number;
     buttonClick: number;
     linkClick: number;
+    blogClick: number;
     [key: string]: number;
   };
 }
@@ -75,6 +76,7 @@ export default function AnalyticsWidget() {
     categoryClick: 0,
     buttonClick: 0,
     linkClick: 0,
+    blogClick: 0,
   };
 
   const engagementScore = Math.min(
@@ -196,11 +198,12 @@ export default function AnalyticsWidget() {
           Desglose de Interacciones
         </h3>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           {[
             { type: "productClick", label: "Productos", icon: "shopping_cart", color: "blue" },
             { type: "categoryClick", label: "Categorías", icon: "category", color: "green" },
             { type: "buttonClick", label: "Botones", icon: "smart_button", color: "orange" },
+            { type: "blogClick", label: "Blogs", icon: "article", color: "indigo" },
             { type: "linkClick", label: "Enlaces", icon: "link", color: "pink" },
           ].map((item) => (
             <div

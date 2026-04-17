@@ -4,10 +4,12 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { CATEGORIES_STRUCTURE } from "./categories";
 import { useUser } from "../context/UserContext";
+import { useTracking } from "../lib/useAnalytics";
 
 const CategoriesBarMobile = () => {
   const [openCategory, setOpenCategory] = useState<string | null>(null);
   const [openSubcategory, setOpenSubcategory] = useState<string | null>(null);
+  const { trackCategoryClick } = useTracking();
 
   const { isCliente, user } = useUser();
   if (typeof user === 'undefined') return null;
@@ -55,6 +57,7 @@ const CategoriesBarMobile = () => {
                           <Link
                             key={subsubcat.id}
                             href={`${basePath}?category=${category.id}&subcategory=${subcat.id}&subsubcategory=${subsubcat.id}`}
+                            onClick={() => trackCategoryClick().catch(console.error)}
                             className="block px-3 py-2 rounded text-xs hover:bg-slate-200 dark:hover:bg-slate-700"
                           >
                             {subsubcat.name}
@@ -65,6 +68,7 @@ const CategoriesBarMobile = () => {
                     {(!subcat.subsubcategories || typeof subcat.subsubcategories !== 'object') && (
                       <Link
                         href={`${basePath}?category=${category.id}&subcategory=${subcat.id}`}
+                        onClick={() => trackCategoryClick().catch(console.error)}
                         className="block px-3 py-2 rounded text-xs hover:bg-slate-200 dark:hover:bg-slate-700"
                       >
                         {subcat.name}
@@ -77,6 +81,7 @@ const CategoriesBarMobile = () => {
             {!category.isDropdown && openCategory === category.id && (
               <Link
                 href={`${basePath}?category=${category.id}`}
+                onClick={() => trackCategoryClick().catch(console.error)}
                 className="block px-4 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 transition-colors text-sm font-medium"
               >
                 {category.name}

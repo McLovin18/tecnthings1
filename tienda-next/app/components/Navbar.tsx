@@ -8,6 +8,7 @@ import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { obtenerProductos } from "../lib/productos-db";
 import { useUser } from "../context/UserContext";
+import { useTracking } from "../lib/useAnalytics";
 import { productMatches } from "../lib/search-utils";
 
 // ─────────────────────────────────────────────
@@ -160,6 +161,7 @@ export const Navbar = () => {
   const [openCatId, setOpenCatId] = useState<string | null>(null); // Para dropdown nivel 1 en tablet/desktop
   const [openSubId, setOpenSubId] = useState<string | null>(null); // Para dropdown nivel 2 en tablet/desktop
   const { user, isLogged, carrito } = useUser();
+  const { trackLinkClick } = useTracking();
   const [windowWidth, setWindowWidth] = useState<number | null>(null);
   
 
@@ -445,6 +447,7 @@ export const Navbar = () => {
                 href="https://www.facebook.com/TecnothingsEc/"
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={() => trackLinkClick().catch(console.error)}
                 className="p-1.5 rounded-lg transition-opacity hover:opacity-70"
                 style={{ color: "var(--text)" }}
                 aria-label="Facebook"
@@ -458,6 +461,7 @@ export const Navbar = () => {
                 href="https://www.instagram.com/tecnothings_ec/"
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={() => trackLinkClick().catch(console.error)}
                 className="p-1.5 rounded-lg transition-opacity hover:opacity-70"
                 style={{ color: "var(--text)" }}
                 aria-label="Instagram"
@@ -473,6 +477,7 @@ export const Navbar = () => {
                 href="https://www.tiktok.com/@tecnothings_ec"
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={() => trackLinkClick().catch(console.error)}
                 className="p-1.5 rounded-lg transition-opacity hover:opacity-70"
                 style={{ color: "var(--text)" }}
                 aria-label="TikTok"

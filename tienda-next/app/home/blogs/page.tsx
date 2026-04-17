@@ -4,10 +4,12 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loading3DIcon } from "../../components/Loading3DIcon";
 import { getPublishedBlogs } from "../../lib/blogs-db";
+import { useTracking } from "../../lib/useAnalytics";
 import type { Blog } from "../../lib/blog-types";
 
 export default function HomeBlogsPage() {
   const router = useRouter();
+  const { trackBlogClick } = useTracking();
   const [blogs, setBlogs] = useState<Blog[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -50,7 +52,10 @@ export default function HomeBlogsPage() {
               </h2>
               <button
                 type="button"
-                onClick={() => router.push(`/home/blogs/${featured.id}`)}
+                onClick={() => {
+                  trackBlogClick().catch(console.error);
+                  router.push(`/home/blogs/${featured.id}`);
+                }}
                 className="w-full text-left rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-0.5 transition flex flex-col md:flex-row"
               >
                 {featured.blocks?.some((b) => b.type === "image") && (
@@ -101,7 +106,10 @@ export default function HomeBlogsPage() {
                   return (
                     <article
                       key={b.id}
-                      onClick={() => router.push(`/home/blogs/${b.id}`)}
+                      onClick={() => {
+                        trackBlogClick().catch(console.error);
+                        router.push(`/home/blogs/${b.id}`);
+                      }}
                       className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden shadow-sm flex flex-col cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition"
                     >
                       {imageBlock && imageBlock.type === "image" && (
