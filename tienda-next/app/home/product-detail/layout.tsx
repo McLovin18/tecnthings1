@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   title: "Detalle del Producto | TecnoThings",
   description: "Información detallada del producto. PC Gamer y componentes gaming.",
   openGraph: {
-    type: "product",
+    type: "website",
     url: `${SITE_URL}/home/product-detail`,
     title: "Producto | TecnoThings",
     description: "Información detallada del producto",

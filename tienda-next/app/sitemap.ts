@@ -1,21 +1,11 @@
 import { MetadataRoute } from 'next';
-import { initializeApp, cert, getApps } from 'firebase-admin';
+import admin from './lib/firebase-admin';
 import { getFirestore } from 'firebase-admin/firestore';
 
 // Inicializar Firebase Admin (si no está ya inicializado)
 let db: any;
 try {
-  if (!getApps().length) {
-    const serviceAccount = {
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-    };
-    initializeApp({
-      credential: cert(serviceAccount as any),
-    });
-  }
-  db = getFirestore();
+  db = getFirestore(admin.app());
 } catch (error) {
   console.log('Firebase Admin init (sitemap):', error);
 }

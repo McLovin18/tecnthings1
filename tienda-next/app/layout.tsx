@@ -7,7 +7,7 @@ import { UserProvider } from "./context/UserContext";
 import { OnboardingProvider } from "./context/OnboardingContext";
 import LayoutContentClient from "./components/LayoutContentClient";
 import { StructuredData } from "./components/StructuredData";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 
 // ISR Global: Revalidar sitio cada 30 minutos
 // Optimiza regeneración de página principal y otros contenidos estáticos
@@ -104,14 +104,14 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: SITE_NAME,
   },
+};
 
-  // Viewport
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 5,
-    userScalable: true,
-  },
+// Viewport export - separate from metadata in Next.js 16
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
