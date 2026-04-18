@@ -120,21 +120,21 @@ function ProductoCard({
           relative flex-shrink-0 overflow-hidden
           bg-white dark:bg-white/[0.03]
 
-          /* móvil: cuadrado más pequeño a la izquierda (optimizado) */
-          w-[110px] h-[140px]
+          /* móvil: aumentar ancho y alto, con mínimo */
+          w-[150px] h-[130px] min-h-[150px]
 
-          /* sm+: ancho completo, altura optimizada para móvil */
-          sm:w-full sm:h-48
+          /* sm+: ancho completo, altura optimizada */
+          sm:w-full sm:h-48 sm:min-h-auto
         "
       >
         <Image
           src={producto.imagenes?.[0] || "/no-image.png"}
           alt={producto.nombre}
           fill
-          sizes="(max-width: 640px) 140px, (max-width: 768px) 100vw, 400px"
+          sizes="(max-width: 640px) 150px, (max-width: 768px) 100vw, 400px"
           className="
             object-contain
-            p-3 sm:p-5
+            p-1 sm:p-5
             group-hover:scale-105
             transition-transform duration-500
           "

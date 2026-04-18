@@ -131,7 +131,7 @@ export default function FeaturedProductsSection({
       {/* Título */}
       {title && (
         <h2
-          className="text-3xl text-center sm:text-2xl lg:text-4xl py-2 font-extrabold tracking-tight"
+          className="text-4xl text-center sm:text-2xl lg:text-4xl py-2 font-extrabold tracking-tight"
           style={fieldStyles?.title || { color: "var(--text)" }}
         >
           {title}
