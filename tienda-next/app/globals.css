@@ -1,6 +1,10 @@
 @config "../tailwind.config.ts";
 @import "tailwindcss";
 
+html {
+  overflow-y: scroll; /* Prevenir layout shift cuando aparece scrollbar */
+}
+
 :root {
   --background: #ffffff;
   --foreground: black;

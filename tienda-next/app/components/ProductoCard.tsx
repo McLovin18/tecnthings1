@@ -121,7 +121,7 @@ function ProductoCard({
           bg-white dark:bg-white/[0.03]
 
           /* móvil: cuadrado más pequeño a la izquierda (optimizado) */
-          w-[110px] h-[110px]
+          w-[110px] h-[140px]
 
           /* sm+: ancho completo, altura optimizada para móvil */
           sm:w-full sm:h-48
