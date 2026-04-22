@@ -2,6 +2,7 @@
 
 
 import React, { useState, useCallback, useEffect } from "react";
+import { obtenerBodegas } from "../lib/bodegas-db";
 import { Loading3DIcon } from "../components/Loading3DIcon";
 import { useRouter } from "next/navigation";
 import { loadStripe } from "@stripe/stripe-js";
