@@ -105,7 +105,7 @@ export default function FeaturedCategoriesSection({
       <div className="max-w-6xl mx-auto text-slate-900 dark:text-white relative ">
         {title && (
           <h2
-            className="text-4xl py-2 sm:text-2xl lg:text-4xl font-extrabold tracking-tight text-center"
+            className="text-3xl py-2 sm:text-2xl lg:text-4xl font-extrabold tracking-tight text-center"
             style={fieldStyles?.title || { color: "var(--text)" }}
           >
             {title}
