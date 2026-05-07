@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import ProductoCard from "../components/ProductoCard";
-import { obtenerProductos } from "../lib/productos-db";
+import { obtenerProductosDestacados, onProductosDestacadosChange } from "../lib/productos-db";
 import { Loading3DIcon } from "../components/Loading3DIcon";
 import { getCurrentUser } from "../lib/firebase-auth";
 import dynamic from "next/dynamic";
@@ -42,18 +42,14 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    async function fetchDestacados() {
-      setLoading(true);
-      try {
-        const productos = await obtenerProductos();
-        setProductosDestacados(productos.filter((p: any) => p.destacado));
-      } catch {
-        setProductosDestacados([]);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchDestacados();
+    setLoading(true);
+    // Usar listener en tiempo real para que se actualice cuando cambien los productos destacados
+    const unsubscribe = onProductosDestacadosChange((productos) => {
+      setProductosDestacados(productos);
+      setLoading(false);
+    });
+    
+    return () => unsubscribe();
   }, []);
 
   return (

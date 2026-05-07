@@ -12,7 +12,7 @@ import { SectionRenderer } from "./landing/sectionRegistry";
 import Hero360Section from "./landing/sections/Hero360Section";
 import PlansSection from "./landing/sections/PlansSection";
 import type { LandingSection } from "./lib/landing-types";
-import { obtenerProductos } from "./lib/productos-db";
+import { obtenerProductos, obtenerProductosDestacados, onProductosDestacadosChange } from "./lib/productos-db";
 import { Loading3DIcon } from "./components/Loading3DIcon";
 
 export default function Home() {
@@ -20,20 +20,26 @@ export default function Home() {
   const [landing, setLanding] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [productos, setProductos] = useState<any[]>([]);
+  const [productosDestacados, setProductosDestacados] = useState<any[]>([]);
   const [showPlans, setShowPlans] = useState(false);
   const plansRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    async function fetchData() {
-      const [landingData, productosData] = await Promise.all([
-        getLandingPage(),
-        obtenerProductos(),
-      ]);
+    async function fetchLanding() {
+      const landingData = await getLandingPage();
       setLanding(landingData);
-      setProductos(productosData);
-      setLoading(false);
     }
-    fetchData();
+    fetchLanding();
+  }, []);
+
+  useEffect(() => {
+    // Usar listener en tiempo real para que se actualice cuando cambien los productos destacados
+    const unsubscribe = onProductosDestacadosChange((destacados) => {
+      setProductosDestacados(destacados);
+      setLoading(false);
+    });
+    
+    return () => unsubscribe();
   }, []);
 
   if (loading) {
@@ -44,10 +50,9 @@ export default function Home() {
     );
   }
 
-  // Map featuredProducts (ids) to full product objects
-  const destacados = (landing?.featuredProducts || [])
-    .map((id: string) => productos.find((p) => p.id === id))
-    .filter(Boolean);
+  // Usar productos destacados dinámicos obtenidos del listener
+  // Los productos destacados se actualizan en tiempo real cuando se marcan/desmarcan en el inventario
+  const destacados = productosDestacados;
 
   // Normalizar secciones a LandingSection (migrando legacy si hace falta)
   const rawSections: any[] = landing?.sections || [];
@@ -72,7 +77,7 @@ export default function Home() {
     }
 
     // Si la sección es de tipo featuredProducts, inyectamos los
-    // productos destacados resueltos desde Firestore.
+    // productos destacados dinámicos desde Firestore.
     if (base.type === "featuredProducts") {
       return {
         ...base,

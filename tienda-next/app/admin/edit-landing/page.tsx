@@ -276,20 +276,13 @@ export default function LandingEditor() {
       const allProds = prods ?? [];
       const featuredIds: string[] = landingData?.featuredProducts || [];
 
-      // 1) Tomamos los productos configurados explícitamente en la landing
+      // Solo cargar los productos seleccionados explícitamente en la landing
+      // (NO agregar automáticamente los productos marcados como destacados en inventario)
       const explicitFeatured: any[] = featuredIds
         .map((id) => allProds.find((p) => p.id === id))
         .filter(Boolean);
 
-      // 2) Sumamos cualquier producto marcado como destacado en el inventario
-      //    que aún no esté en la lista explícita (unión inventario + landing).
-      const explicitIds = new Set(explicitFeatured.map((p: any) => p.id));
-      const fromInventory = allProds.filter(
-        (p: any) => p.destacado && !explicitIds.has(p.id)
-      );
-
-      const initialFeatured: any[] = [...explicitFeatured, ...fromInventory];
-      setFeaturedProducts(initialFeatured);
+      setFeaturedProducts(explicitFeatured);
 
       // Migramos secciones antiguas (no JSON) al nuevo formato en memoria
       const rawSections: any[] = landingData?.sections ?? [];

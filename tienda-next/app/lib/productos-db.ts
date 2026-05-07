@@ -96,7 +96,8 @@ import {
   updateDoc,
   deleteDoc,
   query,
-  where
+  where,
+  onSnapshot
 } from "firebase/firestore";
 
 const COLLECTION = "productos";
@@ -207,4 +208,66 @@ export async function actualizarProducto(id: string, data: Partial<Producto>): P
 // Eliminar producto
 export async function eliminarProducto(id: string): Promise<void> {
   await deleteDoc(doc(db, COLLECTION, id));
+}
+
+// Obtener productos destacados
+export async function obtenerProductosDestacados(opts = {}) {
+  const q = query(collection(db, COLLECTION), where("destacado", "==", true));
+  const snapshot = await getDocs(q);
+  let productos = snapshot.docs.map(doc => {
+    const data = doc.data();
+    const producto = { id: doc.id, ...data };
+    
+    // Normalizar createdAt
+    if (!producto.createdAt) {
+      if (data.fechaCreacion && typeof data.fechaCreacion.toMillis === 'function') {
+        producto.createdAt = data.fechaCreacion.toMillis();
+      } else if (data.fechaCreacion && typeof data.fechaCreacion === 'number') {
+        producto.createdAt = data.fechaCreacion;
+      } else {
+        producto.createdAt = 0;
+      }
+    }
+    
+    return producto;
+  });
+  
+  if (!opts.incluirSinStock) {
+    productos = productos.filter(p => typeof p.stock !== "number" || p.stock > 0);
+  }
+  return productos;
+}
+
+// Escuchar cambios en tiempo real de productos destacados
+export function onProductosDestacadosChange(
+  callback: (productos: Producto[]) => void,
+  opts = {}
+) {
+  const q = query(collection(db, COLLECTION), where("destacado", "==", true));
+  
+  return onSnapshot(q, (snapshot) => {
+    let productos = snapshot.docs.map(doc => {
+      const data = doc.data();
+      const producto = { id: doc.id, ...data };
+      
+      // Normalizar createdAt
+      if (!producto.createdAt) {
+        if (data.fechaCreacion && typeof data.fechaCreacion.toMillis === 'function') {
+          producto.createdAt = data.fechaCreacion.toMillis();
+        } else if (data.fechaCreacion && typeof data.fechaCreacion === 'number') {
+          producto.createdAt = data.fechaCreacion;
+        } else {
+          producto.createdAt = 0;
+        }
+      }
+      
+      return producto;
+    });
+    
+    if (!opts.incluirSinStock) {
+      productos = productos.filter(p => typeof p.stock !== "number" || p.stock > 0);
+    }
+    
+    callback(productos);
+  });
 }
