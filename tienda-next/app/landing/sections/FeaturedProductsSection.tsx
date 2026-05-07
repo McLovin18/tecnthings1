@@ -175,7 +175,7 @@ export default function FeaturedProductsSection({
             className={
               isSingleVisible
                 ? "flex justify-center w-full max-w-full mx-auto"
-                : `grid w-full ${itemsPerView === 1 ? "place-items-center gap-2 md:gap-0" : "place-items-center gap-2 md:gap-6"} ${gridCols}`
+                : `grid w-full ${itemsPerView === 1 ? "place-items-center gap-2 md:gap-0" : "place-items-center gap-2 md:gap-6"} ${gridCols} md:auto-rows-[360px]`
             }
             style={{
               minWidth: 0,
@@ -187,8 +187,8 @@ export default function FeaturedProductsSection({
             {visibleProducts.map((prod: any, idx: number) => (
               <div
                 key={`${prod.id}-${currentIndex}-${idx}`}
-                className={`transition-all duration-300 flex flex-col items-stretch justify-stretch ${
-                  isSingleVisible ? "w-full px-2 md:px-0" : "w-full max-w-[320px] h-auto md:h-[340px]"
+                className={`transition-all duration-300 flex flex-col items-stretch justify-stretch h-full ${
+                  isSingleVisible ? "w-full px-2 md:px-0" : "w-full max-w-[320px]"
                 }`}
                 style={{ width: "100%", minWidth: 0 }}
               >

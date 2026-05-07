@@ -93,7 +93,7 @@ function ProductoCard({
   const detailUrl = getDetailUrl();
 
   return (
-    <Link href={detailUrl}>
+    <Link href={detailUrl} className="block md:h-full">
       <div
         onClick={onClick || goToDetail}
         className="
@@ -105,8 +105,7 @@ function ProductoCard({
           hover:shadow-xl dark:hover:shadow-purple-950/60
           hover:border-[#7b68ee] dark:hover:border-[#7b68ee]
           transition-all duration-300
-
-          sm:h-full
+          md:h-full
 
           /* ── MÓVIL: horizontal (imagen izq + info der) ── */
           flex flex-row items-stretch
@@ -196,8 +195,8 @@ function ProductoCard({
       <div className="
         flex flex-col flex-1 min-w-0
         p-2 sm:p-4
-        justify-between
-        sm:h-full
+        md:justify-between
+        md:h-full
       ">
         {/* Nombre */}
         <p className="
@@ -226,7 +225,7 @@ function ProductoCard({
         )}
 
         {/* Precios */}
-        <div className="mt-1 sm:mt-3 flex items-baseline gap-2 flex-wrap">
+        <div className="mt-1 md:mt-auto md:mb-3 flex items-baseline gap-2 flex-wrap">
           {hasDiscount && (
             <span className="text-xs sm:text-sm text-[#7b68ee] dark:text-white/30 line-through">
               ${fakeOldPrice.toFixed(2)}
