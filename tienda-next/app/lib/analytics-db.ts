@@ -45,7 +45,6 @@ function getTodayDate(): string {
 export async function trackPageView(): Promise<void> {
   try {
     const deviceId = getOrCreateDeviceId();
-    console.log("[Analytics] Tracking page view for device:", deviceId);
     
     const response = await fetch(API_TRACK_URL, {
       method: "POST",
@@ -58,15 +57,14 @@ export async function trackPageView(): Promise<void> {
       }),
     });
 
+    // Silently fail if analytics endpoint is not available
+    // Analytics should never block page load
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error("[Analytics] API returned non-ok status:", response.status);
-      console.error("[Analytics] API response:", errorText);
-    } else {
-      console.log("[Analytics] Page view tracked successfully");
+      return;
     }
   } catch (error) {
-    console.error("[Analytics] Error tracking page view:", error);
+    // Silently fail - analytics shouldn't break the app
+    return;
   }
 }
 
@@ -79,7 +77,6 @@ export async function trackClick(
 ): Promise<void> {
   try {
     const deviceId = getOrCreateDeviceId();
-    console.log("[Analytics] Tracking click:", { type, deviceId });
     
     const response = await fetch(API_TRACK_URL, {
       method: "POST",
@@ -93,15 +90,13 @@ export async function trackClick(
       }),
     });
 
+    // Silently fail if analytics endpoint is not available
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error("[Analytics] Click API returned non-ok status:", response.status);
-      console.error("[Analytics] Click API response:", errorText);
-    } else {
-      console.log("[Analytics] Click tracked successfully");
+      return;
     }
   } catch (error) {
-    console.error("[Analytics] Error tracking click:", error);
+    // Silently fail - analytics shouldn't break the app
+    return;
   }
 }
 
