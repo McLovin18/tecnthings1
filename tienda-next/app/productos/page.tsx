@@ -324,31 +324,75 @@ export default function ProductsByCategoryPage() {
                 />
               ))}
             </div>
-            {/* Paginación */}
+            {/* Paginación compacta */}
             {totalPages > 1 && (
-              <div className="flex flex-wrap justify-center items-center gap-2 mt-8 select-none w-full">
+              <div className="flex flex-wrap justify-center items-center gap-1 mt-8 select-none w-full">
+                {/* Primera página */}
                 <button
-                  className="px-3 py-1.5 rounded border text-xs font-medium bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-600 dark:text-white/60 hover:border-purple-400 dark:hover:border-purple-500 hover:text-purple-600 dark:hover:text-purple-300 transition-all disabled:opacity-40"
+                  className="px-2 py-1.5 rounded border text-xs font-medium bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-600 dark:text-white/60 hover:border-purple-400 dark:hover:border-purple-500 hover:text-purple-600 dark:hover:text-purple-300 transition-all disabled:opacity-40"
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
+                  title="Primera página"
+                >
+                  &lt;&lt;
+                </button>
+
+                {/* Anterior */}
+                <button
+                  className="px-2 py-1.5 rounded border text-xs font-medium bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-600 dark:text-white/60 hover:border-purple-400 dark:hover:border-purple-500 hover:text-purple-600 dark:hover:text-purple-300 transition-all disabled:opacity-40"
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
                 >
                   &lt;
                 </button>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
+
+                {/* Páginas adyacentes */}
+                <div className="flex gap-1">
+                  {/* Página anterior si existe */}
+                  {currentPage > 1 && (
+                    <button
+                      className="px-2 py-1.5 rounded border text-xs font-medium bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-600 dark:text-white/60 hover:border-purple-400 dark:hover:border-purple-500 hover:text-purple-600 dark:hover:text-purple-300 transition-all"
+                      onClick={() => setCurrentPage(currentPage - 1)}
+                    >
+                      {currentPage - 1}
+                    </button>
+                  )}
+
+                  {/* Página actual */}
                   <button
-                    key={n}
-                    className={`px-3 py-1.5 rounded border text-xs font-medium transition-all ${currentPage === n ? 'bg-[#7b68ee] border-purple-600 text-white shadow-sm' : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-600 dark:text-white/60 hover:border-purple-400 dark:hover:border-purple-500 hover:text-purple-600 dark:hover:text-purple-300'}`}
-                    onClick={() => setCurrentPage(n)}
+                    className="px-2 py-1.5 rounded border text-xs font-medium bg-[#7b68ee] border-purple-600 text-white shadow-sm"
                   >
-                    {n}
+                    {currentPage}
                   </button>
-                ))}
+
+                  {/* Página siguiente si existe */}
+                  {currentPage < totalPages && (
+                    <button
+                      className="px-2 py-1.5 rounded border text-xs font-medium bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-600 dark:text-white/60 hover:border-purple-400 dark:hover:border-purple-500 hover:text-purple-600 dark:hover:text-purple-300 transition-all"
+                      onClick={() => setCurrentPage(currentPage + 1)}
+                    >
+                      {currentPage + 1}
+                    </button>
+                  )}
+                </div>
+
+                {/* Siguiente */}
                 <button
-                  className="px-3 py-1.5 rounded border text-xs font-medium bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-600 dark:text-white/60 hover:border-purple-400 dark:hover:border-purple-500 hover:text-purple-600 dark:hover:text-purple-300 transition-all disabled:opacity-40"
+                  className="px-2 py-1.5 rounded border text-xs font-medium bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-600 dark:text-white/60 hover:border-purple-400 dark:hover:border-purple-500 hover:text-purple-600 dark:hover:text-purple-300 transition-all disabled:opacity-40"
                   onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                   disabled={currentPage === totalPages}
                 >
                   &gt;
+                </button>
+
+                {/* Última página */}
+                <button
+                  className="px-2 py-1.5 rounded border text-xs font-medium bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-600 dark:text-white/60 hover:border-purple-400 dark:hover:border-purple-500 hover:text-purple-600 dark:hover:text-purple-300 transition-all disabled:opacity-40"
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                  title="Última página"
+                >
+                  &gt;&gt;
                 </button>
               </div>
             )}
