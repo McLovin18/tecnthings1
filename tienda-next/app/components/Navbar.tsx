@@ -252,7 +252,7 @@ export const Navbar = () => {
 
   if (!mounted) return null;
 
-  const isClient = user?.role === "client";
+  const isClient = user?.role === "client" || user?.role === "cliente";
   const isAdmin = user?.role === "admin";
   const isMobileOrTablet = windowWidth !== null && windowWidth < 1024;
 

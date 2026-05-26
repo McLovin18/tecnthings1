@@ -1,6 +1,7 @@
 
 import Sidebar from "../components/Sidebar";
 import BottomBar from "../components/BottomBar";
+import CartFloatingButton from "../components/CartFloatingButton";
 
 import { ReactNode } from "react";
 
@@ -17,6 +18,7 @@ export default function HomeLayout({ children }: HomeLayoutProps) {
         {children}
       </main>
       <BottomBar />
+      <CartFloatingButton />
     </div>
   );
 }

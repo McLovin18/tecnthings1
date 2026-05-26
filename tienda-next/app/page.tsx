@@ -2,6 +2,7 @@
 
 
 import BottomBarPublic from "./components/BottomBarPublic";
+import CartFloatingButton from "./components/CartFloatingButton";
 import WhatsAppFloatingButton from "./components/WhatsAppFloatingButton";
 import { useUser } from "./context/UserContext";
 
@@ -136,6 +137,7 @@ export default function Home() {
     <>
       {/* Botón flotante de WhatsApp aún más arriba */}
       <WhatsAppFloatingButton />
+      <CartFloatingButton />
       <div className="bg-white dark:bg-black text-slate-900 dark:text-white min-h-screen flex flex-col w-full">
         <main className="flex-1 w-full flex flex-col gap-0">
           {/* Todas las secciones incluyendo Hero360 renderizadas por orden */}
