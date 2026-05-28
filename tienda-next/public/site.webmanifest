@@ -1,0 +1,23 @@
+{
+  "name": "TecnoThings",
+  "short_name": "TecnoThings",
+  "description": "Tienda online de PC gamer, componentes y perifericos en Ecuador.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#7c3aed",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "16x16 32x32 48x48",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "/logo_tecno.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
