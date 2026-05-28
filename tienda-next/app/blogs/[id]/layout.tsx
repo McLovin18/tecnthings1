@@ -59,11 +59,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     }
 
     const description =
-      blogData.excerpt || blogData.content?.substring(0, 160) || "Artículo de TecnoThings";
+      blogData.description ||
+      blogData.excerpt ||
+      blogData.content?.substring(0, 160) ||
+      "Artículo de TecnoThings";
     const imageUrl = blogData.image || `${SITE_URL}/default-blog-image.jpg`;
 
     return {
-      title: `${blog.title} | TecnoThings`,
+      title: blog.title,
       description: description,
       keywords: blogData.tags || ["tecnología", "PC Gamer"],
       openGraph: {
