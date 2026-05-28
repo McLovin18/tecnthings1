@@ -4,12 +4,14 @@
  */
 
 export function StructuredData() {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.tecnothings.com";
+
   const organizationSchema = {
     "@context": "https://schema.org",
     "@type": "Organization",
     name: "TecnoThings",
-    url: "https://tecnothings.ec",
-    logo: "https://tecnothings.ec/logo.png",
+    url: siteUrl,
+    logo: `${siteUrl}/logo.png`,
     description: "Tienda online especializada en PC Gamer y componentes",
     sameAs: [
       "https://www.facebook.com/tecnothings",
@@ -35,12 +37,12 @@ export function StructuredData() {
     "@context": "https://schema.org",
     "@type": "WebSite",
     name: "TecnoThings",
-    url: "https://tecnothings.ec",
+    url: siteUrl,
     potentialAction: {
       "@type": "SearchAction",
       target: {
         "@type": "EntryPoint",
-        urlTemplate: "https://tecnothings.ec/products-by-category?search={search_term_string}",
+        urlTemplate: `${siteUrl}/products-by-category?search={search_term_string}`,
       },
       "query-input": "required name=search_term_string",
     },
@@ -50,7 +52,7 @@ export function StructuredData() {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
     name: "TecnoThings",
-    image: "https://tecnothings.ec/logo.png",
+    image: `${siteUrl}/logo.png`,
     description:
       "Tienda online de PC Gamer y componentes gaming con envíos a Ecuador",
     address: {

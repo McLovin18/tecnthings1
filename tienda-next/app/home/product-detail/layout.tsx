@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://tecnothings.ec";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.tecnothings.com";
 
 // ISR: Revalidar cada 24 horas para detalles de productos
 // Cachea la página por 1 día, luego regenera en background

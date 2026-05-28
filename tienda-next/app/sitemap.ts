@@ -10,7 +10,7 @@ try {
   console.log('Firebase Admin init (sitemap):', error);
 }
 
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://tecnothings.ec';
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://tecnothings.com';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const routes: MetadataRoute.Sitemap = [
@@ -45,7 +45,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Agregar URLs dinámicas de productos
     const productosSnapshot = await db.collection('productos').get();
     const productosUrls = productosSnapshot.docs.map((doc: any) => ({
-      url: `${BASE_URL}/home/product-detail?id=${doc.id}`,
+      url: `${BASE_URL}/product-detail/${doc.id}`,
       lastModified: doc.data().updatedAt || new Date(),
       changeFrequency: 'weekly' as const,
       priority: 0.8,
@@ -82,11 +82,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         if (categoria.subcategorias && Array.isArray(categoria.subcategorias)) {
           categoria.subcategorias.forEach((sub: any) => {
             urls.push({
-              url: `${BASE_URL}/products-by-category?cat=${doc.id}&subcat=${sub.nombre}`,
+              url: `${BASE_URL}/products-by-category?cat=${doc.id}&sub=${sub.id}`,
               lastModified: categoria.updatedAt || new Date(),
               changeFrequency: 'weekly' as const,
               priority: 0.6,
             });
+
+            if (sub.subcategorias && Array.isArray(sub.subcategorias)) {
+              sub.subcategorias.forEach((subsub: any) => {
+                urls.push({
+                  url: `${BASE_URL}/products-by-category?cat=${doc.id}&sub=${sub.id}&subsub=${subsub.id}`,
+                  lastModified: categoria.updatedAt || new Date(),
+                  changeFrequency: 'weekly' as const,
+                  priority: 0.55,
+                });
+              });
+            }
           });
         }
         return urls;

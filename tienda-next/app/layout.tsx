@@ -14,7 +14,7 @@ import type { Metadata, Viewport } from "next";
 // Optimiza regeneración de página principal y otros contenidos estáticos
 export const revalidate = 1800;
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://tecnothings.ec";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.tecnothings.com";
 const SITE_NAME = "TecnoThings";
 
 export const metadata: Metadata = {

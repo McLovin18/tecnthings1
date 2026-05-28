@@ -5,12 +5,13 @@ User-agent: *
 Allow: /
 Allow: /productos
 Allow: /blogs
+Allow: /blogs/
 Allow: /products-by-category
-Allow: /home/product-detail
-Allow: /home/cart
-Allow: /account/*
+Allow: /product-detail
+Allow: /politicas
 
-# Evitar que crawleen admin
+# Evitar que crawleen áreas privadas o técnicas
+Disallow: /home/
 Disallow: /admin/
 Disallow: /api/
 Disallow: /login/
@@ -29,8 +30,6 @@ Crawl-delay: 10
 
 # Sitemap
 Sitemap: https://tecnothings.ec/sitemap.xml
-Sitemap: https://tecnothings.ec/sitemap/productos
-Sitemap: https://tecnothings.ec/sitemap/blogs
 
 # Permitir Googlebot acceso prioritario
 User-agent: Googlebot

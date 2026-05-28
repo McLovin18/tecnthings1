@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { getBlogById } from "../../lib/blogs-db";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://tecnothings.ec";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.tecnothings.com";
 
 // ISR: Revalidar cada hora (3600 segundos)
 // Significa que la página se cachea por 1 hora, después se regenera
@@ -49,6 +49,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   try {
     const { id } = await params;
     const blog = await getBlogById(id);
+    const blogData = blog as any;
 
     if (!blog) {
       return {
@@ -58,13 +59,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     }
 
     const description =
-      blog.excerpt || blog.content?.substring(0, 160) || "Artículo de TecnoThings";
-    const imageUrl = blog.image || `${SITE_URL}/default-blog-image.jpg`;
+      blogData.excerpt || blogData.content?.substring(0, 160) || "Artículo de TecnoThings";
+    const imageUrl = blogData.image || `${SITE_URL}/default-blog-image.jpg`;
 
     return {
       title: `${blog.title} | TecnoThings`,
       description: description,
-      keywords: blog.tags || ["tecnología", "PC Gamer"],
+      keywords: blogData.tags || ["tecnología", "PC Gamer"],
       openGraph: {
         type: "article",
         url: `${SITE_URL}/blogs/${id}`,
@@ -80,7 +81,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         ],
         publishedTime: convertToISOString(blog.createdAt),
         modifiedTime: convertToISOString(blog.updatedAt),
-        authors: [blog.author || "TecnoThings"],
+        authors: [blogData.author || "TecnoThings"],
       },
       twitter: {
         card: "summary_large_image",
