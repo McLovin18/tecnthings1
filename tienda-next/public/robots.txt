@@ -29,7 +29,7 @@ User-agent: AhrefsBot
 Crawl-delay: 10
 
 # Sitemap
-Sitemap: https://tecnothings.ec/sitemap.xml
+Sitemap: https://www.tecnothings.com/sitemap.xml
 
 # Permitir Googlebot acceso prioritario
 User-agent: Googlebot

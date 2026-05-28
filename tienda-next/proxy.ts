@@ -5,8 +5,7 @@ import type { NextRequest } from "next/server";
 const PUBLIC_EXACT: string[] = ["/", "/login"];
 const PUBLIC_PREFIXES: string[] = [
   "/blogs",
-  "/cart",
-  "/product-detail",
+  "/products-by-category",
   "/products-by-category",
   "/search-results",
   "/order-confirmation",

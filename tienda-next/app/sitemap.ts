@@ -1,14 +1,4 @@
 import { MetadataRoute } from 'next';
-import admin from './lib/firebase-admin';
-import { getFirestore } from 'firebase-admin/firestore';
-
-// Inicializar Firebase Admin (si no está ya inicializado)
-let db: any;
-try {
-  db = getFirestore(admin.app());
-} catch (error) {
-  console.log('Firebase Admin init (sitemap):', error);
-}
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://tecnothings.com';
 
@@ -42,71 +32,109 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
 
   try {
-    // Agregar URLs dinámicas de productos
-    const productosSnapshot = await db.collection('productos').get();
-    const productosUrls = productosSnapshot.docs.map((doc: any) => ({
-      url: `${BASE_URL}/product-detail/${doc.id}`,
-      lastModified: doc.data().updatedAt || new Date(),
-      changeFrequency: 'weekly' as const,
-      priority: 0.8,
-    }));
-    routes.push(...productosUrls);
+    // Importar Firebase Admin dinámicamente para evitar errores en tiempo de import
+    let db: any = null;
+    try {
+      const adminModule = await import('./lib/firebase-admin');
+      const { getFirestore } = await import('firebase-admin/firestore');
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      db = getFirestore(adminModule.default.app());
+    } catch (initError) {
+      console.warn('Firebase Admin no disponible para sitemap (fallback a rutas estáticas):', initError);
+      db = null;
+    }
 
-    // Agregar URLs dinámicas de blogs publicados
-    const blogsSnapshot = await db
-      .collection('blogs')
-      .where('status', '==', 'published')
-      .get();
-    const blogsUrls = blogsSnapshot.docs.map((doc: any) => ({
-      url: `${BASE_URL}/blogs/${doc.id}`,
-      lastModified: doc.data().updatedAt || new Date(),
-      changeFrequency: 'weekly' as const,
-      priority: 0.7,
-    }));
-    routes.push(...blogsUrls);
+    if (db) {
+      // Agregar URLs dinámicas de productos
+      const productosSnapshot = await db.collection('productos').get();
+      const productosUrls = productosSnapshot.docs.map((doc: any) => ({
+        url: `${BASE_URL}/product-detail/${doc.id}`,
+        lastModified: doc.data().updatedAt || new Date(),
+        changeFrequency: 'weekly' as const,
+        priority: 0.8,
+      }));
+      routes.push(...productosUrls);
 
-    // Agregar URLs dinámicas de categorías
-    const categoriasSnapshot = await db.collection('categorias').get();
-    const categoriasUrls = categoriasSnapshot.docs
-      .map((doc: any) => {
-        const urls = [];
-        const categoria = doc.data();
-        // URL principal de la categoría
-        urls.push({
-          url: `${BASE_URL}/products-by-category?cat=${doc.id}`,
-          lastModified: categoria.updatedAt || new Date(),
-          changeFrequency: 'weekly' as const,
-          priority: 0.7,
-        });
-        // URLs de subcategorías
-        if (categoria.subcategorias && Array.isArray(categoria.subcategorias)) {
-          categoria.subcategorias.forEach((sub: any) => {
+      // Agregar URLs dinámicas de blogs publicados
+      const blogsSnapshot = await db
+        .collection('blogs')
+        .where('status', '==', 'published')
+        .get();
+      const blogsUrls = blogsSnapshot.docs.map((doc: any) => ({
+        url: `${BASE_URL}/blogs/${doc.id}`,
+        lastModified: doc.data().updatedAt || new Date(),
+        changeFrequency: 'weekly' as const,
+        priority: 0.7,
+      }));
+      routes.push(...blogsUrls);
+
+      // Agregar URLs dinámicas de categorías
+      const categoriasSnapshot = await db.collection('categorias').get();
+      // Helper to XML-escape values placed inside <loc>
+      const escapeXml = (s: string) =>
+        s
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&apos;');
+
+      const categoriasUrls = categoriasSnapshot.docs
+        .map((doc: any) => {
+          const urls: any[] = [];
+          const categoria = doc.data();
+
+          // URL principal de la categoría (use URL+searchParams to encode params)
+          try {
+            const u = new URL(`${BASE_URL}/products-by-category`);
+            u.searchParams.set('cat', String(doc.id));
             urls.push({
-              url: `${BASE_URL}/products-by-category?cat=${doc.id}&sub=${sub.id}`,
+              url: escapeXml(u.toString()),
               lastModified: categoria.updatedAt || new Date(),
               changeFrequency: 'weekly' as const,
-              priority: 0.6,
+              priority: 0.7,
             });
 
-            if (sub.subcategorias && Array.isArray(sub.subcategorias)) {
-              sub.subcategorias.forEach((subsub: any) => {
+            // URLs de subcategorías
+            if (categoria.subcategorias && Array.isArray(categoria.subcategorias)) {
+              categoria.subcategorias.forEach((sub: any) => {
+                const us = new URL(`${BASE_URL}/products-by-category`);
+                us.searchParams.set('cat', String(doc.id));
+                us.searchParams.set('sub', String(sub.id));
                 urls.push({
-                  url: `${BASE_URL}/products-by-category?cat=${doc.id}&sub=${sub.id}&subsub=${subsub.id}`,
+                  url: escapeXml(us.toString()),
                   lastModified: categoria.updatedAt || new Date(),
                   changeFrequency: 'weekly' as const,
-                  priority: 0.55,
+                  priority: 0.6,
                 });
+
+                if (sub.subcategorias && Array.isArray(sub.subcategorias)) {
+                  sub.subcategorias.forEach((subsub: any) => {
+                    const uss = new URL(`${BASE_URL}/products-by-category`);
+                    uss.searchParams.set('cat', String(doc.id));
+                    uss.searchParams.set('sub', String(sub.id));
+                    uss.searchParams.set('subsub', String(subsub.id));
+                    urls.push({
+                      url: escapeXml(uss.toString()),
+                      lastModified: categoria.updatedAt || new Date(),
+                      changeFrequency: 'weekly' as const,
+                      priority: 0.55,
+                    });
+                  });
+                }
               });
             }
-          });
-        }
-        return urls;
-      })
-      .flat();
-    routes.push(...categoriasUrls);
+          } catch (uErr) {
+            console.error('Error construyendo URLs de categoría:', uErr);
+          }
+
+          return urls;
+        })
+        .flat();
+      routes.push(...categoriasUrls);
+    }
   } catch (error) {
-    console.error('Error generando sitemap:', error);
-    // Continuar sin URLs dinámicas si hay error
+    console.error('Error generando sitemap dinámico (se devolverán solo rutas estáticas):', error);
   }
 
   return routes;

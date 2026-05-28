@@ -128,15 +128,8 @@ const nextConfig: NextConfig = {
 
   // Rewrites para mejorar URLs
   async rewrites() {
-    return {
-      beforeFiles: [
-        // Rewrite para sitemap dinámico
-        {
-          source: "/sitemap.xml",
-          destination: "/api/sitemap",
-        },
-      ],
-    };
+    // No forced rewrite for /sitemap.xml — use app/sitemap.ts or public/sitemap.xml
+    return { beforeFiles: [] };
   },
 
 };
