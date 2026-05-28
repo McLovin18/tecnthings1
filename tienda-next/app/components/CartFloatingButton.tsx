@@ -2,25 +2,15 @@
 
 import React from "react";
 import { useRouter } from "next/navigation";
-import { usePathname } from "next/navigation";
 import { useUser } from "../context/UserContext";
 
 const CartFloatingButton: React.FC = () => {
   const router = useRouter();
-  const pathname = usePathname();
   const { user, isCliente, isAdmin, carrito } = useUser();
 
   if (!user) return null;
 
-  const cartPath = pathname.startsWith("/admin")
-    ? "/admin/cart"
-    : pathname.startsWith("/home")
-      ? "/home/cart"
-      : isAdmin
-        ? "/admin/cart"
-        : isCliente
-          ? "/home/cart"
-          : "/cart";
+  const cartPath = isAdmin ? "/admin/cart" : isCliente ? "/home/cart" : "/cart";
   const cartCount = carrito?.length ?? 0;
 
   return (

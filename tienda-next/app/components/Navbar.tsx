@@ -2,7 +2,6 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { themeManager } from "./themeManager";
 import ThemeToggle from "./ThemeToggle";
 import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
@@ -163,7 +162,6 @@ export const Navbar = () => {
   const [openSubId, setOpenSubId] = useState<string | null>(null); // Para dropdown nivel 2 en tablet/desktop
   const { user, isLogged, carrito } = useUser();
   const { trackLinkClick } = useTracking();
-  const pathname = usePathname();
   const [windowWidth, setWindowWidth] = useState<number | null>(null);
   
 
@@ -257,16 +255,6 @@ export const Navbar = () => {
   const isClient = user?.role === "client" || user?.role === "cliente";
   const isAdmin = user?.role === "admin";
   const isMobileOrTablet = windowWidth !== null && windowWidth < 1024;
-  const currentPath = pathname ?? "";
-  const cartHref = currentPath.startsWith("/admin")
-    ? "/admin/cart"
-    : currentPath.startsWith("/home")
-      ? "/home/cart"
-      : isLogged
-        ? isClient
-          ? "/home/cart"
-          : "/admin/cart"
-        : "/cart";
 
   const basePath = isClient
     ? "/home/products-by-category"
@@ -509,7 +497,7 @@ export const Navbar = () => {
             {/* Carrito */}
             <div className="relative flex flex-col items-center">
               <a
-                href={cartHref}
+                href={user ? (isClient ? "/home/cart" : "/admin/cart") : "/cart"}
                 className="flex items-center dark:color-white justify-center px-1 rounded-xl transition-colors"
                 style={{ background: "bg"}}
                 aria-label="Carrito"

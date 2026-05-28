@@ -149,15 +149,6 @@ export default function ProductsByCategoryPage() {
     router.push(`/home/product-detail?id=${producto.id}`);
   }, [router]);
 
-  const handleAddCart = useCallback((producto: any) => {
-    const inCart = carrito?.some((p: any) => p.id === producto.id);
-    if (inCart) {
-      removeCarrito(producto.id);
-    } else {
-      addCarrito({ ...producto, cantidad: 1 });
-    }
-  }, [addCarrito, removeCarrito, carrito]);
-
   const handleEye = useCallback((producto: any) => {
     router.push(`/home/product-detail?id=${producto.id}`);
   }, [router]);
@@ -302,7 +293,6 @@ export default function ProductsByCategoryPage() {
                 showEye
                 showFav={false}
                 onClick={() => {}}
-                onAddCart={() => {}}
                 onEye={() => {}}
               />
             ))}
@@ -340,7 +330,6 @@ export default function ProductsByCategoryPage() {
                   showEye
                   showFav={isAuthenticated}
                   onClick={() => handleProductoClick(p)}
-                  onAddCart={() => handleAddCart(p)}
                   onEye={() => handleEye(p)}
                 />
               ))}

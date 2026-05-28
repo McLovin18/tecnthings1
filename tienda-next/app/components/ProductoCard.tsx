@@ -8,6 +8,16 @@ import { useRouter } from "next/navigation";
 import { useTracking } from "../lib/useAnalytics";
 import { useToast } from "../context/ToastContext";
 
+type ProductoCardProps = {
+  producto: any;
+  onClick?: (e?: React.MouseEvent) => void;
+  showCart?: boolean;
+  showEye?: boolean;
+  onAddCart?: (producto: any) => void;
+  onEye?: (producto: any) => void;
+  showFav?: boolean;
+};
+
 function ProductoCard({
   producto,
   onClick,
@@ -16,7 +26,7 @@ function ProductoCard({
   onAddCart,
   onEye,
   showFav = false,
-}) {
+}: ProductoCardProps) {
   const {
     isLogged,
     isCliente,
@@ -75,19 +85,16 @@ function ProductoCard({
   const handleCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (sinStock) return;
-    if (onAddCart) { 
-      onAddCart(producto); 
-      showToast("Añadido al carrito", "success");
-      return; 
-    }
+    if (sinStock || !producto?.id) return;
+
     if (inCart) {
       removeCarrito(producto.id);
       showToast("Eliminado del carrito", "info");
-    } else {
-      addCarrito({ ...producto, cantidad: 1 });
-      showToast(`${producto.nombre} añadido al carrito`, "success");
+      return; 
     }
+
+    addCarrito({ ...producto, cantidad: 1 });
+    showToast(`${producto.nombre} añadido al carrito`, "success");
   };
 
   const detailUrl = getDetailUrl();
