@@ -26,18 +26,24 @@ export default function ProductsByCategoryPage() {
   useEffect(() => {
     async function fetchProductos() {
       setLoading(true);
-      let prods = [];
-      if (subsubcategoria && subcategoria && categoria) {
-        prods = await obtenerProductosPorSubsubcategoria(subsubcategoria, subcategoria, categoria);
-      } else if (subcategoria && categoria) {
-        prods = await obtenerProductosPorSubcategoria(subcategoria, categoria);
-      } else if (categoria) {
-        prods = await obtenerProductosPorCategoria(categoria);
-      } else {
-        prods = await obtenerProductos();
+      try {
+        let prods;
+        if (subsubcategoria && subcategoria && categoria) {
+          prods = await obtenerProductosPorSubsubcategoria(subsubcategoria, subcategoria, categoria);
+        } else if (subcategoria && categoria) {
+          prods = await obtenerProductosPorSubcategoria(subcategoria, categoria);
+        } else if (categoria) {
+          prods = await obtenerProductosPorCategoria(categoria);
+        } else {
+          prods = await obtenerProductos();
+        }
+        setProductos(prods);
+      } catch (error) {
+        console.error("Error cargando productos:", error);
+        setProductos([]);
+      } finally {
+        setLoading(false);
       }
-      setProductos(prods);
-      setLoading(false);
     }
     fetchProductos();
   }, [categoria, subcategoria, subsubcategoria]);

@@ -56,6 +56,8 @@ function ProductoCard({
   const finalPrice = hasDiscount ? basePrice * (1 - discount / 100) : basePrice;
 
   const getDetailUrl = () => {
+    if (!producto?.nombre || !producto?.id) return "#";
+
     const slug = createFullProductSlug(producto.nombre, producto.id);
     let detailUrl = `/product-detail/${slug}`;
     try {
@@ -137,7 +139,7 @@ function ProductoCard({
       >
         <Image
           src={producto.imagenes?.[0] || "/no-image.png"}
-          alt={producto.nombre}
+          alt={producto.nombre || "Producto"}
           fill
           sizes="(max-width: 640px) 140px, (max-width: 768px) 100vw, 400px"
           className="
