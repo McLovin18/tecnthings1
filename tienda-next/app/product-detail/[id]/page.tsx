@@ -7,6 +7,7 @@ import {
   obtenerProductosPorSubsubcategoria,
 } from "../../lib/productos-db";
 import ProductDetailClient from "../../home/product-detail/ProductDetailClient";
+import { parseProductSlug } from "../../lib/slug";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.tecnothings.com";
 
@@ -19,8 +20,11 @@ function stripHtml(input: string) {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { id } = await params;
-  const product = await obtenerProductoPorId(id);
+  const { id: slugOrId } = await params;
+  const { id } = parseProductSlug(slugOrId);
+  const productId = id || slugOrId; // Fallback to old ID-only format
+  
+  const product = await obtenerProductoPorId(productId);
 
   if (!product) {
     return {
@@ -32,7 +36,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const title = `${product.nombre} | TecnoThings`;
   const description = stripHtml(product.descripcion || `Compra ${product.nombre} en TecnoThings.`).slice(0, 160);
   const image = String(product.imagenes?.[0] || `${SITE_URL}/default-product-image.jpg`);
-  const url = `${SITE_URL}/product-detail/${id}`;
+  const url = `${SITE_URL}/product-detail/${slugOrId}`;
 
   return {
     title,
@@ -56,8 +60,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function PublicProductDetailPage({ params }: Props) {
-  const { id } = await params;
-  const product = await obtenerProductoPorId(id);
+  const { id: slugOrId } = await params;
+  const { id } = parseProductSlug(slugOrId);
+  const productId = id || slugOrId; // Fallback to old ID-only format
+  
+  const product = await obtenerProductoPorId(productId);
 
   if (!product) notFound();
 

@@ -5,6 +5,7 @@ import { useEffect, useState, useMemo, useCallback } from "react";
 import { useUser } from "../../context/UserContext";
 import type { Producto } from "../../lib/productos-db";
 import { obtenerProductos, obtenerProductosPorCategoria, obtenerProductosPorSubcategoria, obtenerProductosPorSubsubcategoria } from "../../lib/productos-db";
+import { createFullProductSlug } from "../../lib/slug";
 
 export default function ProductsByCategoryPage() {
   const router = useRouter();
@@ -146,11 +147,13 @@ export default function ProductsByCategoryPage() {
 
   // Handlers para interacción con productos
   const handleProductoClick = useCallback((producto: any) => {
-    router.push(`/home/product-detail?id=${producto.id}`);
+    const slug = createFullProductSlug(producto.nombre, producto.id);
+    router.push(`/home/product-detail/${slug}`);
   }, [router]);
 
   const handleEye = useCallback((producto: any) => {
-    router.push(`/home/product-detail?id=${producto.id}`);
+    const slug = createFullProductSlug(producto.nombre, producto.id);
+    router.push(`/home/product-detail/${slug}`);
   }, [router]);
 
   const ordenOpciones = [

@@ -10,6 +10,7 @@ import { obtenerProductos } from "../lib/productos-db";
 import { useUser } from "../context/UserContext";
 import { useTracking } from "../lib/useAnalytics";
 import { productMatches } from "../lib/search-utils";
+import { createFullProductSlug } from "../lib/slug";
 
 // ─────────────────────────────────────────────
 // Acordeón de categorías para el drawer móvil
@@ -367,9 +368,10 @@ export const Navbar = () => {
                       </div>
                     ) : suggestions.length > 0 ? (
                       suggestions.map((prod) => {
-                        let href = `/product-detail?id=${prod.id}`;
-                        if (isClient) href = `/home/product-detail?id=${prod.id}`;
-                        if (isAdmin) href = `/admin/product-detail?id=${prod.id}`;
+                        const slug = createFullProductSlug(prod.nombre, prod.id);
+                        let href = `/product-detail/${slug}`;
+                        if (isClient) href = `/home/product-detail/${slug}`;
+                        if (isAdmin) href = `/admin/product-detail/${slug}`;
                         return (
                           <a
                             key={prod.id}
@@ -811,9 +813,10 @@ export const Navbar = () => {
                       </div>
                     ) : suggestions.length > 0 ? (
                       suggestions.map((prod) => {
-                        let href = `/product-detail?id=${prod.id}`;
-                        if (isClient) href = `/home/product-detail?id=${prod.id}`;
-                        if (isAdmin) href = `/admin/product-detail?id=${prod.id}`;
+                        const slug = createFullProductSlug(prod.nombre, prod.id);
+                        let href = `/product-detail/${slug}`;
+                        if (isClient) href = `/home/product-detail/${slug}`;
+                        if (isAdmin) href = `/admin/product-detail/${slug}`;
                         return (
                           <a
                             key={prod.id}

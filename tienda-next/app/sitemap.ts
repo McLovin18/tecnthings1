@@ -1,6 +1,23 @@
 import { MetadataRoute } from 'next';
+import { createFullProductSlug } from './lib/slug';
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://tecnothings.com';
+
+function toValidDate(value: unknown): Date {
+  if (value && typeof value === 'object' && 'toDate' in value && typeof value.toDate === 'function') {
+    value = value.toDate();
+  } else if (value && typeof value === 'object' && '_seconds' in value) {
+    const timestamp = value as { _seconds: unknown; _nanoseconds?: unknown };
+    const seconds = Number(timestamp._seconds);
+    const nanoseconds = Number(timestamp._nanoseconds || 0);
+    value = new Date(seconds * 1000 + nanoseconds / 1_000_000);
+  } else if (typeof value === 'number') {
+    value = new Date(value);
+  }
+
+  const date = value instanceof Date ? value : new Date(String(value));
+  return Number.isNaN(date.getTime()) ? new Date() : date;
+}
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const routes: MetadataRoute.Sitemap = [
@@ -48,8 +65,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       // Agregar URLs dinámicas de productos
       const productosSnapshot = await db.collection('productos').get();
       const productosUrls = productosSnapshot.docs.map((doc: any) => ({
-        url: `${BASE_URL}/product-detail/${doc.id}`,
-        lastModified: doc.data().updatedAt || new Date(),
+        url: `${BASE_URL}/product-detail/${createFullProductSlug(doc.data().nombre, doc.id)}`,
+        lastModified: toValidDate(doc.data().updatedAt),
         changeFrequency: 'weekly' as const,
         priority: 0.8,
       }));
@@ -62,7 +79,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         .get();
       const blogsUrls = blogsSnapshot.docs.map((doc: any) => ({
         url: `${BASE_URL}/blogs/${doc.id}`,
-        lastModified: doc.data().updatedAt || new Date(),
+        lastModified: toValidDate(doc.data().updatedAt),
         changeFrequency: 'weekly' as const,
         priority: 0.7,
       }));
@@ -90,7 +107,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             u.searchParams.set('cat', String(doc.id));
             urls.push({
               url: escapeXml(u.toString()),
-              lastModified: categoria.updatedAt || new Date(),
+              lastModified: toValidDate(categoria.updatedAt),
               changeFrequency: 'weekly' as const,
               priority: 0.7,
             });
@@ -103,7 +120,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
                 us.searchParams.set('sub', String(sub.id));
                 urls.push({
                   url: escapeXml(us.toString()),
-                  lastModified: categoria.updatedAt || new Date(),
+                  lastModified: toValidDate(categoria.updatedAt),
                   changeFrequency: 'weekly' as const,
                   priority: 0.6,
                 });
@@ -116,7 +133,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
                     uss.searchParams.set('subsub', String(subsub.id));
                     urls.push({
                       url: escapeXml(uss.toString()),
-                      lastModified: categoria.updatedAt || new Date(),
+                      lastModified: toValidDate(categoria.updatedAt),
                       changeFrequency: 'weekly' as const,
                       priority: 0.55,
                     });

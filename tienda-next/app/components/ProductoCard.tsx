@@ -7,6 +7,7 @@ import { useUser } from "../context/UserContext";
 import { useRouter } from "next/navigation";
 import { useTracking } from "../lib/useAnalytics";
 import { useToast } from "../context/ToastContext";
+import { createFullProductSlug } from "../lib/slug";
 
 type ProductoCardProps = {
   producto: any;
@@ -55,17 +56,18 @@ function ProductoCard({
   const finalPrice = hasDiscount ? basePrice * (1 - discount / 100) : basePrice;
 
   const getDetailUrl = () => {
-    let detailUrl = `/product-detail?id=${producto.id}`;
+    const slug = createFullProductSlug(producto.nombre, producto.id);
+    let detailUrl = `/product-detail/${slug}`;
     try {
       if (typeof window !== "undefined" && window.location.pathname.startsWith("/home")) {
-        detailUrl = `/home/product-detail?id=${producto.id}`;
+        detailUrl = `/home/product-detail/${slug}`;
       } else {
-        if (isAdmin) detailUrl = `/admin/product-detail?id=${producto.id}`;
-        if (isCliente) detailUrl = `/home/product-detail?id=${producto.id}`;
+        if (isAdmin) detailUrl = `/admin/product-detail/${slug}`;
+        if (isCliente) detailUrl = `/home/product-detail/${slug}`;
       }
     } catch {
-      if (isAdmin) detailUrl = `/admin/product-detail?id=${producto.id}`;
-      if (isCliente) detailUrl = `/home/product-detail?id=${producto.id}`;
+      if (isAdmin) detailUrl = `/admin/product-detail/${slug}`;
+      if (isCliente) detailUrl = `/home/product-detail/${slug}`;
     }
     return detailUrl;
   };
