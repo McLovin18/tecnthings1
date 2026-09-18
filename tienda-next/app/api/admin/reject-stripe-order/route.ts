@@ -20,19 +20,32 @@ import { Timestamp } from "firebase-admin/firestore";
 
 export async function POST(req: NextRequest) {
   try {
+    console.log("[reject-stripe-order] 📥 Iniciando rechazo de orden Stripe");
+    
     // ✅ VERIFICAR TOKEN ADMIN
     const adminToken = req.headers.get("x-admin-token");
     const expectedToken = process.env.ADMIN_REJECT_TOKEN;
     
+    console.log("[reject-stripe-order] 🔐 Verificando token admin:");
+    console.log("  - Token recibido:", adminToken ? `${adminToken.substring(0, 10)}...` : "null");
+    console.log("  - Token esperado existe:", !!expectedToken);
+    
     if (!adminToken || !expectedToken || adminToken !== expectedToken) {
+      console.error("[reject-stripe-order] ❌ Token inválido o faltante");
       return NextResponse.json(
         { error: "Token de admin inválido o no proporcionado" },
         { status: 401 }
       );
     }
+    
+    console.log("[reject-stripe-order] ✅ Token válido");
 
     const body = await req.json();
     const { orderId, reason = "Rechazo del administrador" } = body;
+
+    console.log("[reject-stripe-order] 📋 Datos recibidos:");
+    console.log("  - Order ID:", orderId);
+    console.log("  - Reason:", reason);
 
     if (!orderId) {
       return NextResponse.json(
@@ -42,6 +55,7 @@ export async function POST(req: NextRequest) {
     }
 
     const db = admin.firestore();
+    console.log("[reject-stripe-order] 🔍 Buscando orden en Firestore...");
 
     // 🔒 TRANSACCIÓN ATÓMICA
     const resultado = await db.runTransaction(async (transaction: any) => {
@@ -51,19 +65,36 @@ export async function POST(req: NextRequest) {
       const ordenSnap = await transaction.get(ordenRef);
 
       if (!ordenSnap.exists) {
+        console.error("[reject-stripe-order] ❌ Orden no encontrada:", orderId);
         throw new Error(`Orden no encontrada: ${orderId}`);
       }
 
       const orden = ordenSnap.data() as any;
+      console.log("[reject-stripe-order] 📋 Orden encontrada:");
+      console.log("  - Estado actual:", orden.estado);
+      console.log("  - Método pago:", orden.metodoPago);
+      console.log("  - Status Stripe:", orden.status || orden.paymentStatus);
 
       // ✅ Validación 1: Debe ser orden Stripe
       if (orden.metodoPago !== "stripe") {
+        console.error("[reject-stripe-order] ❌ No es orden Stripe:", orden.metodoPago);
         throw new Error("Esta no es una orden de pago con tarjeta (Stripe)");
       }
 
       // ✅ Validación 2: No debe estar ya aprobada o rechazada
       if (orden.estado === "aprobada" || orden.estado === "rechazada") {
+        console.error("[reject-stripe-order] ❌ Orden ya procesada:", orden.estado);
         throw new Error(`Orden ya tiene estado: ${orden.estado}`);
+      }
+
+      // ✅ Validación 3: Si el pago fue completado, NO permitir rechazo
+      const isPaid = orden.status === "paid" || orden.paymentStatus === "paid";
+      console.log("[reject-stripe-order] 💳 Verificando si el cliente pagó:", isPaid);
+      if (isPaid) {
+        console.error("[reject-stripe-order] ❌ Cliente ya pagó - bloqueando rechazo");
+        throw new Error(
+          `❌ NO se puede rechazar. El cliente ya pagó (Stripe: ${orden.status || orden.paymentStatus}). Para reembolsar, usa el panel de Stripe.`
+        );
       }
 
       // ✅ LECTURA 2: Obtener todos los productos
