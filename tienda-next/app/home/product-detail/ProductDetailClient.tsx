@@ -126,6 +126,22 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
 
     addCarrito({ ...product, cantidad });
     showToast(`${product.nombre} añadido al carrito`, "success");
+
+    // Google Analytics event: add_to_cart
+    if (typeof window !== "undefined" && (window as any).gtag) {
+      (window as any).gtag("event", "add_to_cart", {
+        currency: "USD",
+        value: basePrice * cantidad,
+        items: [
+          {
+            item_id: product.id,
+            item_name: product.nombre,
+            price: basePrice,
+            quantity: cantidad,
+          },
+        ],
+      });
+    }
   };
 
   const handleFav = () => {

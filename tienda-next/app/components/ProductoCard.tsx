@@ -94,11 +94,27 @@ function ProductoCard({
     if (inCart) {
       removeCarrito(producto.id);
       showToast("Eliminado del carrito", "info");
-      return; 
+      return;
     }
 
     addCarrito({ ...producto, cantidad: 1 });
     showToast(`${producto.nombre} añadido al carrito`, "success");
+
+    // Google Analytics event: add_to_cart
+    if (typeof window !== "undefined" && (window as any).gtag) {
+      (window as any).gtag("event", "add_to_cart", {
+        currency: "USD",
+        value: basePrice,
+        items: [
+          {
+            item_id: producto.id,
+            item_name: producto.nombre,
+            price: basePrice,
+            quantity: 1,
+          },
+        ],
+      });
+    }
   };
 
   const detailUrl = getDetailUrl();

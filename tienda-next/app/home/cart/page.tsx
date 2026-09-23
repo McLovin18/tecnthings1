@@ -128,11 +128,30 @@ export default function CartPage() {
 
   const handleGenerarOrden = async () => {
     setError("");
-    
+
     // Enviar a WhatsApp para todos (invitados y autenticados)
     const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_PHONE || "34123456789";
     const message = await generateWhatsAppMessage();
     window.open(`https://wa.me/${whatsappNumber}?text=${message}`, "_blank");
+
+    // Google Analytics event: purchase
+    if (typeof window !== "undefined" && (window as any).gtag) {
+      const items = carrito.map((p) => {
+        const { finalPrice } = calcularPrecioData(p);
+        return {
+          item_id: p.id,
+          item_name: p.nombre,
+          price: finalPrice,
+          quantity: p.cantidad || 1,
+        };
+      });
+
+      (window as any).gtag("event", "purchase", {
+        currency: "USD",
+        value: total,
+        items: items,
+      });
+    }
   };
 
 

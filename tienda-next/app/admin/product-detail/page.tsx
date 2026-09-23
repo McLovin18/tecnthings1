@@ -166,6 +166,22 @@ export default function ProductDetailPage({ params }) {
     } else {
       addCarrito({ ...producto, cantidad });
       showToast(`${producto.nombre} añadido al carrito`, "success");
+
+      // Google Analytics event: add_to_cart
+      if (typeof window !== "undefined" && (window as any).gtag) {
+        (window as any).gtag("event", "add_to_cart", {
+          currency: "USD",
+          value: basePrice * cantidad,
+          items: [
+            {
+              item_id: producto.id,
+              item_name: producto.nombre,
+              price: basePrice,
+              quantity: cantidad,
+            },
+          ],
+        });
+      }
     }
   };
   const handleFav = () => {
