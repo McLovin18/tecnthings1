@@ -28,12 +28,11 @@ export function extractProductIdFromSlug(slug: string): string | null {
 }
 
 /**
- * Create a full product slug with ID for uniqueness
- * Example: "mouse-logitech-g502-rgb-0ejPM5AUiJ2MvKBM8N8U"
+ * Create a product slug without ID
+ * Example: "mouse-logitech-g502-rgb"
  */
-export function createFullProductSlug(nombre: string, id: string): string {
-  const baseSlug = generateProductSlug(nombre);
-  return `${baseSlug}-${id}`;
+export function createProductSlugWithoutId(nombre: string): string {
+  return generateProductSlug(nombre);
 }
 
 /**
@@ -44,5 +43,44 @@ export function parseProductSlug(slug: string): { slug: string; id: string | nul
   return {
     slug,
     id,
+  };
+}
+
+/**
+ * Generate a URL-safe slug from a category name
+ * Example: "Computadora" -> "computadora", "Computadora Gamer" -> "computadora-gamer"
+ */
+export function generateCategorySlug(nombre: string): string {
+  return nombre
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-áéíóúñ]/g, '') // Remove special chars except accents
+    .replace(/\s+/g, '-') // Replace spaces with hyphens
+    .replace(/-+/g, '-') // Replace multiple hyphens with single
+    .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
+}
+
+/**
+ * Create a combined slug for category hierarchy
+ * Example: category="computadora", subcategory="gamer" -> "computadora-gamer"
+ * Example: category="computadora", subcategory="gamer", subsubcategory="laptop" -> "computadora-gamer-laptop"
+ */
+export function createCategorySlug(category: string, subcategory?: string, subsubcategory?: string): string {
+  const parts = [generateCategorySlug(category)];
+  if (subcategory) parts.push(generateCategorySlug(subcategory));
+  if (subsubcategory) parts.push(generateCategorySlug(subsubcategory));
+  return parts.join('-');
+}
+
+/**
+ * Parse a category slug to extract individual parts
+ * Example: "computadora-gamer-laptop" -> { category: "computadora", subcategory: "gamer", subsubcategory: "laptop" }
+ */
+export function parseCategorySlug(slug: string): { category: string; subcategory?: string; subsubcategory?: string } {
+  const parts = slug.split('-');
+  return {
+    category: parts[0] || '',
+    subcategory: parts[1] || undefined,
+    subsubcategory: parts[2] || undefined,
   };
 }

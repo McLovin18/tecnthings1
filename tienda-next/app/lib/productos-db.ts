@@ -200,6 +200,28 @@ export async function obtenerProductoPorId(id: string): Promise<Producto | null>
   return { id: docSnap.id, ...docSnap.data() };
 }
 
+// Obtener producto por slug (nombre normalizado)
+export async function obtenerProductoPorSlug(slug: string): Promise<Producto | null> {
+  const snapshot = await getDocs(collection(db, COLLECTION));
+  const productos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  
+  // Buscar producto cuyo nombre normalizado coincida con el slug
+  // Usamos la misma lógica de normalización que generateProductSlug
+  const producto = productos.find(p => {
+    if (!p.nombre) return false;
+    const normalizedNombre = p.nombre
+      .toLowerCase()
+      .trim()
+      .replace(/[^\w\s-áéíóúñ]/g, '') // Remove special chars except accents
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .replace(/-+/g, '-') // Replace multiple hyphens with single
+      .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
+    return normalizedNombre === slug;
+  });
+  
+  return producto || null;
+}
+
 // Actualizar producto
 export async function actualizarProducto(id: string, data: Partial<Producto>): Promise<void> {
   await updateDoc(doc(db, COLLECTION, id), cleanUndefinedDeep(data));

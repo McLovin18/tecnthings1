@@ -7,7 +7,7 @@ import { useUser } from "../context/UserContext";
 import { useRouter } from "next/navigation";
 import { useTracking } from "../lib/useAnalytics";
 import { useToast } from "../context/ToastContext";
-import { createFullProductSlug } from "../lib/slug";
+import { createProductSlugWithoutId } from "../lib/slug";
 
 type ProductoCardProps = {
   producto: any;
@@ -58,20 +58,14 @@ function ProductoCard({
   const getDetailUrl = () => {
     if (!producto?.nombre || !producto?.id) return "#";
 
-    const slug = createFullProductSlug(producto.nombre, producto.id);
-    let detailUrl = `/product-detail/${slug}`;
-    try {
-      if (typeof window !== "undefined" && window.location.pathname.startsWith("/home")) {
-        detailUrl = `/home/product-detail/${slug}`;
-      } else {
-        if (isAdmin) detailUrl = `/admin/product-detail/${slug}`;
-        if (isCliente) detailUrl = `/home/product-detail/${slug}`;
-      }
-    } catch {
-      if (isAdmin) detailUrl = `/admin/product-detail/${slug}`;
-      if (isCliente) detailUrl = `/home/product-detail/${slug}`;
-    }
-    return detailUrl;
+    const slug = createProductSlugWithoutId(producto.nombre);
+    
+    // Use root-level slug for better SEO: /nombre-producto
+    // For admin routes, keep the old structure
+    if (isAdmin) return `/admin/product-detail/${producto.id}`;
+    
+    // For public and client routes, use root slug without ID
+    return `/${slug}`;
   };
 
   const goToDetail = (e?: React.MouseEvent) => {

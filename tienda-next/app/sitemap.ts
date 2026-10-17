@@ -1,5 +1,5 @@
 import { MetadataRoute } from 'next';
-import { createFullProductSlug } from './lib/slug';
+import { createProductSlugWithoutId, generateCategorySlug, createCategorySlug } from './lib/slug';
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://tecnothings.com';
 
@@ -65,7 +65,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       // Agregar URLs dinámicas de productos
       const productosSnapshot = await db.collection('productos').get();
       const productosUrls = productosSnapshot.docs.map((doc: any) => ({
-        url: `${BASE_URL}/product-detail/${createFullProductSlug(doc.data().nombre, doc.id)}`,
+        url: `${BASE_URL}/${createProductSlugWithoutId(doc.data().nombre)}`,
         lastModified: toValidDate(doc.data().updatedAt),
         changeFrequency: 'weekly' as const,
         priority: 0.8,
@@ -85,28 +85,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       }));
       routes.push(...blogsUrls);
 
-      // Agregar URLs dinámicas de categorías
+      // Agregar URLs dinámicas de categorías con slugs raíz
       const categoriasSnapshot = await db.collection('categorias').get();
-      // Helper to XML-escape values placed inside <loc>
-      const escapeXml = (s: string) =>
-        s
-          .replace(/&/g, '&amp;')
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;')
-          .replace(/"/g, '&quot;')
-          .replace(/'/g, '&apos;');
-
       const categoriasUrls = categoriasSnapshot.docs
         .map((doc: any) => {
           const urls: any[] = [];
           const categoria = doc.data();
 
-          // URL principal de la categoría (use URL+searchParams to encode params)
-          try {
-            const u = new URL(`${BASE_URL}/products-by-category`);
-            u.searchParams.set('cat', String(doc.id));
+          // URL principal de la categoría con slug raíz
+          if (categoria.nombre) {
+            const categorySlug = generateCategorySlug(categoria.nombre);
             urls.push({
-              url: escapeXml(u.toString()),
+              url: `${BASE_URL}/${categorySlug}`,
               lastModified: toValidDate(categoria.updatedAt),
               changeFrequency: 'weekly' as const,
               priority: 0.7,
@@ -115,34 +105,31 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             // URLs de subcategorías
             if (categoria.subcategorias && Array.isArray(categoria.subcategorias)) {
               categoria.subcategorias.forEach((sub: any) => {
-                const us = new URL(`${BASE_URL}/products-by-category`);
-                us.searchParams.set('cat', String(doc.id));
-                us.searchParams.set('sub', String(sub.id));
-                urls.push({
-                  url: escapeXml(us.toString()),
-                  lastModified: toValidDate(categoria.updatedAt),
-                  changeFrequency: 'weekly' as const,
-                  priority: 0.6,
-                });
-
-                if (sub.subcategorias && Array.isArray(sub.subcategorias)) {
-                  sub.subcategorias.forEach((subsub: any) => {
-                    const uss = new URL(`${BASE_URL}/products-by-category`);
-                    uss.searchParams.set('cat', String(doc.id));
-                    uss.searchParams.set('sub', String(sub.id));
-                    uss.searchParams.set('subsub', String(subsub.id));
-                    urls.push({
-                      url: escapeXml(uss.toString()),
-                      lastModified: toValidDate(categoria.updatedAt),
-                      changeFrequency: 'weekly' as const,
-                      priority: 0.55,
-                    });
+                if (sub.nombre) {
+                  const subSlug = createCategorySlug(categoria.nombre, sub.nombre);
+                  urls.push({
+                    url: `${BASE_URL}/${subSlug}`,
+                    lastModified: toValidDate(categoria.updatedAt),
+                    changeFrequency: 'weekly' as const,
+                    priority: 0.6,
                   });
+
+                  if (sub.subcategorias && Array.isArray(sub.subcategorias)) {
+                    sub.subcategorias.forEach((subsub: any) => {
+                      if (subsub.nombre) {
+                        const subsubSlug = createCategorySlug(categoria.nombre, sub.nombre, subsub.nombre);
+                        urls.push({
+                          url: `${BASE_URL}/${subsubSlug}`,
+                          lastModified: toValidDate(categoria.updatedAt),
+                          changeFrequency: 'weekly' as const,
+                          priority: 0.55,
+                        });
+                      }
+                    });
+                  }
                 }
               });
             }
-          } catch (uErr) {
-            console.error('Error construyendo URLs de categoría:', uErr);
           }
 
           return urls;

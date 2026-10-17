@@ -1,14 +1,16 @@
 # Robots.txt para TecnoThings
 # Optimizado para Google, Bing y otros crawlers
+# Actualizado con nuevas URLs SEO-friendly (enero 2026)
 
 User-agent: *
 Allow: /
 Allow: /productos
 Allow: /blogs
 Allow: /blogs/
-Allow: /products-by-category
-Allow: /product-detail
 Allow: /politicas
+
+# Nuevas URLs SEO-friendly para productos y categorías (raíz)
+# Las redirecciones 301 manejan las URLs antiguas
 
 # Evitar que crawleen áreas privadas o técnicas
 Disallow: /home/
@@ -35,6 +37,3 @@ Sitemap: https://www.tecnothings.com/sitemap.xml
 User-agent: Googlebot
 Allow: /
 Crawl-delay: 0
-
-# Sitio web en Google Search Console
-# Verifica tu sitio en Google Search Console para mejor indexación

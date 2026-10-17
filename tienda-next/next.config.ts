@@ -117,7 +117,29 @@ const nextConfig: NextConfig = {
   // Redireccionamientos SEO
   async redirects() {
     return [
-      // Redirigir URLs antiguas si las tienes
+      // Redirigir URLs antiguas de productos a nuevas URLs SEO-friendly
+      {
+        source: "/product-detail/:slug",
+        destination: "/:slug",
+        permanent: true,
+      },
+      {
+        source: "/home/product-detail/:slug",
+        destination: "/:slug",
+        permanent: true,
+      },
+      // Redirigir URLs antiguas de categorías a nuevas URLs SEO-friendly
+      {
+        source: "/products-by-category/:slug",
+        destination: "/:slug",
+        permanent: true,
+      },
+      {
+        source: "/home/products-by-category/:slug",
+        destination: "/:slug",
+        permanent: true,
+      },
+      // Redirigir tienda a productos
       {
         source: "/tienda",
         destination: "/productos",

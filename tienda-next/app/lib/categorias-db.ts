@@ -53,3 +53,66 @@ export async function actualizarCategoria(id, data) {
 export async function eliminarCategoria(id) {
   await deleteDoc(doc(db, COLLECTION, id));
 }
+
+/**
+ * Find category ID by slug
+ */
+export async function findCategoryIdBySlug(slug: string): Promise<string | null> {
+  const categorias = await obtenerCategorias();
+  const category = categorias.find(cat => {
+    const catSlug = cat.nombre?.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-áéíóúñ]/g, '');
+    return catSlug === slug;
+  });
+  return category?.id || null;
+}
+
+/**
+ * Find subcategory ID by slug within a category
+ */
+export async function findSubcategoryIdBySlug(categorySlug: string, subcategorySlug: string): Promise<{ categoryId: string; subcategoryId: string } | null> {
+  const categorias = await obtenerCategorias();
+  const category = categorias.find(cat => {
+    const catSlug = cat.nombre?.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-áéíóúñ]/g, '');
+    return catSlug === categorySlug;
+  });
+  
+  if (!category || !category.subcategorias) return null;
+  
+  const subcategory = category.subcategorias.find((sub: any) => {
+    const subSlug = sub.nombre?.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-áéíóúñ]/g, '');
+    return subSlug === subcategorySlug;
+  });
+  
+  if (!subcategory) return null;
+  
+  return { categoryId: category.id, subcategoryId: subcategory.id };
+}
+
+/**
+ * Find subsubcategory ID by slug within a subcategory
+ */
+export async function findSubsubcategoryIdBySlug(categorySlug: string, subcategorySlug: string, subsubcategorySlug: string): Promise<{ categoryId: string; subcategoryId: string; subsubcategoryId: string } | null> {
+  const categorias = await obtenerCategorias();
+  const category = categorias.find(cat => {
+    const catSlug = cat.nombre?.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-áéíóúñ]/g, '');
+    return catSlug === categorySlug;
+  });
+  
+  if (!category || !category.subcategorias) return null;
+  
+  const subcategory = category.subcategorias.find((sub: any) => {
+    const subSlug = sub.nombre?.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-áéíóúñ]/g, '');
+    return subSlug === subcategorySlug;
+  });
+  
+  if (!subcategory || !subcategory.subcategorias) return null;
+  
+  const subsubcategory = subcategory.subcategorias.find((subsub: any) => {
+    const subsubSlug = subsub.nombre?.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-áéíóúñ]/g, '');
+    return subsubSlug === subsubcategorySlug;
+  });
+  
+  if (!subsubcategory) return null;
+  
+  return { categoryId: category.id, subcategoryId: subcategory.id, subsubcategoryId: subsubcategory.id };
+}

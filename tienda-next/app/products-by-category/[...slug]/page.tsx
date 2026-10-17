@@ -1,0 +1,444 @@
+"use client";
+import BottomBarPublic from "../../components/BottomBarPublic";
+import ProductoCard from "../../components/ProductoCard";
+import { Loading3DIcon } from "../../components/Loading3DIcon";
+import { useEffect, useState, useMemo, useCallback } from "react";
+import { 
+  obtenerProductos,
+  obtenerProductosPorCategoria,
+  obtenerProductosPorSubcategoria,
+  obtenerProductosPorSubsubcategoria
+} from "../../lib/productos-db";
+import { obtenerCategorias } from "../../lib/categorias-db";
+import { parseCategorySlug } from "../../lib/slug";
+import { useUser } from "../../context/UserContext";
+
+export default function ProductsByCategorySlugPage({ params }: { params: Promise<{ slug: string[] }> }) {
+  const [slugArray, setSlugArray] = useState<string[]>([]);
+  const [categoriaId, setCategoriaId] = useState("");
+  const [subcategoriaId, setSubcategoriaId] = useState("");
+  const [subsubcategoriaId, setSubsubcategoriaId] = useState("");
+  const [loadingIds, setLoadingIds] = useState(true);
+
+  useEffect(() => {
+    async function resolveIds() {
+      const { slug } = await params;
+      setSlugArray(slug);
+      
+      const { category, subcategory, subsubcategory } = parseCategorySlug(slug.join('-'));
+      
+      const { findCategoryIdBySlug, findSubcategoryIdBySlug, findSubsubcategoryIdBySlug } = await import("../../lib/categorias-db");
+      
+      let catId = "";
+      let subId = "";
+      let subsubId = "";
+      
+      if (category) {
+        catId = await findCategoryIdBySlug(category) || "";
+      }
+      
+      if (category && subcategory && catId) {
+        const subResult = await findSubcategoryIdBySlug(category, subcategory);
+        if (subResult) {
+          subId = subResult.subcategoryId;
+        }
+      }
+      
+      if (category && subcategory && subsubcategory && catId && subId) {
+        const subsubResult = await findSubsubcategoryIdBySlug(category, subcategory, subsubcategory);
+        if (subsubResult) {
+          subsubId = subsubResult.subsubcategoryId;
+        }
+      }
+      
+      setCategoriaId(catId);
+      setSubcategoriaId(subId);
+      setSubsubcategoriaId(subsubId);
+      setLoadingIds(false);
+    }
+    
+    resolveIds();
+  }, [params]);
+
+  // Estado para el mapeo de nombres
+  const [catMap, setCatMap] = useState<any>({});
+  const [subcatMap, setSubcatMap] = useState<any>({});
+  const [subsubcatMap, setSubsubcatMap] = useState<any>({});
+
+  useEffect(() => {
+    async function fetchCategorias() {
+      const cats = await obtenerCategorias();
+      const catObj: any = {};
+      const subcatObj: any = {};
+      const subsubcatObj: any = {};
+      cats.forEach((cat: any) => {
+        catObj[cat.id] = cat.nombre || cat.id;
+        if (cat.subcategorias) {
+          cat.subcategorias.forEach((sub: any) => {
+            subcatObj[sub.id] = sub.nombre || sub.id;
+            if (sub.subcategorias) {
+              sub.subcategorias.forEach((subsub: any) => {
+                subsubcatObj[subsub.id] = subsub.nombre || subsub.id;
+              });
+            }
+          });
+        }
+      });
+      setCatMap(catObj);
+      setSubcatMap(subcatObj);
+      setSubsubcatMap(subsubcatObj);
+    }
+    fetchCategorias();
+  }, []);
+
+  function getCategoryName(id: string) {
+    return catMap[id] || id;
+  }
+  function getSubcategoryName(id: string) {
+    return subcatMap[id] || id;
+  }
+  function getSubsubcategoryName(id: string) {
+    return subsubcatMap[id] || id;
+  }
+
+  const isLogged = useUser();
+  
+  // --- Estados de datos ---
+  const [productos, setProductos] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // --- Estados de filtros ---
+  const [search, setSearch] = useState("");
+  const [precioMin, setPrecioMin] = useState("");
+  const [precioMax, setPrecioMax] = useState("");
+  const [orden, setOrden] = useState("price-low");
+  const [showPrecio, setShowPrecio] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  // Chequear autenticación
+  useEffect(() => {
+    const loggedIn = Boolean(localStorage.getItem("token"));
+    setIsAuthenticated(loggedIn);
+  }, []);
+
+  // Fetch productos cuando se resuelven los IDs
+  useEffect(() => {
+    if (loadingIds) return;
+    
+    async function fetchProductos() {
+      setLoading(true);
+      try {
+        let prods = [];
+        if (subsubcategoriaId) {
+          prods = await obtenerProductosPorSubsubcategoria(subsubcategoriaId, subcategoriaId, categoriaId);
+        } else if (subcategoriaId) {
+          prods = await obtenerProductosPorSubcategoria(subcategoriaId, categoriaId);
+        } else if (categoriaId) {
+          prods = await obtenerProductosPorCategoria(categoriaId);
+        } else {
+          prods = await obtenerProductos();
+        }
+        setProductos(prods || []);
+      } catch (error) {
+        console.error("Error fetching products:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchProductos();
+  }, [categoriaId, subcategoriaId, subsubcategoriaId, loadingIds]);
+
+  // Filtrado y orden
+  const productosFiltrados = useMemo(() => {
+    const minNum = precioMin && precioMin !== "" ? parseFloat(precioMin) : null;
+    const maxNum = precioMax && precioMax !== "" ? parseFloat(precioMax) : null;
+    
+    const filtered = productos
+      .filter((p: any) => {
+        // Filtrado estricto por ID
+        if (subsubcategoriaId && subcategoriaId && categoriaId) {
+          if (
+            p.categoria !== categoriaId ||
+            p.subcategoria !== subcategoriaId ||
+            p.subsubcategoria !== subsubcategoriaId
+          ) {
+            return false;
+          }
+        } else if (subcategoriaId && categoriaId) {
+          if (
+            p.categoria !== categoriaId ||
+            p.subcategoria !== subcategoriaId
+          ) {
+            return false;
+          }
+        } else if (categoriaId) {
+          if (p.categoria !== categoriaId) {
+            return false;
+          }
+        }
+
+        const texto = search.toLowerCase().trim();
+        const matchTexto =
+          !texto ||
+          (p.nombre?.toLowerCase() || "").includes(texto) ||
+          (p.descripcion?.toLowerCase() || "").includes(texto);
+
+        const basePrice = Number(p.precio || 0);
+        const matchMin = minNum === null || basePrice >= minNum;
+        const matchMax = maxNum === null || basePrice <= maxNum;
+
+        return matchTexto && matchMin && matchMax;
+      })
+      .sort((a: any, b: any) => {
+        const basePrice = (p: any) => Number(p.precio || 0);
+        if (orden === "price-low") return basePrice(a) - basePrice(b);
+        if (orden === "price-high") return basePrice(b) - basePrice(a);
+        return (new Date(b.createdAt).getTime() || 0) - (new Date(a.createdAt).getTime() || 0);
+      });
+    return filtered;
+  }, [productos, categoriaId, subcategoriaId, subsubcategoriaId, search, precioMin, precioMax, orden]);
+
+  const hasFilters = !!(search || precioMin || precioMax || orden !== "newest");
+
+  // Paginación responsive
+  const [currentPage, setCurrentPage] = useState(1);
+  const getProductsPerPage = () => {
+    if (typeof window !== 'undefined') {
+      if (window.innerWidth < 640) return 10;
+      if (window.innerWidth >= 1024) return 4 * 3;
+      if (window.innerWidth >= 768) return 3 * 3;
+      if (window.innerWidth >= 640) return 2 * 3;
+    }
+    return 10;
+  };
+  const [productsPerPage, setProductsPerPage] = useState(getProductsPerPage());
+  useEffect(() => {
+    function handleResize() {
+      setProductsPerPage(getProductsPerPage());
+    }
+    window.addEventListener('resize', handleResize);
+    handleResize();
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  
+  const totalPages = Math.ceil(productosFiltrados.length / productsPerPage);
+  
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [productosFiltrados.length, search, precioMin, precioMax]);
+  
+  const paginatedProducts = useMemo(() => {
+    return productosFiltrados.slice((currentPage - 1) * productsPerPage, currentPage * productsPerPage);
+  }, [productosFiltrados, currentPage, productsPerPage]);
+
+  const clearFilters = useCallback(() => {
+    setSearch("");
+    setPrecioMin("");
+    setPrecioMax("");
+    setOrden("newest");
+  }, []);
+
+  const chip = (active: boolean) =>
+    `flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition-all cursor-pointer select-none whitespace-nowrap ${
+      active
+        ? "bg-[#7b68ee] border-purple-600 text-white shadow-sm"
+        : "bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-600 dark:text-white/60 hover:border-purple-400 dark:hover:border-purple-500 hover:text-purple-600 dark:hover:text-purple-300"
+    }`;
+
+  const inputCls =
+    "px-3 py-2 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm text-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-purple-400 transition-all";
+
+  if (loadingIds || loading) {
+    return (
+      <div className="min-h-screen flex flex-col mt-2 bg-white dark:bg-black text-slate-900 dark:text-white transition-colors">
+        <BottomBarPublic />
+        <main className="max-w-7xl mx-auto w-full px-3 sm:px-5 py-8 flex-1">
+          <div className="flex flex-col items-center justify-center py-32 transition-opacity duration-500">
+            <Loading3DIcon />
+            <p className="text-xs text-slate-400 dark:text-white/20 mt-6 font-medium tracking-widest uppercase">Cargando catálogo</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen flex flex-col mt-2 bg-white dark:bg-black text-slate-900 dark:text-white transition-colors">
+      <BottomBarPublic />
+
+      <main className="max-w-7xl mx-auto w-full px-3 sm:px-5 py-8 flex-1">
+        {/* Cabecera */}
+        {(categoriaId || subcategoriaId || subsubcategoriaId) && (
+          <div className="mb-4">
+            <nav className="flex items-center gap-1 text-xs text-slate-400 dark:text-white/30 mb-1 select-none">
+              <span className="hover:underline cursor-pointer" onClick={() => window.location.href = '/products-by-category'}>Categorías</span>
+              {categoriaId && (
+                <>
+                  <span className="mx-1">›</span>
+                  <span className="hover:underline cursor-pointer" onClick={() => window.location.href = `/products-by-category/${slugArray[0]}`}>{getCategoryName(categoriaId)}</span>
+                </>
+              )}
+              {subcategoriaId && slugArray[1] && (
+                <>
+                  <span className="mx-1">›</span>
+                  <span className="hover:underline cursor-pointer" onClick={() => window.location.href = `/products-by-category/${slugArray.slice(0, 2).join('/')}`}>{getSubcategoryName(subcategoriaId)}</span>
+                </>
+              )}
+              {subsubcategoriaId && slugArray[2] && (
+                <>
+                  <span className="mx-1">›</span>
+                  <span className="font-semibold text-slate-600 dark:text-white/80">{getSubsubcategoryName(subsubcategoriaId)}</span>
+                </>
+              )}
+            </nav>
+            <h1 className="text-xl sm:text-2xl font-bold leading-tight">
+              {subsubcategoriaId
+                ? getSubsubcategoryName(subsubcategoriaId)
+                : subcategoriaId
+                  ? getSubcategoryName(subcategoriaId)
+                  : getCategoryName(categoriaId)}
+            </h1>
+          </div>
+        )}
+
+        {/* Filtros horizontales */}
+        <div className="bg-white dark:bg-white/3 border border-slate-200 dark:border-white/10 rounded-2xl px-4 py-3.5 mb-5 space-y-3 shadow-sm">
+          <div className="flex flex-wrap gap-2 items-center">
+            <div className="relative flex-1 min-w-40 max-w-sm">
+              <span className="material-icons-round absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-white/30 text-[17px] pointer-events-none">
+                search
+              </span>
+              <input
+                type="text"
+                placeholder="Buscar productos..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className={`${inputCls} w-full pl-9 pr-8`}
+              />
+              {search && (
+                <button onClick={() => setSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-white/80">
+                  <span className="material-icons-round text-[15px]">close</span>
+                </button>
+              )}
+            </div>
+
+            <button onClick={() => setShowPrecio((v) => !v)} className={chip(showPrecio || !!(precioMin || precioMax))}>
+              <span className="material-icons-round text-[15px]">attach_money</span>
+              Precio
+            </button>
+
+            {hasFilters && (
+              <button onClick={clearFilters} className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium border border-red-200 dark:border-red-500/30 text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 transition-all">
+                <span className="material-icons-round text-[14px]">close</span>
+                Limpiar
+              </button>
+            )}
+          </div>
+
+          {showPrecio && (
+            <div className="flex items-center gap-2 flex-wrap pt-1 animate-in fade-in slide-in-from-top-1">
+              <span className="text-xs text-slate-500 dark:text-white/40 font-medium">Rango:</span>
+              <input type="number" placeholder="Mín" value={precioMin} onChange={(e) => setPrecioMin(e.target.value)} className={`${inputCls} w-24`} />
+              <span className="text-slate-300 dark:text-white/20">—</span>
+              <input type="number" placeholder="Máx" value={precioMax} onChange={(e) => setPrecioMax(e.target.value)} className={`${inputCls} w-24`} />
+            </div>
+          )}
+
+          <div className="flex items-center gap-2 flex-wrap border-t border-slate-100 dark:border-white/5 pt-3">
+            <span className="text-xs text-slate-400 dark:text-white/30 font-medium">Ordenar:</span>
+            {[
+              { v: "newest", l: "Más nuevos" },
+              { v: "price-low", l: "Menor precio" },
+              { v: "price-high", l: "Mayor precio" }
+            ].map((opt) => (
+              <button key={opt.v} onClick={() => setOrden(opt.v)} className={chip(orden === opt.v)}>
+                {opt.l}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Grid de productos */}
+        {productosFiltrados.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-24 gap-4 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-white/5 flex items-center justify-center">
+              <span className="material-icons-round text-3xl text-slate-300 dark:text-white/20">search_off</span>
+            </div>
+            <div>
+              <p className="font-semibold text-slate-700 dark:text-white/80">Sin resultados</p>
+              <p className="text-sm text-slate-400 dark:text-white/30 mt-1 max-w-60">Prueba otros términos o ajusta los filtros</p>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 animate-in fade-in duration-700`}>
+              {paginatedProducts.map((p: any) => (
+                <ProductoCard
+                  key={p.id}
+                  producto={p}
+                  showCart
+                  showEye
+                  showFav={isAuthenticated}
+                />
+              ))}
+            </div>
+            {/* Paginación */}
+            {totalPages > 1 && (
+              <div className="flex flex-wrap justify-center items-center gap-1 mt-8 select-none w-full">
+                <button
+                  className="px-2 py-1.5 rounded border text-xs font-medium bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-600 dark:text-white/60 hover:border-purple-400 dark:hover:border-purple-500 hover:text-purple-600 dark:hover:text-purple-300 transition-all disabled:opacity-40"
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
+                >
+                  &lt;&lt;
+                </button>
+                <button
+                  className="px-2 py-1.5 rounded border text-xs font-medium bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-600 dark:text-white/60 hover:border-purple-400 dark:hover:border-purple-500 hover:text-purple-600 dark:hover:text-purple-300 transition-all disabled:opacity-40"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                >
+                  &lt;
+                </button>
+                <div className="flex gap-1">
+                  {currentPage > 1 && (
+                    <button
+                      className="px-2 py-1.5 rounded border text-xs font-medium bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-600 dark:text-white/60 hover:border-purple-400 dark:hover:border-purple-500 hover:text-purple-600 dark:hover:text-purple-300 transition-all"
+                      onClick={() => setCurrentPage(currentPage - 1)}
+                    >
+                      {currentPage - 1}
+                    </button>
+                  )}
+                  <button className="px-2 py-1.5 rounded border text-xs font-medium bg-[#7b68ee] border-purple-600 text-white shadow-sm">
+                    {currentPage}
+                  </button>
+                  {currentPage < totalPages && (
+                    <button
+                      className="px-2 py-1.5 rounded border text-xs font-medium bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-600 dark:text-white/60 hover:border-purple-400 dark:hover:border-purple-500 hover:text-purple-600 dark:hover:text-purple-300 transition-all"
+                      onClick={() => setCurrentPage(currentPage + 1)}
+                    >
+                      {currentPage + 1}
+                    </button>
+                  )}
+                </div>
+                <button
+                  className="px-2 py-1.5 rounded border text-xs font-medium bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-600 dark:text-white/60 hover:border-purple-400 dark:hover:border-purple-500 hover:text-purple-600 dark:hover:text-purple-300 transition-all disabled:opacity-40"
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  &gt;
+                </button>
+                <button
+                  className="px-2 py-1.5 rounded border text-xs font-medium bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-600 dark:text-white/60 hover:border-purple-400 dark:hover:border-purple-500 hover:text-purple-600 dark:hover:text-purple-300 transition-all disabled:opacity-40"
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                >
+                  &gt;&gt;
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </main>
+    </div>
+  );
+}

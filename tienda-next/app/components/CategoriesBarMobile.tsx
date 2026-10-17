@@ -5,6 +5,7 @@ import Link from "next/link";
 import { CATEGORIES_STRUCTURE } from "./categories";
 import { useUser } from "../context/UserContext";
 import { useTracking } from "../lib/useAnalytics";
+import { generateCategorySlug, createCategorySlug } from "../lib/slug";
 
 const CategoriesBarMobile = () => {
   const [openCategory, setOpenCategory] = useState<string | null>(null);
@@ -13,7 +14,8 @@ const CategoriesBarMobile = () => {
 
   const { isCliente, user } = useUser();
   if (typeof user === 'undefined') return null;
-  const basePath = isCliente ? "/home/products-by-category" : "/products-by-category";
+  // Categories now use root-level slugs for better SEO
+  const basePath = "/";
   return (
     <div className="lg:hidden sticky top-16 z-30 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-white/10 px-4 py-3">
       <div className="flex flex-col gap-2">
@@ -53,21 +55,24 @@ const CategoriesBarMobile = () => {
                     </button>
                     {subcat.subsubcategories && typeof subcat.subsubcategories === 'object' && openSubcategory === subcat.id && (
                       <div className="ml-4 space-y-1">
-                        {Object.values(subcat.subsubcategories).map((subsubcat: any) => (
-                          <Link
-                            key={subsubcat.id}
-                            href={`${basePath}?category=${category.id}&subcategory=${subcat.id}&subsubcategory=${subsubcat.id}`}
-                            onClick={() => trackCategoryClick().catch(console.error)}
-                            className="block px-3 py-2 rounded text-xs hover:bg-slate-200 dark:hover:bg-slate-700"
-                          >
-                            {subsubcat.name}
-                          </Link>
-                        ))}
+                        {Object.values(subcat.subsubcategories).map((subsubcat: any) => {
+                          const slug = createCategorySlug(category.name, subcat.name, subsubcat.name);
+                          return (
+                            <Link
+                              key={subsubcat.id}
+                              href={`${basePath}/${slug}`}
+                              onClick={() => trackCategoryClick().catch(console.error)}
+                              className="block px-3 py-2 rounded text-xs hover:bg-slate-200 dark:hover:bg-slate-700"
+                            >
+                              {subsubcat.name}
+                            </Link>
+                          );
+                        })}
                       </div>
                     )}
                     {(!subcat.subsubcategories || typeof subcat.subsubcategories !== 'object') && (
                       <Link
-                        href={`${basePath}?category=${category.id}&subcategory=${subcat.id}`}
+                        href={`${basePath}/${createCategorySlug(category.name, subcat.name)}`}
                         onClick={() => trackCategoryClick().catch(console.error)}
                         className="block px-3 py-2 rounded text-xs hover:bg-slate-200 dark:hover:bg-slate-700"
                       >
@@ -80,7 +85,7 @@ const CategoriesBarMobile = () => {
             )}
             {!category.isDropdown && openCategory === category.id && (
               <Link
-                href={`${basePath}?category=${category.id}`}
+                href={`${basePath}/${generateCategorySlug(category.name)}`}
                 onClick={() => trackCategoryClick().catch(console.error)}
                 className="block px-4 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 transition-colors text-sm font-medium"
               >

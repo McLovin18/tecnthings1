@@ -5,6 +5,7 @@ import { db } from "../lib/firebase";
 import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
 import { useUser } from "../context/UserContext";
 import { useTracking } from "../lib/useAnalytics";
+import { generateCategorySlug, createCategorySlug } from "../lib/slug";
 
 const CategoriesBar = () => {
   const { isCliente, isAdmin, user } = useUser();
@@ -13,9 +14,8 @@ const CategoriesBar = () => {
   // Esperar a que cargue el usuario
   if (typeof user === "undefined") return null;
 
-  let basePath = "/products-by-category";
-  if (isCliente) basePath = "/home/products-by-category";
-  else if (isAdmin) basePath = "/admin/products-by-category";
+  // Categories now use root-level slugs for better SEO
+  let basePath = "/";
 
   const [categorias, setCategorias] = useState<any[]>([]);
 
@@ -93,16 +93,19 @@ const CategoriesBar = () => {
                         {sub.subcategorias &&
                           sub.subcategorias.length > 0 && (
                             <div className="absolute left-full top-0 min-w-45 bg-white dark:bg-black rounded-r-xl rounded-l-none shadow-lg border border-slate-200 dark:border-slate-700 z-50 opacity-0 group-hover/submenu:opacity-100 pointer-events-none group-hover/submenu:pointer-events-auto transition-all">
-                              {sub.subcategorias.map((subsub: any) => (
-                                <Link
-                                  key={subsub.id}
-                                  href={`${basePath}?cat=${category.id}&sub=${sub.id}&subsub=${subsub.id}`}
-                                  onClick={() => trackCategoryClick().catch(console.error)}
-                                  className="block px-4 py-2 hover:bg-slate-100 dark:hover:bg-black text-sm"
-                                >
-                                  {subsub.nombre}
-                                </Link>
-                              ))}
+                              {sub.subcategorias.map((subsub: any) => {
+                                const slug = createCategorySlug(category.nombre, sub.nombre, subsub.nombre);
+                                return (
+                                  <Link
+                                    key={subsub.id}
+                                    href={`${basePath}/${slug}`}
+                                    onClick={() => trackCategoryClick().catch(console.error)}
+                                    className="block px-4 py-2 hover:bg-slate-100 dark:hover:bg-black text-sm"
+                                  >
+                                    {subsub.nombre}
+                                  </Link>
+                                );
+                              })}
                             </div>
                           )}
                       </div>
@@ -112,7 +115,7 @@ const CategoriesBar = () => {
               </>
             ) : (
               <Link
-                href={`${basePath}?cat=${category.id}`}
+                href={`${basePath}/${generateCategorySlug(category.nombre)}`}
                 onClick={() => trackCategoryClick().catch(console.error)}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition-colors shadow-sm border"
                 style={{

@@ -10,7 +10,7 @@ import { obtenerProductos } from "../lib/productos-db";
 import { useUser } from "../context/UserContext";
 import { useTracking } from "../lib/useAnalytics";
 import { productMatches } from "../lib/search-utils";
-import { createFullProductSlug } from "../lib/slug";
+import { createProductSlugWithoutId, generateCategorySlug, createCategorySlug } from "../lib/slug";
 
 // ─────────────────────────────────────────────
 // Acordeón de categorías para el drawer móvil
@@ -109,22 +109,25 @@ function MobileCategoriesAccordion({ basePath }: { basePath: string }) {
                       {openSub === sub.id && (
                         <div className="ml-3 border-l"
                           style={{ borderColor: "var(--border)" }}>
-                          {sub.subcategorias.map((subsub: any) => (
-                            <a
-                              key={subsub.id}
-                              href={`${basePath}?cat=${cat.id}&sub=${sub.id}&subsub=${subsub.id}`}
-                              className="block px-4 py-2 text-xs transition-colors"
-                              style={{ color: "var(--textMuted)" }}
-                            >
-                              {subsub.nombre}
-                            </a>
-                          ))}
+                          {sub.subcategorias.map((subsub: any) => {
+                            const slug = createCategorySlug(cat.nombre, sub.nombre, subsub.nombre);
+                            return (
+                              <a
+                                key={subsub.id}
+                                href={`/${slug}`}
+                                className="block px-4 py-2 text-xs transition-colors"
+                                style={{ color: "var(--textMuted)" }}
+                              >
+                                {subsub.nombre}
+                              </a>
+                            );
+                          })}
                         </div>
                       )}
                     </>
                   ) : (
                     <a
-                      href={`${basePath}?cat=${cat.id}&sub=${sub.id}`}
+                      href={`/${createCategorySlug(cat.nombre, sub.nombre)}`}
                       className="block px-3 py-2 text-sm transition-shadow hover:shadow-sm rounded-md"
                       style={{ color: "var(--text)" }}
                     >
@@ -138,7 +141,7 @@ function MobileCategoriesAccordion({ basePath }: { basePath: string }) {
 
           {!cat.subcategorias?.length && openCat === cat.id && (
             <a
-              href={`${basePath}?cat=${cat.id}`}
+              href={`/${generateCategorySlug(cat.nombre)}`}
               className="block px-3 py-2 text-sm"
               style={{ color: "var(--text)" }}
             >
@@ -368,10 +371,9 @@ export const Navbar = () => {
                       </div>
                     ) : suggestions.length > 0 ? (
                       suggestions.map((prod) => {
-                        const slug = createFullProductSlug(prod.nombre, prod.id);
-                        let href = `/product-detail/${slug}`;
-                        if (isClient) href = `/home/product-detail/${slug}`;
-                        if (isAdmin) href = `/admin/product-detail/${slug}`;
+                        const slug = createProductSlugWithoutId(prod.nombre);
+                        let href = `/${slug}`;
+                        if (isAdmin) href = `/admin/product-detail/${prod.id}`;
                         return (
                           <a
                             key={prod.id}
@@ -645,7 +647,7 @@ export const Navbar = () => {
                 </button>
               ) : (
                 <Link
-                  href={`${basePath}?cat=${cat.id}`}
+                  href={`/${generateCategorySlug(cat.nombre)}`}
                   className="flex items-center gap-1 px-3 py-2.5 text-sm font-medium whitespace-nowrap transition-shadow rounded-xl hover:shadow-sm text-black dark:text-white"
                 >
                   {cat.icono && (
@@ -698,20 +700,23 @@ export const Navbar = () => {
                               transition: "all 150ms",
                             }}
                           >
-                            {sub.subcategorias.map((subsub: any) => (
-                              <Link
-                                key={subsub.id}
-                                href={`${basePath}?cat=${cat.id}&sub=${sub.id}&subsub=${subsub.id}`}
-                                className="block px-4 py-2.5 text-sm hover:text-[#7b68ee] transition-colors text-black dark:text-white"
-                              >
-                                <span className="dark:text-white hover:text-[#7b68ee]">{subsub.nombre}</span>
-                              </Link>
-                            ))}
+                            {sub.subcategorias.map((subsub: any) => {
+                              const slug = createCategorySlug(cat.nombre, sub.nombre, subsub.nombre);
+                              return (
+                                <Link
+                                  key={subsub.id}
+                                  href={`/${slug}`}
+                                  className="block px-4 py-2.5 text-sm hover:text-[#7b68ee] transition-colors text-black dark:text-white"
+                                >
+                                  <span className="dark:text-white hover:text-[#7b68ee]">{subsub.nombre}</span>
+                                </Link>
+                              );
+                            })}
                           </div>
                         </button>
                       ) : (
                         <Link
-                          href={`${basePath}?cat=${cat.id}&sub=${sub.id}`}
+                          href={`/${createCategorySlug(cat.nombre, sub.nombre)}`}
                           className="block px-4 py-2.5 text-sm transition-shadow !text-black dark:!text-white hover:shadow-sm rounded-md"
                         >
                           <span className="!text-black dark:!text-white group-hover/sub:!text-[#7b68ee] dark:group-hover/sub:!text-[#7b68ee] transition-colors">{sub.nombre}</span>
@@ -813,10 +818,9 @@ export const Navbar = () => {
                       </div>
                     ) : suggestions.length > 0 ? (
                       suggestions.map((prod) => {
-                        const slug = createFullProductSlug(prod.nombre, prod.id);
-                        let href = `/product-detail/${slug}`;
-                        if (isClient) href = `/home/product-detail/${slug}`;
-                        if (isAdmin) href = `/admin/product-detail/${slug}`;
+                        const slug = createProductSlugWithoutId(prod.nombre);
+                        let href = `/${slug}`;
+                        if (isAdmin) href = `/admin/product-detail/${prod.id}`;
                         return (
                           <a
                             key={prod.id}
