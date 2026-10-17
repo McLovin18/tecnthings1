@@ -103,7 +103,7 @@ export default function Home() {
       subheading: "NUEVO EQUIPO",
       description: "Arma tu PC soñada. Nosotros te asesoramos para que juegues sin límites.",
       primaryButtonText: "ENSAMBLES",
-      primaryButtonLink: "/products-by-category?cat=1775935501638&sub=1775935523162",
+      primaryButtonLink: "/computadoras-gamer-ensambles",
       secondaryButtonText: "ASESORAMIENTO",
       secondaryButtonLink: "https://wa.me/593962873167?text=Hola%20quiero%20asesoramiento%20para%20mi%20PC",
       backgroundImage: "/banner_img.jpeg",
