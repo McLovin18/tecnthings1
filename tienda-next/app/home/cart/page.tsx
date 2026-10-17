@@ -209,7 +209,7 @@ export default function CartPage() {
                   </span>
                   <h3 className="text-xl font-semibold mt-4 text-[#3a1859] dark:text-white">Carrito vacío</h3>
                   <a
-                    href="/home/products-by-category"
+                    href="/home"
                     className="inline-block mt-4 px-6 py-2 bg-accent text-white rounded-lg"
                   >
                     Continuar comprando

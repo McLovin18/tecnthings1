@@ -2412,7 +2412,7 @@ export default function LandingEditor() {
                                                   <input
                                                     type="text"
                                                     className="border rounded px-2 py-1 text-xs"
-                                                    placeholder="Enlace (ruta interna, ej: /products-by-category)"
+                                                    placeholder="Enlace (ruta SEO-friendly, ej: /computadoras-gamer-ensambles)"
                                                     value={item.link || ""}
                                                     onChange={(e) =>
                                                       handleFeaturedCategoryFieldChange(

@@ -42,7 +42,7 @@ export function StructuredData() {
       "@type": "SearchAction",
       target: {
         "@type": "EntryPoint",
-        urlTemplate: `${siteUrl}/products-by-category?search={search_term_string}`,
+        urlTemplate: `${siteUrl}/search-results?query={search_term_string}`,
       },
       "query-input": "required name=search_term_string",
     },

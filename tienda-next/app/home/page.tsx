@@ -101,7 +101,7 @@ export default function HomePage() {
               </div>
               <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
                 <a
-                  href="/home/products-by-category"
+                  href="/home"
                   className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#7b68ee] hover:bg-[#6d28d9] text-white font-bold rounded-xl transition-colors shadow-md"
                 >
                   <span className="text-sm">Categorías</span>

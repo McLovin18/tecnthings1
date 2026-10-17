@@ -26,7 +26,7 @@ export default function Hero360Section({
   description = "Arma tu PC soñada. Nosotros te asesoramos para que juegues sin límites.",
   primaryButtonText = "ENSAMBLES",
   secondaryButtonText = "ASESORAMIENTO",
-  primaryButtonLink = "/products-by-category?cat=1775935501638&sub=1775935523162",
+  primaryButtonLink = "/computadoras-gamer-ensambles",
   secondaryButtonLink = "https://wa.me/593962873167?text=Hola%20quiero%20asesoramiento%20para%20mi%20PC",
   backgroundImage = "/banner_img.jpeg",
   images = [
@@ -228,7 +228,7 @@ export default function Hero360Section({
                   if (onPrimaryButtonClick) {
                     onPrimaryButtonClick();
                   } else {
-                    window.location.href = primaryButtonLink || "/products-by-category?cat=1775935501638&sub=1775935523162";
+                    window.location.href = primaryButtonLink || "/computadoras-gamer-ensambles";
                   }
                 }}
                 className="inline-flex items-center justify-center px-8 py-4 rounded-lg font-bold text-base md:text-lg transition-all duration-300 transform hover:scale-105 active:scale-95"

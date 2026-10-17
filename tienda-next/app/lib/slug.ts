@@ -74,9 +74,57 @@ export function createCategorySlug(category: string, subcategory?: string, subsu
 
 /**
  * Parse a category slug to extract individual parts
+ * This function needs to be called with the actual categorias data to correctly parse
  * Example: "computadora-gamer-laptop" -> { category: "computadora", subcategory: "gamer", subsubcategory: "laptop" }
  */
 export function parseCategorySlug(slug: string): { category: string; subcategory?: string; subsubcategory?: string } {
+  const parts = slug.split('-');
+  return {
+    category: parts[0] || '',
+    subcategory: parts[1] || undefined,
+    subsubcategory: parts[2] || undefined,
+  };
+}
+
+/**
+ * Parse a category slug using actual category data to handle names with hyphens correctly
+ */
+export function parseCategorySlugWithData(slug: string, categorias: any[]): { category: string; subcategory?: string; subsubcategory?: string } {
+  // Try to find the category by matching the full slug or parts
+  for (const cat of categorias) {
+    const catSlug = generateCategorySlug(cat.nombre);
+    
+    // Check if it's just a category
+    if (catSlug === slug) {
+      return { category: catSlug };
+    }
+    
+    // Check if it's category + subcategory
+    if (cat.subcategorias) {
+      for (const sub of cat.subcategorias) {
+        const subSlug = generateCategorySlug(sub.nombre);
+        const combinedSlug = `${catSlug}-${subSlug}`;
+        
+        if (combinedSlug === slug) {
+          return { category: catSlug, subcategory: subSlug };
+        }
+        
+        // Check if it's category + subcategory + subsubcategory
+        if (sub.subcategorias) {
+          for (const subsub of sub.subcategorias) {
+            const subsubSlug = generateCategorySlug(subsub.nombre);
+            const fullSlug = `${catSlug}-${subSlug}-${subsubSlug}`;
+            
+            if (fullSlug === slug) {
+              return { category: catSlug, subcategory: subSlug, subsubcategory: subsubSlug };
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  // Fallback to simple split
   const parts = slug.split('-');
   return {
     category: parts[0] || '',

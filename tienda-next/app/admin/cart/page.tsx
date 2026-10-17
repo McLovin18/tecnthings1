@@ -93,7 +93,7 @@ export default function CartPage() {
 							<div className="text-center py-12">
 								<span className="material-icons-round text-6xl opacity-30 text-[#3a1859] dark:text-white">shopping_bag</span>
 								<h3 className="text-xl font-semibold mt-4 text-[#3a1859] dark:text-white">Carrito vacío</h3>
-								<a href="/admin/products-by-category" className="inline-block mt-4 px-6 py-2 bg-accent text-white rounded-lg">Continuar comprando</a>
+								<a href="/admin" className="inline-block mt-4 px-6 py-2 bg-accent text-white rounded-lg">Continuar comprando</a>
 							</div>
 						) : (
 							<div className="space-y-4">

@@ -618,17 +618,19 @@ export default function CartPage() {
         <h3 className="text-lg font-semibold text-slate-700 dark:text-white">
           Tu carrito está vacío
         </h3>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-          Agrega productos para continuar
-        </p>
+        <div className="mt-6">
+          <p className="text-sm text-slate-600 dark:text-white/60">
+            ¿Quieres agregar más productos?
+          </p>
+        </div>
+        <a
+          href="/"
+          className="mt-2 inline-flex items-center gap-2 bg-[#7b68ee] hover:bg-purple-800 text-white font-semibold px-6 py-2.5 rounded-xl transition-colors shadow"
+        >
+          <span className="material-icons-round text-base">storefront</span>
+          Ver productos
+        </a>
       </div>
-      <a
-        href="/products-by-category"
-        className="mt-2 inline-flex items-center gap-2 bg-[#7b68ee] hover:bg-purple-800 text-white font-semibold px-6 py-2.5 rounded-xl transition-colors shadow"
-      >
-        <span className="material-icons-round text-base">storefront</span>
-        Ver productos
-      </a>
     </div>
   );
 
@@ -775,7 +777,7 @@ export default function CartPage() {
 
                 {/* Link continuar comprando */}
                 <a
-                  href="/products-by-category"
+                  href="/"
                   className="inline-flex items-center gap-1.5 text-sm text-[#7b68ee] dark:text-purple-400 hover:underline mt-1"
                 >
                   <span className="material-icons-round text-base">arrow_back</span>

@@ -2,7 +2,6 @@
 import ProductoCard from "../components/ProductoCard";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import type { Producto } from "../lib/productos-db";
-import { obtenerCategorias } from "../lib/categorias-db";
 import { parseCategorySlug } from "../lib/slug";
 
 interface CategoryPageClientProps {
@@ -11,9 +10,12 @@ interface CategoryPageClientProps {
   subcategoriaId: string;
   subsubcategoriaId: string;
   slug: string;
+  categoriaNombre?: string;
+  subcategoriaNombre?: string;
+  subsubcategoriaNombre?: string;
 }
 
-export default function CategoryPageClient({ productos, categoriaId, subcategoriaId, subsubcategoriaId, slug }: CategoryPageClientProps) {
+export default function CategoryPageClient({ productos, categoriaId, subcategoriaId, subsubcategoriaId, slug, categoriaNombre, subcategoriaNombre, subsubcategoriaNombre }: CategoryPageClientProps) {
   const [search, setSearch] = useState("");
   const [precioMin, setPrecioMin] = useState("");
   const [precioMax, setPrecioMax] = useState("");
@@ -21,49 +23,11 @@ export default function CategoryPageClient({ productos, categoriaId, subcategori
   const [showPrecio, setShowPrecio] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // Estado para el mapeo de nombres
-  const [catMap, setCatMap] = useState<any>({});
-  const [subcatMap, setSubcatMap] = useState<any>({});
-  const [subsubcatMap, setSubsubcatMap] = useState<any>({});
   const [slugArray, setSlugArray] = useState<string[]>([]);
 
   useEffect(() => {
     setSlugArray(slug.split('/'));
-    
-    async function fetchCategorias() {
-      const cats = await obtenerCategorias();
-      const catObj: any = {};
-      const subcatObj: any = {};
-      const subsubcatObj: any = {};
-      cats.forEach((cat: any) => {
-        catObj[cat.id] = cat.nombre || cat.id;
-        if (cat.subcategorias) {
-          cat.subcategorias.forEach((sub: any) => {
-            subcatObj[sub.id] = sub.nombre || sub.id;
-            if (sub.subcategorias) {
-              sub.subcategorias.forEach((subsub: any) => {
-                subsubcatObj[subsub.id] = subsub.nombre || subsub.id;
-              });
-            }
-          });
-        }
-      });
-      setCatMap(catObj);
-      setSubcatMap(subcatObj);
-      setSubsubcatMap(subsubcatObj);
-    }
-    fetchCategorias();
   }, [slug]);
-
-  function getCategoryName(id: string) {
-    return catMap[id] || id;
-  }
-  function getSubcategoryName(id: string) {
-    return subcatMap[id] || id;
-  }
-  function getSubsubcategoryName(id: string) {
-    return subsubcatMap[id] || id;
-  }
 
   // Chequear autenticación
   useEffect(() => {
@@ -75,28 +39,7 @@ export default function CategoryPageClient({ productos, categoriaId, subcategori
   const productosFiltrados = useMemo(() => {
     const filtered = productos
       .filter((p: any) => {
-        // Validación estricta de jerarquía
-        if (subsubcategoriaId && subcategoriaId && categoriaId) {
-          if (
-            p.categoria !== categoriaId ||
-            p.subcategoria !== subcategoriaId ||
-            p.subsubcategoria !== subsubcategoriaId
-          ) {
-            return false;
-          }
-        } else if (subcategoriaId && categoriaId) {
-          if (
-            p.categoria !== categoriaId ||
-            p.subcategoria !== subcategoriaId
-          ) {
-            return false;
-          }
-        } else if (categoriaId) {
-          if (p.categoria !== categoriaId) {
-            return false;
-          }
-        }
-
+        // Solo filtrar por búsqueda y precio, ya que la base de datos ya filtró por categoría/subcategoría
         const texto = search.toLowerCase().trim();
         const matchTexto =
           !texto ||
@@ -120,7 +63,7 @@ export default function CategoryPageClient({ productos, categoriaId, subcategori
       });
     
     return filtered;
-  }, [productos, categoriaId, subcategoriaId, subsubcategoriaId, search, precioMin, precioMax, orden]);
+  }, [productos, search, precioMin, precioMax, orden]);
 
   // Paginación responsive
   const [currentPage, setCurrentPage] = useState(1);
@@ -181,28 +124,24 @@ export default function CategoryPageClient({ productos, categoriaId, subcategori
               {categoriaId && slugArray[0] && (
                 <>
                   <span className="mx-1">›</span>
-                  <span className="hover:underline cursor-pointer" onClick={() => window.location.href = `/${slugArray[0]}`}>{getCategoryName(categoriaId)}</span>
+                  <span className="hover:underline cursor-pointer" onClick={() => window.location.href = `/${slugArray[0]}`}>{categoriaNombre || slugArray[0]}</span>
                 </>
               )}
               {subcategoriaId && slugArray[1] && (
                 <>
                   <span className="mx-1">›</span>
-                  <span className="hover:underline cursor-pointer" onClick={() => window.location.href = `/${slugArray.slice(0, 2).join('/')}`}>{getSubcategoryName(subcategoriaId)}</span>
+                  <span className="hover:underline cursor-pointer" onClick={() => window.location.href = `/${slugArray.slice(0, 2).join('/')}`}>{subcategoriaNombre || slugArray[1]}</span>
                 </>
               )}
               {subsubcategoriaId && slugArray[2] && (
                 <>
                   <span className="mx-1">›</span>
-                  <span className="font-semibold text-slate-600 dark:text-white/80">{getSubsubcategoryName(subsubcategoriaId)}</span>
+                  <span className="font-semibold text-slate-600 dark:text-white/80">{subsubcategoriaNombre || slugArray[2]}</span>
                 </>
               )}
             </nav>
             <h1 className="text-xl sm:text-2xl font-bold leading-tight">
-              {subsubcategoriaId
-                ? getSubsubcategoryName(subsubcategoriaId)
-                : subcategoriaId
-                  ? getSubcategoryName(subcategoriaId)
-                  : getCategoryName(categoriaId)}
+              {subsubcategoriaNombre || subcategoriaNombre || categoriaNombre}
             </h1>
           </div>
         )}

@@ -15,7 +15,7 @@ import { createProductSlugWithoutId, generateCategorySlug, createCategorySlug } 
 // ─────────────────────────────────────────────
 // Acordeón de categorías para el drawer móvil
 // ─────────────────────────────────────────────
-function MobileCategoriesAccordion({ basePath }: { basePath: string }) {
+function MobileCategoriesAccordion() {
   const [categorias, setCategorias] = React.useState<any[]>([]);
   const [openCat, setOpenCat] = React.useState<string | null>(null);
   const [openSub, setOpenSub] = React.useState<string | null>(null);
@@ -259,12 +259,6 @@ export const Navbar = () => {
   const isClient = user?.role === "client" || user?.role === "cliente";
   const isAdmin = user?.role === "admin";
   const isMobileOrTablet = windowWidth !== null && windowWidth < 1024;
-
-  const basePath = isClient
-    ? "/home/products-by-category"
-    : isAdmin
-    ? "/admin/products-by-category"
-    : "/products-by-category";
 
   const links = user
     ? [
@@ -871,7 +865,7 @@ export const Navbar = () => {
               ))}
 
               {/* Categorías en acordeón */}
-              <MobileCategoriesAccordion basePath={basePath} />
+              <MobileCategoriesAccordion />
 
               {/* Divisor */}
               <div className="border-t my-2" style={{ borderColor: "var(--border)" }} />

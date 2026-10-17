@@ -9,8 +9,14 @@ import {
   query,
   orderBy
 } from "firebase/firestore";
+import { generateCategorySlug } from "./slug";
 
 const COLLECTION = "categorias";
+
+// Cache para categorías (expira en 5 minutos)
+let categoriasCache: any[] | null = null;
+let categoriasCacheTime = 0;
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutos
 
 function sortCategoriasByOrder(categorias: any[]): any[] {
   return categorias
@@ -22,9 +28,23 @@ function sortCategoriasByOrder(categorias: any[]): any[] {
 }
 
 export async function obtenerCategorias() {
+  const now = Date.now();
+  
+  // Retornar datos del caché si aún son válidos
+  if (categoriasCache && (now - categoriasCacheTime) < CACHE_TTL) {
+    return categoriasCache;
+  }
+  
+  // Obtener datos frescos de Firebase
   const snapshot = await getDocs(collection(db, COLLECTION));
   const categorias = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  return sortCategoriasByOrder(categorias);
+  const sortedCategorias = sortCategoriasByOrder(categorias);
+  
+  // Actualizar caché
+  categoriasCache = sortedCategorias;
+  categoriasCacheTime = now;
+  
+  return sortedCategorias;
 }
 
 
@@ -60,10 +80,22 @@ export async function eliminarCategoria(id) {
 export async function findCategoryIdBySlug(slug: string): Promise<string | null> {
   const categorias = await obtenerCategorias();
   const category = categorias.find(cat => {
-    const catSlug = cat.nombre?.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-áéíóúñ]/g, '');
+    const catSlug = generateCategorySlug(cat.nombre);
     return catSlug === slug;
   });
   return category?.id || null;
+}
+
+/**
+ * Find category by slug and return the full category object
+ */
+export async function findCategoryBySlug(slug: string): Promise<any | null> {
+  const categorias = await obtenerCategorias();
+  const category = categorias.find(cat => {
+    const catSlug = generateCategorySlug(cat.nombre);
+    return catSlug === slug;
+  });
+  return category || null;
 }
 
 /**
@@ -72,14 +104,14 @@ export async function findCategoryIdBySlug(slug: string): Promise<string | null>
 export async function findSubcategoryIdBySlug(categorySlug: string, subcategorySlug: string): Promise<{ categoryId: string; subcategoryId: string } | null> {
   const categorias = await obtenerCategorias();
   const category = categorias.find(cat => {
-    const catSlug = cat.nombre?.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-áéíóúñ]/g, '');
+    const catSlug = generateCategorySlug(cat.nombre);
     return catSlug === categorySlug;
   });
   
   if (!category || !category.subcategorias) return null;
   
   const subcategory = category.subcategorias.find((sub: any) => {
-    const subSlug = sub.nombre?.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-áéíóúñ]/g, '');
+    const subSlug = generateCategorySlug(sub.nombre);
     return subSlug === subcategorySlug;
   });
   
@@ -94,21 +126,21 @@ export async function findSubcategoryIdBySlug(categorySlug: string, subcategoryS
 export async function findSubsubcategoryIdBySlug(categorySlug: string, subcategorySlug: string, subsubcategorySlug: string): Promise<{ categoryId: string; subcategoryId: string; subsubcategoryId: string } | null> {
   const categorias = await obtenerCategorias();
   const category = categorias.find(cat => {
-    const catSlug = cat.nombre?.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-áéíóúñ]/g, '');
+    const catSlug = generateCategorySlug(cat.nombre);
     return catSlug === categorySlug;
   });
   
   if (!category || !category.subcategorias) return null;
   
   const subcategory = category.subcategorias.find((sub: any) => {
-    const subSlug = sub.nombre?.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-áéíóúñ]/g, '');
+    const subSlug = generateCategorySlug(sub.nombre);
     return subSlug === subcategorySlug;
   });
   
   if (!subcategory || !subcategory.subcategorias) return null;
   
   const subsubcategory = subcategory.subcategorias.find((subsub: any) => {
-    const subsubSlug = subsub.nombre?.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-áéíóúñ]/g, '');
+    const subsubSlug = generateCategorySlug(subsub.nombre);
     return subsubSlug === subsubcategorySlug;
   });
   

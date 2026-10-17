@@ -9,8 +9,8 @@ import {
 } from "../lib/productos-db";
 import ProductDetailClient from "../home/product-detail/ProductDetailClient";
 import CategoryPageClient from "./CategoryPageClient";
-import { parseCategorySlug } from "../lib/slug";
-import { findCategoryIdBySlug, findSubcategoryIdBySlug, findSubsubcategoryIdBySlug, obtenerCategorias } from "../lib/categorias-db";
+import { parseCategorySlug, generateCategorySlug, parseCategorySlugWithData } from "../lib/slug";
+import { findCategoryIdBySlug, findSubcategoryIdBySlug, findSubsubcategoryIdBySlug, findCategoryBySlug, obtenerCategorias } from "../lib/categorias-db";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.tecnothings.com";
 
@@ -56,48 +56,35 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   // It's a category - get category name for SEO
-  const { category, subcategory, subsubcategory } = parseCategorySlug(slug);
+  const categorias = await obtenerCategorias();
+  const { category, subcategory, subsubcategory } = parseCategorySlugWithData(slug, categorias);
   
   if (category) {
-    const categorias = await obtenerCategorias();
-    const catMap: any = {};
-    const subcatMap: any = {};
-    const subsubcatMap: any = {};
-    
-    categorias.forEach((cat: any) => {
-      catMap[cat.id] = cat.nombre;
-      if (cat.subcategorias) {
-        cat.subcategorias.forEach((sub: any) => {
-          subcatMap[sub.id] = sub.nombre;
-          if (sub.subcategorias) {
-            sub.subcategorias.forEach((subsub: any) => {
-              subsubcatMap[subsub.id] = subsub.nombre;
-            });
-          }
-        });
-      }
-    });
-    
-    // Resolve IDs to get names
-    const categoriaId = await findCategoryIdBySlug(category);
     let categoriaNombre = "";
     let subcategoriaNombre = "";
     let subsubcategoriaNombre = "";
     
-    if (categoriaId) {
-      categoriaNombre = catMap[categoriaId] || category;
+    const categoryData = await findCategoryBySlug(category);
+    if (categoryData) {
+      categoriaNombre = categoryData.nombre;
       
-      if (subcategory) {
-        const subResult = await findSubcategoryIdBySlug(category, subcategory);
-        if (subResult) {
-          subcategoriaNombre = subcatMap[subResult.subcategoryId] || subcategory;
-        }
-      }
-      
-      if (subcategory && subsubcategory) {
-        const subsubResult = await findSubsubcategoryIdBySlug(category, subcategory, subsubcategory);
-        if (subsubResult) {
-          subsubcategoriaNombre = subsubcatMap[subsubResult.subsubcategoryId] || subsubcategory;
+      if (subcategory && categoryData.subcategorias) {
+        const subData = categoryData.subcategorias.find((sub: any) => {
+          const subSlug = generateCategorySlug(sub.nombre);
+          return subSlug === subcategory;
+        });
+        if (subData) {
+          subcategoriaNombre = subData.nombre;
+          
+          if (subsubcategory && subData.subcategorias) {
+            const subsubData = subData.subcategorias.find((subsub: any) => {
+              const subsubSlug = generateCategorySlug(subsub.nombre);
+              return subsubSlug === subsubcategory;
+            });
+            if (subsubData) {
+              subsubcategoriaNombre = subsubData.nombre;
+            }
+          }
         }
       }
     }
@@ -173,37 +160,66 @@ export default async function RootSlugPage({ params }: Props) {
   }
   
   // It's a category slug - resolve IDs and render category page
-  const { category, subcategory, subsubcategory } = parseCategorySlug(slug);
+  const categorias = await obtenerCategorias();
+  const { category, subcategory, subsubcategory } = parseCategorySlugWithData(slug, categorias);
+  
+  console.log(`Parsed slug: ${slug} -> category=${category}, subcategory=${subcategory}, subsubcategory=${subsubcategory}`);
   
   if (category) {
     let categoriaId = "";
     let subcategoriaId = "";
     let subsubcategoriaId = "";
+    let categoriaNombre = "";
+    let subcategoriaNombre = "";
+    let subsubcategoriaNombre = "";
     
-    categoriaId = await findCategoryIdBySlug(category) || "";
-    
-    if (category && subcategory && categoriaId) {
-      const subResult = await findSubcategoryIdBySlug(category, subcategory);
-      if (subResult) {
-        subcategoriaId = subResult.subcategoryId;
-      }
-    }
-    
-    if (category && subcategory && subsubcategory && categoriaId && subcategoriaId) {
-      const subsubResult = await findSubsubcategoryIdBySlug(category, subcategory, subsubcategory);
-      if (subsubResult) {
-        subsubcategoriaId = subsubResult.subsubcategoryId;
+    const categoryData = await findCategoryBySlug(category);
+    if (categoryData) {
+      categoriaId = categoryData.id;
+      categoriaNombre = categoryData.nombre;
+      console.log(`Found category: ${categoryData.nombre} (id=${categoryData.id})`);
+      
+      if (subcategory && categoryData.subcategorias) {
+        const subData = categoryData.subcategorias.find((sub: any) => {
+          const subSlug = generateCategorySlug(sub.nombre);
+          return subSlug === subcategory;
+        });
+        if (subData) {
+          subcategoriaId = subData.id;
+          subcategoriaNombre = subData.nombre;
+          console.log(`Found subcategory: ${subData.nombre} (id=${subData.id})`);
+          
+          if (subsubcategory && subData.subcategorias) {
+            const subsubData = subData.subcategorias.find((subsub: any) => {
+              const subsubSlug = generateCategorySlug(subsub.nombre);
+              return subsubSlug === subsubcategory;
+            });
+            if (subsubData) {
+              subsubcategoriaId = subsubData.id;
+              subsubcategoriaNombre = subsubData.nombre;
+              console.log(`Found subsubcategory: ${subsubData.nombre} (id=${subsubData.id})`);
+            }
+          }
+        }
       }
     }
     
     // Fetch products for this category
     let productos: any[] = [];
     if (subsubcategoriaId && subcategoriaId && categoriaId) {
+      console.log(`Fetching subsubcategoria: subsubcategoriaId=${subsubcategoriaId}, subcategoriaId=${subcategoriaId}, categoriaId=${categoriaId}`);
       productos = await obtenerProductosPorSubsubcategoria(subsubcategoriaId, subcategoriaId, categoriaId);
+      console.log(`Products fetched: ${productos.length}`);
+      productos.forEach(p => console.log(` - ${p.nombre}: subcategoria=${p.subcategoria}, subsubcategoria=${p.subsubcategoria}`));
     } else if (subcategoriaId && categoriaId) {
+      console.log(`Fetching subcategoria: subcategoriaId=${subcategoriaId}, categoriaId=${categoriaId}`);
       productos = await obtenerProductosPorSubcategoria(subcategoriaId, categoriaId);
+      console.log(`Products fetched: ${productos.length}`);
+      productos.forEach(p => console.log(` - ${p.nombre}: subcategoria=${p.subcategoria}`));
     } else if (categoriaId) {
+      console.log(`Fetching categoria: categoriaId=${categoriaId}`);
       productos = await obtenerProductosPorCategoria(categoriaId);
+      console.log(`Products fetched: ${productos.length}`);
     }
     
     // Convert Firebase Timestamps to plain values
@@ -216,6 +232,9 @@ export default async function RootSlugPage({ params }: Props) {
         subcategoriaId={subcategoriaId}
         subsubcategoriaId={subsubcategoriaId}
         slug={slug}
+        categoriaNombre={categoriaNombre}
+        subcategoriaNombre={subcategoriaNombre}
+        subsubcategoriaNombre={subsubcategoriaNombre}
       />
     );
   }
