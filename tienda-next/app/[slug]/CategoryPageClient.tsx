@@ -1,5 +1,6 @@
 "use client";
 import ProductoCard from "../components/ProductoCard";
+import BottomBarPublic from "../components/BottomBarPublic";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import type { Producto } from "../lib/productos-db";
 import { parseCategorySlug } from "../lib/slug";
@@ -322,6 +323,7 @@ export default function CategoryPageClient({ productos, categoriaId, subcategori
           </>
         )}
       </main>
+      {!isAuthenticated && <BottomBarPublic />}
     </div>
   );
 }

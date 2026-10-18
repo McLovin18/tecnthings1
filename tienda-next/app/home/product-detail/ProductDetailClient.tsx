@@ -233,7 +233,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
 
   return (
     <div className="min-h-screen flex flex-col mt-2 bg-white dark:bg-black text-slate-900 dark:text-white transition-colors">
-      <BottomBarPublic />
+      {!isLogged && <BottomBarPublic />}
 
       <div className="max-w-5xl mx-auto w-full px-3 sm:px-6 py-6 sm:py-10">
         <div className="flex flex-col md:flex-row gap-8 lg:gap-14">
