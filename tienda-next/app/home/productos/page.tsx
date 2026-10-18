@@ -4,6 +4,7 @@ import ProductoCard from "../../components/ProductoCard";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useUser } from "../../context/UserContext";
 import type { Producto } from "../../lib/productos-db";
+import BottomBarPublic from "../../components/BottomBarPublic"
 import { obtenerProductos, obtenerProductosPorCategoria, obtenerProductosPorSubcategoria, obtenerProductosPorSubsubcategoria } from "../../lib/productos-db";
 import { createProductSlugWithoutId } from "../../lib/slug";
 
@@ -369,6 +370,7 @@ export default function ProductsByCategoryPage() {
         )}
 
       </main>
+      {!isAuthenticated && <BottomBarPublic />}
     </div>
   );
 }
