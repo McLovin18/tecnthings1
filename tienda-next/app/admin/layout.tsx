@@ -8,8 +8,15 @@ export default function HomeLayout({ children }) {
   const [role, setRole] = useState("client");
   useEffect(() => {
     getCurrentUser().then((user) => {
-      if (user?.role === "admin") setRole("admin");
-      else setRole("client");
+      console.log("Admin layout - Current user:", user);
+      console.log("Admin layout - User role:", user?.role);
+      if (user?.role === "admin") {
+        console.log("Admin layout - Setting role to admin");
+        setRole("admin");
+      } else {
+        console.log("Admin layout - Setting role to client");
+        setRole("client");
+      }
     });
   }, []);
   return (

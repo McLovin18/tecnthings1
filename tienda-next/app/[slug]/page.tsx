@@ -24,9 +24,15 @@ function stripHtml(input: string) {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
+  let decodedSlug = slug;
+  try {
+    decodedSlug = slug ? decodeURIComponent(slug) : slug;
+  } catch (e) {
+    decodedSlug = slug;
+  }
   
   // Try to find product by slug first
-  const product = await obtenerProductoPorSlug(slug);
+  const product = await obtenerProductoPorSlug(decodedSlug);
   
   if (product) {
     const title = `${product.nombre} | TecnoThings`;
@@ -128,11 +134,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function RootSlugPage({ params }: Props) {
+export default async function Page({ params }: Props) {
   const { slug } = await params;
+  let decodedSlug = slug;
+  try {
+    decodedSlug = slug ? decodeURIComponent(slug) : slug;
+  } catch (e) {
+    decodedSlug = slug;
+  }
   
   // Try to find product by slug first
-  const product = await obtenerProductoPorSlug(slug);
+  const product = await obtenerProductoPorSlug(decodedSlug);
   
   if (product) {
     // It's a product - show product detail
@@ -161,9 +173,9 @@ export default async function RootSlugPage({ params }: Props) {
   
   // It's a category slug - resolve IDs and render category page
   const categorias = await obtenerCategorias();
-  const { category, subcategory, subsubcategory } = parseCategorySlugWithData(slug, categorias);
+  const { category, subcategory, subsubcategory } = parseCategorySlugWithData(decodedSlug, categorias);
   
-  console.log(`Parsed slug: ${slug} -> category=${category}, subcategory=${subcategory}, subsubcategory=${subsubcategory}`);
+  console.log(`Parsed slug: ${slug} (decoded: ${decodedSlug}) -> category=${category}, subcategory=${subcategory}, subsubcategory=${subsubcategory}`);
   
   if (category) {
     let categoriaId = "";
@@ -198,10 +210,19 @@ export default async function RootSlugPage({ params }: Props) {
               subsubcategoriaId = subsubData.id;
               subsubcategoriaNombre = subsubData.nombre;
               console.log(`Found subsubcategory: ${subsubData.nombre} (id=${subsubData.id})`);
+            } else {
+              console.log(`⚠️ Subsubcategory not found: ${subsubcategory} in subcategory ${subData.nombre}`);
             }
           }
+        } else {
+          console.log(`⚠️ Subcategory not found: ${subcategory} in category ${categoryData.nombre}`);
+          console.log(`   Available subcategories:`, categoryData.subcategorias.map((s: any) => ({ nombre: s.nombre, slug: generateCategorySlug(s.nombre) })));
         }
+      } else if (subcategory) {
+        console.log(`⚠️ Subcategory requested but category has no subcategorias`);
       }
+    } else {
+      console.log(`⚠️ Category not found: ${category}`);
     }
     
     // Fetch products for this category
